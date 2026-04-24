@@ -84,6 +84,7 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       background: rgba(255, 255, 255, 0.04);
       box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25) inset;
+      position: relative;
     }
     .cell {
       border-radius: 14px;
@@ -91,6 +92,10 @@
       background: rgba(0, 0, 0, 0.25);
       position: relative;
       overflow: hidden;
+      transition: transform 0.1s ease, border-color 0.15s ease, box-shadow 0.2s ease;
+    }
+    .cell:active:not(:disabled) {
+      transform: scale(0.96);
     }
     .cell::after {
       content: "";
@@ -108,9 +113,61 @@
       box-shadow: 0 0 28px rgba(86, 167, 255, 0.35);
       cursor: pointer;
     }
+    .cell.hot:not(.missflash) {
+      animation: satHotPulse 1.1s ease-in-out infinite;
+    }
+    @keyframes satHotPulse {
+      0%, 100% { box-shadow: 0 0 22px rgba(86, 167, 255, 0.28); }
+      50% { box-shadow: 0 0 38px rgba(120, 210, 255, 0.55); }
+    }
+    .cell.cell--bloom {
+      animation: satBloom 0.42s ease-out;
+    }
+    @keyframes satBloom {
+      0% { filter: brightness(1.35); transform: scale(1.04); }
+      100% { filter: brightness(1); transform: scale(1); }
+    }
+    .cell.cell--hit {
+      animation: satHit 0.28s ease-out;
+    }
+    @keyframes satHit {
+      0% { transform: scale(1.06); filter: brightness(1.4); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    .cellRipple {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      margin: -7px 0 0 -7px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.55), rgba(86, 167, 255, 0.35) 40%, transparent 70%);
+      transform: scale(0);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .cellRipple.is-on {
+      animation: satRipple 0.55s ease-out forwards;
+    }
+    @keyframes satRipple {
+      to {
+        transform: scale(14);
+        opacity: 0;
+      }
+    }
+    .cellRipple--miss {
+      background: radial-gradient(circle, rgba(255, 120, 120, 0.65), transparent 65%);
+    }
     .cell.missflash::after {
       opacity: 0.5;
       background: radial-gradient(circle, rgba(255, 80, 80, 0.4), transparent 65%);
+    }
+    #startBtn {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.12s ease, box-shadow 0.2s ease;
+    }
+    #startBtn:active:not(:disabled) {
+      transform: scale(0.97);
     }
     footer {
       margin-top: 20px;
@@ -119,6 +176,17 @@
     }
     footer a {
       color: rgba(154, 208, 255, 0.95);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cell.hot:not(.missflash),
+      .cell.cell--bloom,
+      .cell.cell--hit,
+      .cellRipple.is-on {
+        animation: none !important;
+      }
+      .cell:active:not(:disabled) {
+        transform: none;
+      }
     }
   </style>
 </head>
@@ -143,6 +211,19 @@
       const timeEl = document.getElementById("time");
       const startBtn = document.getElementById("startBtn");
       const cells = [];
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function rippleOnCell(cell, clientX, clientY, miss) {
+        if (reduceMotion) return;
+        const r = cell.getBoundingClientRect();
+        const el = document.createElement("span");
+        el.className = "cellRipple" + (miss ? " cellRipple--miss" : "");
+        el.style.left = `${clientX - r.left}px`;
+        el.style.top = `${clientY - r.top}px`;
+        cell.appendChild(el);
+        requestAnimationFrame(() => el.classList.add("is-on"));
+        setTimeout(() => el.remove(), 560);
+      }
 
       for (let i = 0; i < 9; i++) {
         const c = document.createElement("button");
@@ -179,21 +260,37 @@
       function showHot() {
         hotIndex = pickRandomHot(hotIndex);
         paintBoard();
+        if (!reduceMotion && hotIndex >= 0) {
+          const c = cells[hotIndex];
+          c.classList.remove("cell--bloom");
+          void c.offsetWidth;
+          c.classList.add("cell--bloom");
+          setTimeout(() => c.classList.remove("cell--bloom"), 420);
+        }
       }
 
-      function onCellClick(i) {
+      function onCellClick(i, ev) {
         if (!playing) return;
+        const cell = cells[i];
+        const cx = ev.clientX;
+        const cy = ev.clientY;
         if (i !== hotIndex) {
-          cells[i].classList.add("missflash");
-          setTimeout(() => cells[i].classList.remove("missflash"), 120);
+          rippleOnCell(cell, cx, cy, true);
+          cell.classList.add("missflash");
+          setTimeout(() => cell.classList.remove("missflash"), 120);
           return;
         }
+        rippleOnCell(cell, cx, cy, false);
+        cell.classList.remove("cell--hit");
+        void cell.offsetWidth;
+        cell.classList.add("cell--hit");
+        setTimeout(() => cell.classList.remove("cell--hit"), 280);
         score += 1;
         scoreEl.textContent = String(score);
         showHot();
       }
 
-      cells.forEach((c, i) => c.addEventListener("click", () => onCellClick(i)));
+      cells.forEach((c, i) => c.addEventListener("click", (ev) => onCellClick(i, ev)));
 
       function endGame() {
         playing = false;
@@ -225,8 +322,18 @@
         }, 1000);
       }
 
-      startBtn.addEventListener("click", () => {
+      startBtn.addEventListener("click", (ev) => {
         if (playing) return;
+        if (!reduceMotion) {
+          const b = startBtn.getBoundingClientRect();
+          const el = document.createElement("span");
+          el.className = "cellRipple";
+          el.style.left = `${ev.clientX - b.left}px`;
+          el.style.top = `${ev.clientY - b.top}px`;
+          startBtn.appendChild(el);
+          requestAnimationFrame(() => el.classList.add("is-on"));
+          setTimeout(() => el.remove(), 560);
+        }
         startGame();
       });
     })();

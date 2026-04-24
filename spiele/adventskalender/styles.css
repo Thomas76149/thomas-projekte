@@ -107,6 +107,8 @@ code {
 }
 
 .door {
+  position: relative;
+  overflow: hidden;
   aspect-ratio: 1;
   border: none;
   border-radius: var(--radius);
@@ -121,6 +123,9 @@ code {
     0 0 0 1px rgba(255, 255, 255, 0.08) inset,
     0 12px 28px rgba(0, 0, 0, 0.35);
   transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+.door:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .door:hover:not(:disabled) {
@@ -151,6 +156,47 @@ code {
 
 .door.is-peek {
   outline: 2px dashed var(--gold-dim);
+}
+
+.doorRipple {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 220, 0.75), rgba(232, 197, 71, 0.4) 42%, transparent 70%);
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 1;
+}
+.doorRipple.go {
+  animation: doorRipple 0.58s ease-out forwards;
+}
+@keyframes doorRipple {
+  to {
+    transform: scale(18);
+    opacity: 0;
+  }
+}
+.doorRipple--muted {
+  background: radial-gradient(circle, rgba(255, 200, 200, 0.55), rgba(196, 59, 74, 0.25) 50%, transparent 72%);
+}
+.door--openflash {
+  animation: doorOpenFlash 0.55s ease-out;
+}
+@keyframes doorOpenFlash {
+  0% {
+    filter: brightness(1.65) saturate(1.15);
+    box-shadow:
+      0 0 0 2px rgba(232, 197, 71, 0.75) inset,
+      0 0 40px rgba(232, 197, 71, 0.45);
+  }
+  100% {
+    filter: none;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 12px 28px rgba(0, 0, 0, 0.35);
+  }
 }
 
 .foot {
@@ -190,6 +236,19 @@ code {
   .door {
     transition: none;
   }
+  .door:active:not(:disabled) {
+    transform: none;
+  }
+  .btn:active {
+    transform: none;
+  }
+  .doorRipple.go,
+  .door--openflash {
+    animation: none !important;
+  }
+  .modal__panel--in {
+    animation: none !important;
+  }
 }
 
 /* Modal */
@@ -220,6 +279,22 @@ code {
   border: 1px solid rgba(255, 220, 180, 0.2);
   background: linear-gradient(165deg, rgba(40, 24, 32, 0.98), rgba(18, 10, 14, 0.98));
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+  transform-origin: 50% 40%;
+}
+.modal__panel--in {
+  animation: modalIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes modalIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: none;
+  }
 }
 
 .modal__x {
@@ -268,4 +343,14 @@ code {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-size: 0.72rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+.btn:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 0 24px rgba(232, 197, 71, 0.35);
+}
+.btn:active {
+  transform: scale(0.97);
 }

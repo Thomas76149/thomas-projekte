@@ -1,5 +1,7 @@
 const STORAGE_KEY = "thomas-fun-advent-opened-v1";
 
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /** @type {{ day: number, title: string, text: string }[]} */
 const DOORS = [
   { day: 1, title: "Start", text: "Ich wünsche dir alles Gute für die Adventszeit." },
@@ -62,16 +64,38 @@ function seasonMessage() {
   return `Heute ist der ${now.getDate()}. Dezember — Türchen bis ${now.getDate()} sind frei.`;
 }
 
+function doorRipple(btn, clientX, clientY, muted) {
+  if (reduceMotion) return;
+  const r = btn.getBoundingClientRect();
+  const el = document.createElement("span");
+  el.className = "doorRipple" + (muted ? " doorRipple--muted" : "");
+  el.style.left = `${clientX - r.left}px`;
+  el.style.top = `${clientY - r.top}px`;
+  btn.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("go"));
+  setTimeout(() => el.remove(), 650);
+}
+
 function openModal(day, title, text) {
   const modal = document.getElementById("modal");
+  const panel = modal.querySelector(".modal__panel");
   document.getElementById("modalDay").textContent = `Türchen ${day}`;
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalBody").textContent = text;
   modal.hidden = false;
+  if (panel) {
+    panel.classList.remove("modal__panel--in");
+    if (!reduceMotion) {
+      void panel.offsetWidth;
+      panel.classList.add("modal__panel--in");
+    }
+  }
 }
 
 function closeModal() {
-  document.getElementById("modal").hidden = true;
+  const modal = document.getElementById("modal");
+  modal.hidden = true;
+  modal.querySelector(".modal__panel")?.classList.remove("modal__panel--in");
 }
 
 function buildSnow() {
@@ -106,17 +130,26 @@ function renderGrid(opened) {
     if (isOpen) {
       btn.classList.add("is-open");
       btn.textContent = title;
-      btn.addEventListener("click", () => openModal(day, title, text));
+      btn.addEventListener("click", (e) => {
+        doorRipple(btn, e.clientX, e.clientY, false);
+        openModal(day, title, text);
+      });
     } else {
       btn.textContent = String(day);
       if (!allowed) {
         btn.disabled = true;
         btn.title = "Noch nicht verfügbar";
       }
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
         if (!canOpenDay(day)) {
+          doorRipple(btn, e.clientX, e.clientY, true);
           openModal(day, "Geduld", "Dieses Türchen ist noch nicht dran — oder Demo-Modus aktivieren.");
           return;
+        }
+        doorRipple(btn, e.clientX, e.clientY, false);
+        if (!reduceMotion) {
+          btn.classList.add("door--openflash");
+          setTimeout(() => btn.classList.remove("door--openflash"), 560);
         }
         opened.add(day);
         saveOpened(opened);

@@ -33,6 +33,7 @@
     .shell {
       max-width: 520px;
       margin: 0 auto;
+      position: relative;
     }
     h1 {
       margin: 0;
@@ -76,6 +77,15 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
       font-size: 0.68rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    button.ghost:active {
+      transform: scale(0.97);
     }
     button.ghost {
       background: transparent;
@@ -98,7 +108,7 @@
     }
     .filters button.is-active {
       opacity: 1;
-      box-shadow: 0 0 0 2px rgba(86, 167, 255, 0.45);
+      box-shadow: 0 0 0 2px rgba(86, 167, 255, 0.45), 0 0 24px rgba(86, 167, 255, 0.25);
     }
     ul {
       list-style: none;
@@ -118,15 +128,42 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       background: var(--panel);
       box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.22) inset;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    li:hover {
+      border-color: rgba(154, 208, 255, 0.22);
+      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.22) inset, 0 8px 28px rgba(0, 0, 0, 0.2);
+    }
+    li.is-new {
+      animation: todoRowIn 0.55s ease-out;
+    }
+    @keyframes todoRowIn {
+      0% {
+        opacity: 0;
+        transform: translateX(-12px);
+        filter: brightness(1.4);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0);
+        filter: brightness(1);
+      }
     }
     li.done span {
       text-decoration: line-through;
       color: var(--muted);
     }
     input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       accent-color: var(--accent);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    input[type="checkbox"]:active {
+      transform: scale(0.88);
     }
     .task-text {
       word-break: break-word;
@@ -152,6 +189,43 @@
     }
     footer a {
       color: rgba(154, 208, 255, 0.95);
+    }
+    .uiRipple {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      margin: -6px 0 0 -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.5), rgba(86, 167, 255, 0.35) 45%, transparent 72%);
+      transform: scale(0);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .uiRipple.go {
+      animation: todoRipple 0.55s ease-out forwards;
+    }
+    button.danger .uiRipple,
+    .uiRipple--warm {
+      background: radial-gradient(circle, rgba(255, 180, 160, 0.55), rgba(255, 107, 107, 0.25) 50%, transparent 72%);
+    }
+    @keyframes todoRipple {
+      to {
+        transform: scale(16);
+        opacity: 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      li.is-new,
+      .uiRipple.go {
+        animation: none !important;
+      }
+      li:hover {
+        transform: none;
+      }
+      button:active,
+      button.ghost:active {
+        transform: none;
+      }
     }
   </style>
 </head>
@@ -189,6 +263,19 @@
 
   let filter = "all";
   let todos = [];
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function addRipple(host, clientX, clientY, warm) {
+    if (reduceMotion) return;
+    const r = host.getBoundingClientRect();
+    const el = document.createElement("span");
+    el.className = "uiRipple" + (warm ? " uiRipple--warm" : "");
+    el.style.left = `${clientX - r.left}px`;
+    el.style.top = `${clientY - r.top}px`;
+    host.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("go"));
+    setTimeout(() => el.remove(), 580);
+  }
 
   function uid() {
     return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -216,17 +303,23 @@
     return true;
   }
 
-  function render() {
+  function render(newId) {
     list.innerHTML = "";
     const items = todos.filter(visible);
     empty.hidden = todos.length > 0;
     for (const t of items) {
       const li = document.createElement("li");
-      li.className = t.done ? "done" : "";
+      li.className = (t.done ? "done" : "") + (t.id === newId ? " is-new" : "");
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = t.done;
       cb.setAttribute("aria-label", "Erledigt");
+      cb.addEventListener("click", (ev) => {
+        if (!reduceMotion) {
+          const r = cb.getBoundingClientRect();
+          addRipple(li, r.left + r.width / 2, r.top + r.height / 2, false);
+        }
+      });
       cb.addEventListener("change", () => {
         t.done = cb.checked;
         save();
@@ -239,7 +332,8 @@
       del.type = "button";
       del.className = "danger ghost";
       del.textContent = "Löschen";
-      del.addEventListener("click", () => {
+      del.addEventListener("click", (ev) => {
+        addRipple(del, ev.clientX, ev.clientY, true);
         todos = todos.filter((x) => x.id !== t.id);
         save();
         render();
@@ -258,15 +352,22 @@
     e.preventDefault();
     const text = field.value.trim();
     if (!text) return;
-    todos.unshift({ id: uid(), text, done: false });
+    const sub = e.submitter;
+    if (sub instanceof HTMLElement && !reduceMotion) {
+      const r = sub.getBoundingClientRect();
+      addRipple(sub, r.left + r.width / 2, r.top + r.height / 2, false);
+    }
+    const id = uid();
+    todos.unshift({ id, text, done: false });
     field.value = "";
     save();
-    render();
+    render(id);
     field.focus();
   });
 
   document.querySelectorAll("[data-filter]").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", (ev) => {
+      addRipple(btn, ev.clientX, ev.clientY, btn.classList.contains("danger"));
       filter = btn.getAttribute("data-filter") || "all";
       document.querySelectorAll("[data-filter]").forEach((b) => {
         b.classList.toggle("is-active", b === btn);
@@ -275,7 +376,8 @@
     });
   });
 
-  clearDone.addEventListener("click", () => {
+  clearDone.addEventListener("click", (ev) => {
+    addRipple(clearDone, ev.clientX, ev.clientY, true);
     todos = todos.filter((t) => !t.done);
     save();
     render();
