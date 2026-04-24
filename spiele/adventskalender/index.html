@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adventskalender</title>
+  <meta name="description" content="24 Türchen — ab Dezember freischaltbar, Fortschritt wird gespeichert." />
+  <meta name="theme-color" content="#1a0a12" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip" href="#grid">Zum Kalender</a>
+  <div class="snow" aria-hidden="true"></div>
+
+  <header class="top">
+    <div>
+      <h1>Adventskalender</h1>
+      <p class="sub">Klicke ein Türchen — im Dezember nur bis zum heutigen Tag. Zum Testen: <code>?demo=1</code> an die URL hängen.</p>
+    </div>
+    <label class="demoToggle">
+      <input type="checkbox" id="demoLocal" />
+      <span>Demo-Modus (alle Türen)</span>
+    </label>
+  </header>
+
+  <p class="hint" id="seasonHint" role="status"></p>
+
+  <main id="grid" class="grid" aria-label="24 Advents-Türen"></main>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button type="button" class="modal__x" data-close aria-label="Schließen">×</button>
+      <p class="modal__kicker" id="modalDay"></p>
+      <h2 id="modalTitle"></h2>
+      <p class="modal__body" id="modalBody"></p>
+      <button type="button" class="btn" data-close>OK</button>
+    </div>
+  </div>
+
+  <footer class="foot">
+    <a href="../../index.html">← thomas.fun</a>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

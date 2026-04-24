@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thomas.fun · Kleine Web-Sachen</title>
+  <meta name="description" content="Spiele und Mini-Apps — anklicken und loslegen." />
+  <meta name="theme-color" content="#0c0c0f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0c0f;
+      --card: #16161c;
+      --border: #2a2a34;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --accent2: #22d3ee;
+      --glow: rgba(249, 115, 22, 0.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Outfit", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .noise {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 4vw, 2.5rem);
+      position: relative;
+      z-index: 1;
+    }
+    header {
+      text-align: center;
+      padding: 2rem 0 2.5rem;
+    }
+    .logo {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .logo span { color: var(--accent); }
+    .tagline {
+      margin: 0.75rem 0 0;
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--accent2);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+    .back:hover { border-color: var(--accent2); }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 520px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .tile {
+      display: block;
+      padding: 1.5rem 1.35rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .tile:hover {
+      transform: translateY(-4px) scale(1.01);
+      border-color: #3f3f4f;
+      box-shadow: 0 20px 50px var(--glow);
+    }
+    .tile:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .tile__emoji { font-size: 2rem; line-height: 1; margin-bottom: 0.5rem; }
+    .tile__label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.35rem;
+    }
+    .tile__title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 0.4rem;
+    }
+    .tile__desc {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .tile__go {
+      margin-top: 1rem;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--accent);
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent2); }
+  </style>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="wrap">
+    <header>
+      <p class="logo">thomas<span>.fun</span></p>
+      <p class="tagline">Kleine Dinge zum Anklicken — Vanilla HTML, CSS &amp; JS.</p>
+      <a class="back" href="#" data-portfolio-link>Zum Portfolio</a>
+    </header>
+
+    <div class="grid">
+      <a class="tile" href="spiele/jetspiel.html">
+        <div class="tile__emoji" aria-hidden="true">🎮</div>
+        <div class="tile__label">Canvas · Arcade</div>
+        <h2 class="tile__title">Jet‑Kampf</h2>
+        <p class="tile__desc">Arcade mit Wärme, Upgrades, verschiedenen Gegnern — auch Touch.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" href="spiele/adventskalender/index.html">
+        <div class="tile__emoji" aria-hidden="true">🎁</div>
+        <div class="tile__label">UI · Dezember</div>
+        <h2 class="tile__title">Adventskalender</h2>
+        <p class="tile__desc">24 Türchen, Speicherstand, Demo‑Modus.</p>
+        <div class="tile__go">Öffnen →</div>
+      </a>
+
+      <a class="tile" href="spiele/todo.html">
+        <div class="tile__emoji" aria-hidden="true">✅</div>
+        <div class="tile__label">App</div>
+        <h2 class="tile__title">To‑Do Liste</h2>
+        <p class="tile__desc">Filter, erledigt löschen — localStorage.</p>
+        <div class="tile__go">Öffnen →</div>
+      </a>
+
+      <a class="tile" href="spiele/spielchen.html">
+        <div class="tile__emoji" aria-hidden="true">🛰️</div>
+        <div class="tile__label">Reflex</div>
+        <h2 class="tile__title">Satelliten‑Ping</h2>
+        <p class="tile__desc">Kurz reagieren, wenn das Signal da ist.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+    </div>
+
+    <footer>
+      Team-Projekt: <a href="https://orbitex-demo.pages.dev" target="_blank" rel="noopener noreferrer">Orbitex</a>
+      · <a href="#" data-portfolio-link>Portfolio</a>
+    </footer>
+  </div>
+
+  <script src="js/site-config.js"></script>
+  <script src="js/portfolio-link.js"></script>
+</body>
+</html>
