@@ -6,6 +6,9 @@
   <title>Jet-Kampf</title>
   <meta name="description" content="Canvas-Arcade: Bosse alle 5 Wellen, Modi, Shop, Web-Audio, Effekte — 1920×1080." />
   <meta name="theme-color" content="#040814" />
+  <link rel="manifest" href="jetspiel-manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <style>
     :root {
       --bg: #040814;
@@ -22,6 +25,9 @@
     html, body {
       margin: 0;
       min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       background:
         radial-gradient(1200px 700px at 50% -20%, rgba(86, 140, 255, 0.18), transparent 55%),
         var(--bg);
@@ -91,11 +97,6 @@
     }
     .hud strong { color: var(--accent); }
     .hud .gold { color: var(--gold); }
-    .hud meter {
-      width: clamp(52px, 14vw, 96px);
-      height: 9px;
-      vertical-align: middle;
-    }
     .hud .tag {
       padding: 3px 9px;
       border-radius: 999px;
@@ -128,6 +129,166 @@
       aspect-ratio: 16 / 9;
       background: radial-gradient(ellipse at 30% 20%, rgba(30, 50, 100, 0.4), #000);
     }
+    .topGameBar {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 6;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+      pointer-events: auto;
+    }
+    .hdrBtn {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 10px;
+      border: 1px solid rgba(100, 170, 255, 0.45);
+      background: rgba(4, 8, 20, 0.75);
+      color: var(--text);
+      padding: 6px 12px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hdrBtn:hover { border-color: rgba(154, 208, 255, 0.75); }
+    .pauseOverlay .card h2 { margin: 0 0 10px; font-size: 0.95rem; letter-spacing: 0.2em; color: var(--gold); }
+    .voiceBubble {
+      position: absolute;
+      left: 50%;
+      bottom: 11%;
+      transform: translateX(-50%);
+      max-width: min(760px, 92%);
+      padding: 10px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(100, 170, 255, 0.4);
+      background: rgba(6, 12, 28, 0.88);
+      color: rgba(230, 240, 255, 0.95);
+      font-size: clamp(0.72rem, 2vw, 0.88rem);
+      font-weight: 700;
+      line-height: 1.35;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      z-index: 9;
+      pointer-events: none;
+      transition: opacity 0.25s ease, bottom 0.35s ease;
+    }
+    /* Wärmeleiste (Strahl) sichtbar: Tower-Text höher, damit nichts überlappt */
+    .canvasWrap.canvasWrap--strahlHud .voiceBubble {
+      bottom: clamp(26%, 22vh, 38%);
+    }
+    .voiceBubble[hidden] { display: none !important; }
+    .voiceBubble .who {
+      display: block;
+      font-size: 0.58rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 4px;
+      opacity: 0.85;
+    }
+    .comboStage {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      transform: translateX(-50%);
+      z-index: 8;
+      width: min(92%, 720px);
+      pointer-events: none;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      filter: drop-shadow(0 0 22px rgba(255, 215, 106, 0.35));
+    }
+    .comboStage[hidden] {
+      display: none !important;
+    }
+    .comboStage .comboLabel {
+      font-size: clamp(0.55rem, 1.6vw, 0.72rem);
+      font-weight: 900;
+      letter-spacing: 0.55em;
+      color: rgba(255, 230, 180, 0.92);
+      text-shadow: 0 0 18px rgba(255, 200, 120, 0.9);
+    }
+    .comboStage .comboBigNum {
+      font-size: clamp(2.1rem, 9vw, 4.8rem);
+      font-weight: 900;
+      line-height: 0.95;
+      background: linear-gradient(185deg, #fff9e6, #ffd76a 40%, #ff9d3d 78%, #ff6a4d);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: none;
+      filter: drop-shadow(0 0 28px rgba(255, 180, 80, 0.85));
+      transform-origin: 50% 60%;
+      will-change: transform;
+    }
+    .comboStage .comboBar {
+      width: min(88%, 420px);
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 215, 106, 0.35);
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .comboStage .comboBar > span {
+      display: block;
+      height: 100%;
+      width: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #56a7ff, #ffd76a, #ff6a4d);
+      transform-origin: 0 50%;
+      transition: width 0.08s linear;
+      box-shadow: 0 0 14px rgba(255, 200, 120, 0.65);
+    }
+    .comboStage--hot .comboBigNum {
+      animation: comboGlowPulse 0.42s ease-in-out infinite;
+    }
+    .comboStage--mega {
+      animation: comboStageShake 0.11s linear infinite;
+    }
+    .comboStage--mega .comboBigNum {
+      animation: comboGlowPulse 0.3s ease-in-out infinite;
+    }
+    .comboStage--insane {
+      animation: comboStageShake 0.07s linear infinite;
+    }
+    .comboStage--insane .comboBigNum {
+      animation: comboGlowPulse 0.22s ease-in-out infinite;
+    }
+    @keyframes comboGlowPulse {
+      0%,
+      100% {
+        filter: drop-shadow(0 0 18px rgba(255, 200, 100, 0.75)) brightness(1);
+        transform: scale(1);
+      }
+      50% {
+        filter: drop-shadow(0 0 42px rgba(255, 230, 160, 1)) brightness(1.12);
+        transform: scale(1.04);
+      }
+    }
+    @keyframes comboStageShake {
+      0% {
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+      }
+      25% {
+        transform: translateX(calc(-50% + 2px)) translateY(-1px) rotate(-0.4deg);
+      }
+      50% {
+        transform: translateX(calc(-50% - 2px)) translateY(1px) rotate(0.35deg);
+      }
+      75% {
+        transform: translateX(calc(-50% + 1px)) translateY(1px) rotate(-0.2deg);
+      }
+      100% {
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+      }
+    }
+    .modHint { margin-top: 4px !important; }
     canvas {
       display: block;
       width: 100%;
@@ -137,16 +298,27 @@
     .overlay {
       position: absolute;
       inset: 0;
-      display: grid;
-      place-items: center;
-      padding: 20px;
+      display: block;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      padding: 16px 12px 28px;
       background: rgba(4, 8, 20, 0.88);
       backdrop-filter: blur(12px);
       text-align: center;
     }
+    .overlay .card {
+      margin-left: auto;
+      margin-right: auto;
+    }
     .overlay[hidden] { display: none !important; }
     .card {
       max-width: 460px;
+      max-height: min(92vh, 880px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
       padding: 22px 22px;
       border-radius: 20px;
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -198,61 +370,209 @@
       transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease, padding 0.4s ease, border-color 0.35s;
     }
     body.phase-shop .shop {
-      max-height: min(560px, 72vh);
+      max-height: min(780px, 82vh);
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       opacity: 1;
-      padding: 22px 20px 26px;
-      border-top-color: rgba(255, 215, 106, 0.45);
-      box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.45);
+      padding: 20px 18px 28px;
+      border-top-color: rgba(255, 215, 106, 0.55);
+      box-shadow:
+        0 -20px 60px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
     }
-    .shop h2 {
+    .shopHead {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(100, 170, 255, 0.2);
+    }
+    .shopHead h2 {
       margin: 0 0 6px;
-      font-size: clamp(0.78rem, 2vw, 0.95rem);
-      letter-spacing: 0.22em;
+      font-size: clamp(0.82rem, 2.2vw, 1rem);
+      letter-spacing: 0.26em;
       text-transform: uppercase;
       color: var(--gold);
-      text-shadow: 0 0 28px rgba(255, 215, 106, 0.25);
+      text-shadow: 0 0 32px rgba(255, 215, 106, 0.35);
     }
     .shopSub {
-      margin: 0 0 16px;
-      font-size: 0.72rem;
+      margin: 0;
+      max-width: min(520px, 100%);
+      font-size: 0.74rem;
       color: var(--muted);
-      line-height: 1.45;
+      line-height: 1.5;
+    }
+    .shopCreditsPill {
+      flex-shrink: 0;
+      padding: 10px 18px 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(93, 255, 180, 0.45);
+      background: linear-gradient(135deg, rgba(20, 60, 48, 0.9), rgba(8, 22, 32, 0.95));
+      box-shadow: 0 0 24px rgba(93, 255, 180, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      font-weight: 900;
+      font-size: clamp(0.95rem, 3vw, 1.15rem);
+      color: var(--mint);
+      letter-spacing: 0.04em;
+    }
+    .shopCreditsPill small {
+      font-size: 0.62em;
+      opacity: 0.75;
+      margin-left: 2px;
     }
     .shopGrid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+      gap: 12px 14px;
     }
-    .shopGrid button {
+    .shopCard {
+      position: relative;
       width: 100%;
-      padding: 14px 12px;
-      font-size: clamp(0.65rem, 1.6vw, 0.74rem);
-      line-height: 1.3;
-      text-align: center;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 215, 106, 0.38);
-      background: linear-gradient(168deg, rgba(52, 72, 128, 0.98), rgba(24, 32, 58, 0.99));
-      color: #f0f6ff;
-      font-weight: 800;
+      margin: 0;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      transition: transform 0.15s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      text-align: left;
+      font: inherit;
+      color: var(--text);
+      background: linear-gradient(155deg, rgba(38, 52, 92, 0.96), rgba(12, 16, 36, 0.98));
+      box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07);
+      transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      overflow: hidden;
+      min-height: 118px;
     }
-    .shopGrid button:hover:not(:disabled) {
-      transform: translateY(-2px);
-      border-color: rgba(154, 208, 255, 0.55);
-      box-shadow: 0 10px 28px rgba(86, 167, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    .shopCard::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 16px 0 0 16px;
+      background: linear-gradient(180deg, rgba(154, 208, 255, 0.85), rgba(86, 167, 255, 0.35));
     }
-    .shopGrid button:disabled {
-      opacity: 0.38;
+    .shopCard--rare::before {
+      background: linear-gradient(180deg, #c9a8ff, #7b5cff);
+    }
+    .shopCard--epic::before {
+      background: linear-gradient(180deg, #ffe8a8, #ff9d4d);
+    }
+    .shopCard-inner {
+      padding: 12px 14px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 118px;
+    }
+    .shopCard-tag {
+      align-self: flex-start;
+      font-size: 0.52rem;
+      font-weight: 900;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(154, 208, 255, 0.35);
+      color: rgba(200, 220, 255, 0.9);
+    }
+    .shopCard--rare .shopCard-tag {
+      border-color: rgba(180, 140, 255, 0.55);
+      color: #e8d8ff;
+    }
+    .shopCard--epic .shopCard-tag {
+      border-color: rgba(255, 200, 120, 0.65);
+      color: #ffe8c8;
+    }
+    .shopCard-title {
+      font-size: clamp(0.68rem, 1.7vw, 0.8rem);
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      line-height: 1.25;
+      color: #f4f8ff;
+    }
+    .shopCard-detail {
+      flex: 1;
+      font-size: 0.62rem;
+      font-weight: 600;
+      line-height: 1.4;
+      color: rgba(180, 200, 230, 0.88);
+    }
+    .shopCard-price {
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+    }
+    .shopCard:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow:
+        0 16px 40px rgba(86, 167, 255, 0.2),
+        0 10px 28px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .shopCard:disabled {
+      opacity: 0.4;
       cursor: not-allowed;
       transform: none;
+      filter: grayscale(0.35);
     }
-    .shopGrid .price { display: block; color: var(--gold); margin-top: 6px; font-weight: 900; font-size: 0.95em; }
+    .shopCard:disabled .shopCard-price { color: rgba(255, 215, 106, 0.45); }
+    .shopContinueBar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 22px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 215, 106, 0.22);
+    }
+    .shopContinueBar[hidden] {
+      display: none !important;
+    }
+    .btn-shop-continue {
+      font: inherit;
+      cursor: pointer;
+      min-width: min(92%, 520px);
+      padding: 18px 32px;
+      border-radius: 18px;
+      border: 2px solid rgba(93, 255, 180, 0.55);
+      background: linear-gradient(165deg, rgba(50, 120, 95, 0.95), rgba(18, 48, 42, 0.98));
+      color: #e8fff4;
+      font-weight: 900;
+      font-size: clamp(1rem, 3.2vw, 1.35rem);
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      box-shadow:
+        0 0 40px rgba(93, 255, 180, 0.22),
+        0 14px 40px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .btn-shop-continue:hover {
+      transform: scale(1.02);
+      border-color: rgba(180, 255, 220, 0.85);
+      box-shadow:
+        0 0 52px rgba(93, 255, 180, 0.35),
+        0 18px 48px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    }
+    .btn-shop-continue:active {
+      transform: scale(0.98);
+    }
     .touch {
       display: none;
       width: min(1920px, 100%);
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
     @media (max-width: 900px) {
@@ -376,28 +696,129 @@
       width: 100%;
       height: auto;
     }
+    @keyframes heatBarPulse {
+      0%, 100% { filter: brightness(1); box-shadow: 0 0 28px rgba(255, 140, 80, 0.75); }
+      50% { filter: brightness(1.12); box-shadow: 0 0 42px rgba(255, 90, 50, 0.95); }
+    }
+    @keyframes heatBarCritical {
+      0%, 100% { filter: brightness(1.05); box-shadow: 0 0 34px rgba(255, 60, 40, 0.9); }
+      50% { filter: brightness(1.2); box-shadow: 0 0 52px rgba(255, 40, 30, 1); }
+    }
+    .heatDock[hidden] {
+      display: none !important;
+    }
+    .heatDock {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(10px, 2.2vh, 24px);
+      transform: translateX(-50%);
+      width: min(920px, 95%);
+      z-index: 7;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 14px 12px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(8, 14, 32, 0.94), rgba(4, 8, 20, 0.9));
+      border: 2px solid rgba(120, 190, 255, 0.5);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.07) inset,
+        0 14px 48px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(255, 120, 70, 0.18);
+    }
+    .heatDock__top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+    .heatDock__title {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: clamp(0.72rem, 2.2vw, 0.98rem);
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 210, 170, 0.98);
+      text-shadow: 0 0 22px rgba(255, 150, 90, 0.65);
+    }
+    .heatDock__pct {
+      flex: 0 0 auto;
+      font-size: clamp(1rem, 3.4vw, 1.45rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+      min-width: 3.1em;
+      text-align: right;
+      text-shadow: 0 0 20px rgba(255, 190, 120, 0.75);
+    }
+    .heatDock__track {
+      height: clamp(26px, 5.5vw, 42px);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      overflow: hidden;
+      box-shadow: inset 0 3px 14px rgba(0, 0, 0, 0.7);
+    }
+    .heatDock__fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #5af0ff 0%, #5dffb4 12%, #ffe566 40%, #ff9944 68%, #ff5530 88%, #ff3018 100%);
+      box-shadow: 0 0 26px rgba(255, 150, 80, 0.7);
+      transition: width 0.06s linear;
+    }
+    .heatDock--warn .heatDock__track {
+      border-color: rgba(255, 200, 120, 0.55);
+    }
+    .heatDock--hot .heatDock__fill {
+      animation: heatBarPulse 0.5s ease-in-out infinite;
+    }
+    .heatDock--critical .heatDock__track {
+      border-color: rgba(255, 100, 70, 0.9);
+    }
+    .heatDock--critical .heatDock__fill {
+      animation: heatBarCritical 0.32s ease-in-out infinite;
+    }
+    .heatDock--locked {
+      border-color: rgba(255, 70, 50, 0.95);
+      box-shadow:
+        0 0 0 1px rgba(255, 100, 80, 0.25) inset,
+        0 0 48px rgba(255, 40, 30, 0.45),
+        0 14px 48px rgba(0, 0, 0, 0.55);
+    }
+    .heatDock--locked .heatDock__title {
+      color: #ff8870;
+      text-shadow: 0 0 28px rgba(255, 60, 40, 0.9);
+    }
+    .heatDock--locked .heatDock__pct {
+      color: #ffc8be;
+    }
   </style>
 </head>
 <body>
   <div class="soundRow">
     <label><input type="checkbox" id="soundOn" checked /> Sound</label>
+    <button type="button" class="hdrBtn" id="btnFsTop" style="border-radius:10px">Vollbild</button>
+    <button type="button" class="hdrBtn" id="btnInstallTop" hidden>App installieren</button>
   </div>
   <header>
     <div class="brand">
       <h1>Jet-Kampf</h1>
       <span class="wave-pill" id="wavePill">Welle 1</span>
     </div>
-    <span class="upgrade-hud" id="upgradeHud" hidden>
-      Upgrade-Phase · noch <strong id="upgradeSec">15</strong>s
-      <button type="button" class="btn-skip" id="btnSkipUpgrade">Sofort weiter</button>
-    </span>
+    <span class="upgrade-hud" id="upgradeHud" hidden>Hangar · kein Zeitlimit</span>
       <div class="hud" aria-live="polite">
       <span id="diffHud" hidden>—</span>
       <span>Punkte <strong id="score">0</strong></span>
       <span class="gold">₡ <strong id="credits">0</strong></span>
       <span><strong id="enemiesHud">Rest —</strong></span>
       <span>Leben <strong id="lives">3</strong></span>
-      <span id="heatWrap" hidden><span id="heatLabel">Strahl</span> <meter id="heatMeter" min="0" max="100" low="52" high="78" optimum="10" value="0"></meter></span>
       <span id="shieldTag" class="tag" hidden>Schild ×<span id="shieldNum">0</span></span>
       <span id="rocketTag" class="tag">🚀 <strong id="rocketNum">0</strong></span>
       <span id="novaTag" class="tag" hidden>Nova <strong id="novaCd">—</strong></span>
@@ -406,18 +827,44 @@
   </header>
 
   <div class="gameRow" id="gameRow">
-    <div class="canvasWrap">
+    <div class="canvasWrap" id="canvasWrap">
+      <div class="topGameBar">
+        <button type="button" class="hdrBtn" id="btnPause">Pause</button>
+        <button type="button" class="hdrBtn" id="btnFs">Vollbild</button>
+      </div>
       <canvas id="game" width="1920" height="1080" aria-label="Spielfeld"></canvas>
+      <div
+        class="heatDock"
+        id="heatDock"
+        hidden
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div class="heatDock__top">
+          <span class="heatDock__title" id="heatLabel">Wärme</span>
+          <span class="heatDock__pct" id="heatPct">0%</span>
+        </div>
+        <div class="heatDock__track"><div class="heatDock__fill" id="heatFill"></div></div>
+      </div>
+      <div class="comboStage" id="comboStage" hidden aria-live="polite">
+        <div class="comboLabel">KOMBO</div>
+        <div class="comboBigNum" id="comboBigNum">0</div>
+        <div class="comboBar"><span id="comboBarFill"></span></div>
+      </div>
       <div class="toastHost"><div class="toast" id="toast"></div></div>
+      <div class="voiceBubble" id="voiceBubble" hidden><span class="who">Tower</span><span id="voiceText"></span></div>
       <div class="overlay" id="startOverlay">
         <div class="card">
-          <p><strong>PC:</strong> <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> · <kbd>Leertaste</kbd> Hauptwaffe · <kbd>E</kbd> Rakete · <kbd>Q</kbd> Nova (wenn freigeschaltet)</p>
-          <p><strong>Handy:</strong> Links am Feld wischen = steuern · Buttons unten</p>
+          <p><strong>PC:</strong> <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> steuern vertikal · <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> seitlich ausweichen · <kbd>Leertaste</kbd> Feuer · <kbd>E</kbd> Rakete · <kbd>Q</kbd> Nova (wenn freigeschaltet)</p>
+          <p><strong>Handy:</strong> Links am Feld wischen = hoch/runter und seitlich · Buttons unten inkl. Links/Rechts</p>
           <ul>
-            <li>Pro <strong>Welle</strong> feste Anzahl Gegner — wenn leer: kurze <strong>Upgrade-Phase</strong> (Shop), dann geht’s weiter.</li>
-            <li><strong>Credits</strong> sammeln, im Shop Raketen, Feuerkraft, Kühlung, … kaufen.</li>
-            <li><strong>Sound</strong> per Web Audio (nach Klick auf Start aktiv).</li>
-            <li>Alle <strong>5 Wellen</strong> ein <strong>Boss</strong> mit eigenem Look &amp; Angriffsmuster (rotiert ab Welle 25).</li>
+            <li>Pro <strong>Welle</strong> feste Anzahl Gegner — wenn leer: <strong>Hangar</strong> ohne Zeitlimit, dann mit <strong>Weiter</strong> in die nächste Welle.</li>
+            <li><strong>Credits</strong> sammeln — Angebote passen zum gewählten <strong>Schiff</strong> (Puls vs. Strahl).</li>
+            <li><strong>Sound</strong>: Schüsse und Effekte per Web Audio (nach Klick auf Start) — ohne Dauer-Hintergrundton.</li>
+            <li>Alle <strong>5 Wellen</strong> ein <strong>Boss</strong> — acht verschiedene Muster im Rotationszyklus.</li>
+            <li><strong>Elite</strong>-Gegner (goldener Ring), <strong>Kombo</strong>-Bonus, <strong>Hitstop</strong> bei schweren Treffern.</li>
+            <li><kbd>ESC</kbd> oder <strong>Pause</strong> im Kampf · <strong>Taktikmodule</strong> je Schiff und Meta-Freischaltungen (Trail, Strahl, Rumpf) über Fortschritt.</li>
           </ul>
           <div class="difficultyRow" role="radiogroup" aria-label="Schwierigkeit">
             <span>Modus</span>
@@ -439,6 +886,25 @@
             <canvas id="shipPreviewCanvas" width="400" height="220" aria-hidden="true"></canvas>
           </div>
           <p class="diffHint" id="shipHint"></p>
+          <div class="difficultyRow" role="radiogroup" aria-label="Taktik Pulsjäger" id="modRowPulse">
+            <span>Taktik (Pulsjäger)</span>
+            <div class="chips">
+              <button type="button" class="diffChip modChip" data-mod="standard" aria-pressed="false">Standard</button>
+              <button type="button" class="diffChip modChip" data-mod="pbreach" aria-pressed="false">Panzerbrecher</button>
+              <button type="button" class="diffChip modChip" data-mod="psalve" aria-pressed="false">Salve</button>
+              <button type="button" class="diffChip modChip" data-mod="pwolke" aria-pressed="false">Wolke</button>
+            </div>
+          </div>
+          <div class="difficultyRow" role="radiogroup" aria-label="Taktik Strahljäger" id="modRowBeam" hidden>
+            <span>Taktik (Strahljäger)</span>
+            <div class="chips">
+              <button type="button" class="diffChip modChip" data-mod="standard" aria-pressed="false">Standard</button>
+              <button type="button" class="diffChip modChip" data-mod="bbreach" aria-pressed="false">Panzerbrecher</button>
+              <button type="button" class="diffChip modChip" data-mod="bflux" aria-pressed="false">Flux</button>
+              <button type="button" class="diffChip modChip" data-mod="bbulk" aria-pressed="false">Bollwerk</button>
+            </div>
+          </div>
+          <p class="diffHint modHint" id="modHint"></p>
           <button type="button" class="btn-primary" id="btnStart">Start</button>
         </div>
       </div>
@@ -449,12 +915,28 @@
           <button type="button" class="btn-secondary" id="btnMenu">Zurück</button>
         </div>
       </div>
+      <div class="overlay pauseOverlay" id="pauseOverlay" hidden>
+        <div class="card">
+          <h2>Pause</h2>
+          <p><kbd>ESC</kbd> oder Weiter — Sound und Modul wie im Menü.</p>
+          <button type="button" class="btn-primary" id="btnResume">Weiter</button>
+          <button type="button" class="btn-secondary" id="btnPauseMenu">Zum Menü</button>
+        </div>
+      </div>
     </div>
 
     <div class="shop" id="shop">
-      <h2>Hangar</h2>
-      <p class="shopSub" id="shopSubline">Nur in der Upgrade-Phase — Credits ausgeben, dann weiter.</p>
+      <div class="shopHead">
+        <div>
+          <h2>Hangar</h2>
+          <p class="shopSub" id="shopSubline">Nur in der Upgrade-Phase — Credits ausgeben, dann weiter.</p>
+        </div>
+        <div class="shopCreditsPill" aria-live="polite"><span id="shopCreditsVal">0</span><small>₡</small></div>
+      </div>
       <div class="shopGrid" id="shopGrid"></div>
+      <div class="shopContinueBar" id="shopContinueBar" hidden>
+        <button type="button" class="btn-shop-continue" id="btnShopContinue">Weiter</button>
+      </div>
     </div>
   </div>
 
@@ -462,6 +944,8 @@
     <button type="button" data-act="fire">Feuer</button>
     <button type="button" data-act="missile">Rakete</button>
     <button type="button" data-act="nova">Nova</button>
+    <button type="button" data-act="left">Links</button>
+    <button type="button" data-act="right">Rechts</button>
     <button type="button" data-act="up">Hoch</button>
     <button type="button" data-act="down">Runter</button>
   </div>
@@ -482,8 +966,10 @@
   const creditsEl = document.getElementById("credits");
   const enemiesHud = document.getElementById("enemiesHud");
   const livesEl = document.getElementById("lives");
-  const heatMeter = document.getElementById("heatMeter");
-  const heatWrap = document.getElementById("heatWrap");
+  const heatDock = document.getElementById("heatDock");
+  const heatFill = document.getElementById("heatFill");
+  const heatPct = document.getElementById("heatPct");
+  const heatLabel = document.getElementById("heatLabel");
   const shopSubline = document.getElementById("shopSubline");
   const shipPreviewCanvas = document.getElementById("shipPreviewCanvas");
   const shieldTag = document.getElementById("shieldTag");
@@ -493,19 +979,41 @@
   const goText = document.getElementById("goText");
   const toastEl = document.getElementById("toast");
   const shopGrid = document.getElementById("shopGrid");
+  const shopCreditsVal = document.getElementById("shopCreditsVal");
   const wavePill = document.getElementById("wavePill");
   const upgradeHud = document.getElementById("upgradeHud");
-  const upgradeSec = document.getElementById("upgradeSec");
-  const btnSkipUpgrade = document.getElementById("btnSkipUpgrade");
+  const shopContinueBar = document.getElementById("shopContinueBar");
+  const btnShopContinue = document.getElementById("btnShopContinue");
   const soundOn = document.getElementById("soundOn");
   const diffHint = document.getElementById("diffHint");
   const diffHud = document.getElementById("diffHud");
   const shipHint = document.getElementById("shipHint");
   const novaTag = document.getElementById("novaTag");
   const novaCd = document.getElementById("novaCd");
+  const comboStage = document.getElementById("comboStage");
+  const comboBigNum = document.getElementById("comboBigNum");
+  const comboBarFill = document.getElementById("comboBarFill");
+  const voiceBubble = document.getElementById("voiceBubble");
+  const voiceText = document.getElementById("voiceText");
+  const pauseOverlay = document.getElementById("pauseOverlay");
+  const btnResume = document.getElementById("btnResume");
+  const btnPauseMenu = document.getElementById("btnPauseMenu");
+  const btnPause = document.getElementById("btnPause");
+  const btnFs = document.getElementById("btnFs");
+  const btnFsTop = document.getElementById("btnFsTop");
+  const canvasWrap = document.getElementById("canvasWrap");
+  const modHint = document.getElementById("modHint");
+  const modRowPulse = document.getElementById("modRowPulse");
+  const modRowBeam = document.getElementById("modRowBeam");
+  const btnInstallTop = document.getElementById("btnInstallTop");
 
   const DIFF_STORAGE_KEY = "jetkampf-difficulty-v1";
   const SHIP_STORAGE_KEY = "jetkampf-ship-v1";
+  const WEAPON_MOD_KEY_LEGACY = "jetkampf-weaponmod-v1";
+  const MOD_KEY_PULSE = "jetkampf-mod-pulse-v2";
+  const MOD_KEY_BEAM = "jetkampf-mod-beam-v2";
+  const MOD_MIGRATE_FLAG = "jetkampf-mod-migrated-v2";
+  const META_KEY = "jetkampf-meta-v1";
 
   /** @type {'pulse' | 'beam'} */
   let shipClass = "pulse";
@@ -514,6 +1022,45 @@
     pulse: "Langsame Bolzen, kein Wärme-Balken — dafür unbegrenzt feuern (kein Überhitzen).",
     beam: "Dauerstrahl mit Wärme-Leiste & Überhitzung — Schaden pro Takt ist begrenzt.",
   };
+
+  /** @type {string} */
+  let weaponMod = "standard";
+  const MOD_HINTS_PULSE = {
+    standard: "Ausgewogen — keine Sonderregeln.",
+    pbreach: "+28 % Bolzen- und Raketenschaden gegen Panzer.",
+    psalve: "Bolzen: etwas schnelleres Feuer (~12 %).",
+    pwolke: "Startet mit Spread-Stufe 1 (Seitenbolzen).",
+  };
+  const MOD_HINTS_BEAM = {
+    standard: "Ausgewogen — keine Sonderregeln.",
+    bbreach: "+28 % Strahl-, Bolzen- und Raketenschaden gegen Panzer.",
+    bflux: "Strahl: +12 % DPS, dafür +9 % Wärmeaufbau.",
+    bbulk: "Jeder Lauf startet mit +1 Schild-Ladung.",
+  };
+  const MOD_LABELS = {
+    standard: "Std",
+    pbreach: "Pz.-Bruch",
+    psalve: "Salve",
+    pwolke: "Wolke",
+    bbreach: "Pz.-Bruch",
+    bflux: "Flux",
+    bbulk: "Bollwerk",
+  };
+
+  let metaMaxWave = 0;
+  let unlockTrail = false;
+  let unlockBeamTint = false;
+  let unlockHullChrome = false;
+
+  let combo = 0;
+  let comboTimerMs = 0;
+  let hitstopMs = 0;
+  let paused = false;
+  /** 0 ruhig, 1 Ion, 2 Trümmer, 3 Wind */
+  let envMode = 0;
+  let voiceHideTimer = 0;
+  let deferredInstallPrompt = null;
+  let lastOneLifeVoiceWave = -999;
 
   /** @type {'easy' | 'medium' | 'hard'} */
   let difficulty = "medium";
@@ -533,7 +1080,6 @@
       creditFromKillMul: 1.12,
       livesStart: 4,
       heatGainMul: 0.88,
-      upgradeMs: 18000,
       rankBias: -55,
       hunterSteerMul: 0.82,
     },
@@ -551,7 +1097,6 @@
       creditFromKillMul: 1,
       livesStart: 3,
       heatGainMul: 1,
-      upgradeMs: 15000,
       rankBias: 0,
       hunterSteerMul: 1,
     },
@@ -569,16 +1114,15 @@
       creditFromKillMul: 0.88,
       livesStart: 3,
       heatGainMul: 1.14,
-      upgradeMs: 11000,
       rankBias: 140,
       hunterSteerMul: 1.22,
     },
   };
 
   const DIFF_HINTS = {
-    easy: "Weniger Feinde, langsamere Panzer-Schüsse, mehr Zeit im Hangar, günstigerer Shop, 4 Leben.",
+    easy: "Weniger Feinde, langsamere Panzer-Schüsse, günstigerer Shop, 4 Leben.",
     medium: "Ausgewogene Kurve — Standard-Empfehlung.",
-    hard: "Deutlich mehr Feinde, schnellere Gegner, härtere Panzer, teurerer Shop, kürzere Upgrade-Phase.",
+    hard: "Deutlich mehr Feinde, schnellere Gegner, härtere Panzer, teurerer Shop.",
   };
 
   function diff() {
@@ -629,7 +1173,167 @@
       btn.setAttribute("aria-pressed", s === shipClass ? "true" : "false");
     });
     if (shipHint) shipHint.textContent = SHIP_HINTS[shipClass] || "";
+    if (modRowPulse) modRowPulse.hidden = shipClass !== "pulse";
+    if (modRowBeam) modRowBeam.hidden = shipClass !== "beam";
+    loadWeaponMod();
+    syncModChips();
     ensureShipPreviewRunning();
+  }
+
+  function migrateWeaponModsOnce() {
+    try {
+      if (localStorage.getItem(MOD_MIGRATE_FLAG)) return;
+      const old = localStorage.getItem(WEAPON_MOD_KEY_LEGACY);
+      if (old === "breach") {
+        localStorage.setItem(MOD_KEY_PULSE, "pbreach");
+        localStorage.setItem(MOD_KEY_BEAM, "bbreach");
+      } else if (old === "flux") {
+        localStorage.setItem(MOD_KEY_BEAM, "bflux");
+        localStorage.setItem(MOD_KEY_PULSE, "standard");
+      } else if (old === "bulwark") {
+        localStorage.setItem(MOD_KEY_BEAM, "bbulk");
+        localStorage.setItem(MOD_KEY_PULSE, "standard");
+      }
+      localStorage.removeItem(WEAPON_MOD_KEY_LEGACY);
+      localStorage.setItem(MOD_MIGRATE_FLAG, "1");
+    } catch (_) {}
+  }
+
+  function modStorageKey() {
+    return shipClass === "beam" ? MOD_KEY_BEAM : MOD_KEY_PULSE;
+  }
+
+  function allowedWeaponMods() {
+    return shipClass === "beam"
+      ? new Set(["standard", "bbreach", "bflux", "bbulk"])
+      : new Set(["standard", "pbreach", "psalve", "pwolke"]);
+  }
+
+  function loadWeaponMod() {
+    try {
+      const v = localStorage.getItem(modStorageKey());
+      weaponMod = allowedWeaponMods().has(v) ? v : "standard";
+    } catch (_) {
+      weaponMod = "standard";
+    }
+  }
+
+  function saveWeaponMod() {
+    try {
+      localStorage.setItem(modStorageKey(), weaponMod);
+    } catch (_) {}
+  }
+
+  function modHintForCurrent() {
+    return shipClass === "beam" ? MOD_HINTS_BEAM : MOD_HINTS_PULSE;
+  }
+
+  function syncModChips() {
+    document.querySelectorAll(".modChip").forEach((btn) => {
+      const row = btn.closest("[id^='modRow']");
+      if (row && row.hidden) return;
+      const m = btn.getAttribute("data-mod");
+      btn.setAttribute("aria-pressed", m === weaponMod ? "true" : "false");
+    });
+    if (modHint) {
+      const bits = [modHintForCurrent()[weaponMod] || ""];
+      if (metaMaxWave > 0) bits.push(`Rekord: Welle ${metaMaxWave}.`);
+      const u = [];
+      if (unlockTrail) u.push("Trail");
+      if (unlockBeamTint) u.push("Strahl-Farbe");
+      if (unlockHullChrome) u.push("Chrom-Rand");
+      if (u.length) bits.push(`Freigeschaltet: ${u.join(", ")}.`);
+      modHint.textContent = bits.filter(Boolean).join(" ");
+    }
+  }
+
+  function loadMetaProgress() {
+    try {
+      const j = localStorage.getItem(META_KEY);
+      const o = j ? JSON.parse(j) : {};
+      metaMaxWave = typeof o.m === "number" ? o.m : 0;
+    } catch (_) {
+      metaMaxWave = 0;
+    }
+    unlockTrail = metaMaxWave >= 6;
+    unlockBeamTint = metaMaxWave >= 12;
+    unlockHullChrome = metaMaxWave >= 20;
+  }
+
+  function saveMetaProgress() {
+    try {
+      localStorage.setItem(META_KEY, JSON.stringify({ m: metaMaxWave }));
+    } catch (_) {}
+  }
+
+  function recordMetaWave(w) {
+    if (w > metaMaxWave) {
+      metaMaxWave = w;
+      saveMetaProgress();
+      loadMetaProgress();
+      syncModChips();
+    }
+  }
+
+  function pickEnvMode() {
+    envMode = (Math.max(0, wave - 1) + (difficulty === "hard" ? 2 : 0)) % 4;
+  }
+
+  function triggerHitstop(ms) {
+    hitstopMs = Math.max(hitstopMs, ms);
+  }
+
+  function showVoiceLine(text, ms = 3200) {
+    if (!voiceBubble || !voiceText) return;
+    voiceText.textContent = text;
+    voiceBubble.hidden = false;
+    voiceHideTimer = ms;
+  }
+
+  function tickVoice(dt) {
+    if (voiceHideTimer <= 0) return;
+    voiceHideTimer -= dt;
+    if (voiceHideTimer <= 0 && voiceBubble) voiceBubble.hidden = true;
+  }
+
+  let bgmLayer = "";
+
+  function initBgm() {
+    /* Kein Dauer-Ambient mehr — Oszillatoren wirkten wie nerviges Rauschen. Nur SFX bleiben. */
+  }
+
+  function setBgmLayer(layer) {
+    if (!soundOn.checked || !actx || !soundReady) return;
+    bgmLayer = layer;
+  }
+
+  function stopBgm() {
+    bgmLayer = "";
+  }
+
+  function decorateElite(u) {
+    if (!u || u.boss || wave < 2) return;
+    if (Math.random() > 0.125) return;
+    u.elite = true;
+    u.eliteType = Math.floor(Math.random() * 3);
+    if (u.eliteType === 0) {
+      const add = u.kind === "tank" ? 3 : 2;
+      u.hp = (u.hp ?? 1) + add;
+      u.maxHp = u.hp;
+      u.pts = Math.floor(u.pts * 1.38);
+    } else if (u.eliteType === 1) {
+      u.vx *= 1.26;
+      u.pts = Math.floor(u.pts * 1.24);
+    } else {
+      u.eliteWeaver = true;
+      u.pts = Math.floor(u.pts * 1.2);
+    }
+  }
+
+  function requestFullscreenGame() {
+    const el = canvasWrap || document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
   }
 
   /* —— Web Audio (procedural, keine Dateien) —— */
@@ -772,6 +1476,9 @@
   const jetSpeedPps = 560;
 
   const jet = { x: 160, y: H / 2 - 38, w: 102, h: 76 };
+  /** Erlaubter Horizontalbereich zum Ausweichen (linker Bildschirmteil). */
+  const jetXMin = 72;
+  const jetXMax = 392;
   const bullets = [];
   const missiles = [];
   const enemyBullets = [];
@@ -797,20 +1504,38 @@
   let dmgShopLevel = 0;
   let coolShopLevel = 0;
   let lifeBuys = 0;
+  let creditKillBonusLevel = 0;
+  let missileDmgShopLevel = 0;
+  let thrusterShopLevel = 0;
+  let beamCoilLevel = 0;
+  let beamDissipLevel = 0;
+  let missileServoLevel = 0;
+  let boltFocusLevel = 0;
+  let overheatServoLevel = 0;
+  let capacitorLevel = 0;
+  let comboExtendLevel = 0;
+  let healKitBuys = 0;
+  let creditInjectBuys = 0;
+  let novaCdReliefLevel = 0;
+  let hangarKickbackLevel = 0;
+  let pickupCreditsBonus = 0;
 
   /** @type {'combat' | 'shop'} */
   let phase = "combat";
   let waveSpawnBudget = 0;
   let waveSpawned = 0;
-  let upgradeTimeMs = 0;
 
   let running = false;
   let raf = 0;
   let lastT = 0;
   let spawnAcc = 0;
   let shake = 0;
+  let comboRumble = 0;
+  let comboTimerMax = 1;
   let aimTouchId = null;
   let aimTouchY = null;
+  /** clientX beim Steuer-Finger (linkes Spielfeld) */
+  let aimTouchX = null;
   /** Screen tint 0..1 (boss kill / hurt) — kind: "boss" | "hurt" | "ice" */
   let screenFlash = 0;
   let screenFlashKind = "ice";
@@ -837,13 +1562,22 @@
     return Math.floor(w / 5) - 1;
   }
   function bossStyle(w) {
-    return bossTier(w) % 4;
+    return bossTier(w) % 8;
   }
   function bossHpTierMul(w) {
     return 1 + Math.max(0, bossTier(w)) * 0.13;
   }
 
-  const BOSS_NAMES = ["Biokern", "Klingenwerk", "Hexkern", "Nebelmutter"];
+  const BOSS_NAMES = [
+    "Biokern",
+    "Klingenwerk",
+    "Hexkern",
+    "Nebelmutter",
+    "Panzergeist",
+    "Splitterwerk",
+    "Rotorkern",
+    "Tieffront",
+  ];
 
   function waveEnemyQuota(w) {
     if (isBossWave(w)) return 1;
@@ -855,7 +1589,8 @@
     phase = "combat";
     body.classList.remove("phase-shop");
     upgradeHud.hidden = true;
-    btnSkipUpgrade.disabled = true;
+    if (shopContinueBar) shopContinueBar.hidden = true;
+    pickEnvMode();
     waveSpawnBudget = waveEnemyQuota(wave);
     waveSpawned = 0;
     spawnAcc = 0;
@@ -867,11 +1602,20 @@
     if (isBossWave(wave)) {
       const bn = BOSS_NAMES[bossStyle(wave)];
       showToast(`BOSS · ${bn} — Welle ${wave}`);
+      showVoiceLine(`Tower: Massesignatur — ${bn}. Alle Kanäle feuerfrei.`);
       sfxBossAppear();
+      setBgmLayer("boss");
       spawnUfo();
     } else {
       showToast(`Welle ${wave} — ${waveSpawnBudget} Kontakte`);
+      const lines = [
+        "Tower: Kontaktliste aktualisiert — viel Erfolg.",
+        "Tower: Radargerät sauber — rein in die Welle.",
+        "Tower: Treibstoff gut — wir halten dich im Loop.",
+      ];
+      showVoiceLine(lines[wave % lines.length]);
       sfxWave();
+      setBgmLayer("combat");
     }
     syncHud();
     renderShop();
@@ -880,39 +1624,68 @@
   function beginShopPhase() {
     phase = "shop";
     body.classList.add("phase-shop");
-    upgradeTimeMs = diff().upgradeMs;
+    recordMetaWave(wave);
     upgradeHud.hidden = false;
-    btnSkipUpgrade.disabled = false;
+    if (shopContinueBar) shopContinueBar.hidden = false;
     wavePill.textContent = `Welle ${wave} ✓`;
     const bonus = Math.max(8, Math.floor((45 + wave * 22) * diff().waveClearBonusMul));
     credits += bonus;
     showToast(`Welle ${wave} clear · +${bonus} ₡`);
+    showVoiceLine("Tower: Hangar offen — Credits klug investieren.");
     sfxWave();
+    setBgmLayer("shop");
     syncHud();
     renderShop();
   }
 
   function exitShopPhase() {
     if (phase !== "shop") return;
+    if (hangarKickbackLevel > 0) {
+      credits += 10 + wave * 3 + hangarKickbackLevel * 5;
+    }
     wave++;
     beginCombatWave();
   }
 
-  const SHOP_CORE = [
+  const SHOP_CATALOG = [
     {
       id: "rockets",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Munition",
       label: "Raketen +5",
-      price: () => 28 + wave * 5,
+      detail: "Volle Ladung — Lager deckelt bei 50.",
+      price: () => 30 + wave * 6,
       can() {
         return missileStock < 50;
       },
       buy() {
-        missileStock += 5;
+        missileStock = Math.min(50, missileStock + 5);
+      },
+    },
+    {
+      id: "rocket_pair",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Munition",
+      label: "Raketen +2",
+      detail: "Kleiner Nachschub — guter Preis pro Rakete.",
+      price: () => 18 + wave * 3,
+      can() {
+        return missileStock <= 48;
+      },
+      buy() {
+        missileStock = Math.min(50, missileStock + 2);
       },
     },
     {
       id: "dmg",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Waffe",
       label: "Feuerkraft +1",
+      detailPulse: "Jeder Bolzen +1 Schaden (auch Spread).",
+      detailBeam: "Strahl-Tick und Nova profitieren mit.",
       price: () => 48 + dmgShopLevel * 22,
       can() {
         return dmgShopLevel < 7;
@@ -923,10 +1696,241 @@
       },
     },
     {
+      id: "shield",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Abwehr",
+      label: "Schild +1",
+      detail: "Ein Treffer weniger weh — max. 7 Ladungen.",
+      price: () => 36 + Math.floor(wave * 1.5),
+      can() {
+        return shieldCharges < 7;
+      },
+      buy() {
+        shieldCharges = Math.min(7, shieldCharges + 1);
+      },
+    },
+    {
+      id: "shield_double",
+      ships: ["pulse", "beam"],
+      tier: "rare",
+      tag: "Abwehr",
+      label: "Doppelbarriere +2",
+      detail: "Zwei Ladungen in einem Kauf (max. 7 gesamt).",
+      price: () => 92 + wave * 14,
+      can() {
+        return shieldCharges <= 5;
+      },
+      buy() {
+        shieldCharges = Math.min(7, shieldCharges + 2);
+      },
+    },
+    {
+      id: "life",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Rumpf",
+      label: "Extra Leben",
+      detail: "Max. 8 Leben — steigt im Preis.",
+      price: () => 128 + lifeBuys * 72,
+      can() {
+        return lifeBuys < 4 && lives < 8;
+      },
+      buy() {
+        lifeBuys++;
+        lives = Math.min(8, lives + 1);
+      },
+    },
+    {
+      id: "heal_kit",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Rumpf",
+      label: "Reparaturkit +1 HP",
+      detail: "Nur wenn du unter dem Lebens-Maximum bist.",
+      price: () => 58 + healKitBuys * 38 + wave * 4,
+      can() {
+        return healKitBuys < 3 && lives < 8;
+      },
+      buy() {
+        healKitBuys++;
+        lives = Math.min(8, lives + 1);
+      },
+    },
+    {
+      id: "credit_inject",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Ökonomie",
+      label: "Sofortliquidität",
+      detail: "Credits direkt aufs Konto — Preis steigt leicht je Kauf.",
+      price: () => 26 + creditInjectBuys * 16 + wave * 4,
+      can() {
+        return creditInjectBuys < 5;
+      },
+      buy() {
+        creditInjectBuys++;
+        credits += 52 + Math.floor(wave * 3.5);
+      },
+    },
+    {
+      id: "hangar_bonus",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Ökonomie",
+      label: "Tower-Bonus",
+      detail: "Jedes Mal wenn du „Weiter“ drückst: automatische Nachzahlung.",
+      price: () => 62 + hangarKickbackLevel * 48,
+      can() {
+        return hangarKickbackLevel < 4;
+      },
+      buy() {
+        hangarKickbackLevel++;
+      },
+    },
+    {
+      id: "scav_salvage",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Ökonomie",
+      label: "Plünder-Sensor",
+      detail: "Grüne Credit-Kisten im Feld zahlen spürbar mehr aus.",
+      price: () => 48 + pickupCreditsBonus * 32,
+      can() {
+        return pickupCreditsBonus < 4;
+      },
+      buy() {
+        pickupCreditsBonus++;
+      },
+    },
+    {
+      id: "bounty",
+      ships: ["pulse", "beam"],
+      tier: "rare",
+      tag: "Ökonomie",
+      label: "Kopfgeld",
+      detail: "+5 % Kill-Credits pro Stufe (max. 5 Stufen = +25 %).",
+      price: () => 92 + creditKillBonusLevel * 46 + wave * 7,
+      can() {
+        return creditKillBonusLevel < 5;
+      },
+      buy() {
+        creditKillBonusLevel++;
+      },
+    },
+    {
+      id: "missile_tip",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Munition",
+      label: "Sprengspitze",
+      detail: "Raketen treffen härter (+1 Basis je Stufe, max. 4).",
+      price: () => 58 + missileDmgShopLevel * 32,
+      can() {
+        return missileDmgShopLevel < 4;
+      },
+      buy() {
+        missileDmgShopLevel++;
+      },
+    },
+    {
+      id: "missile_servo",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Munition",
+      label: "Laderiegel",
+      detail: "Raketen-Taste (E) feuert spürbar öfter.",
+      price: () => 68 + missileServoLevel * 38,
+      can() {
+        return missileServoLevel < 3;
+      },
+      buy() {
+        missileServoLevel++;
+      },
+    },
+    {
+      id: "thruster",
+      ships: ["pulse", "beam"],
+      tier: "std",
+      tag: "Mobilität",
+      label: "Schubvektor",
+      detail: "Steuerung spürbar flotter — WASD / Pfeile / Wischen.",
+      price: () => 58 + thrusterShopLevel * 34,
+      can() {
+        return thrusterShopLevel < 4;
+      },
+      buy() {
+        thrusterShopLevel++;
+      },
+    },
+    {
+      id: "combo_relay",
+      ships: ["pulse", "beam"],
+      tier: "rare",
+      tag: "Taktik",
+      label: "Komborelais",
+      detail: "Deutlich längeres Kombo-Fenster (max. 2 Stufen) — bleib im Flow.",
+      price: () => 82 + comboExtendLevel * 48 + wave * 5,
+      can() {
+        return comboExtendLevel < 2;
+      },
+      buy() {
+        comboExtendLevel++;
+      },
+    },
+    {
+      id: "bolt_bus",
+      tier: "std",
+      tag: "Puls",
+      label: "Zielhilfe",
+      detail: "Nur der mittlere Bolzen profitiert (+9 % je Stufe, max. 3).",
+      ships: ["pulse"],
+      price: () => 74 + boltFocusLevel * 42,
+      can() {
+        return shipClass === "pulse" && boltFocusLevel < 3;
+      },
+      buy() {
+        boltFocusLevel++;
+      },
+    },
+    {
+      id: "rapid",
+      tier: "std",
+      tag: "Puls",
+      label: "Feuertempo",
+      detail: "Kürzere Pause zwischen Bolzen (stärker als Feld-Pickups).",
+      ships: ["pulse"],
+      price: () => 58 + Math.floor((1 / fireMul) * 14),
+      can() {
+        return shipClass === "pulse" && fireMul > 0.38;
+      },
+      buy() {
+        fireMul *= 0.898;
+      },
+    },
+    {
+      id: "spread",
+      tier: "rare",
+      tag: "Puls",
+      label: "Spread-Stufe",
+      detail: "Extra-Seitenbolzen — Außenlinien sind absichtlich viel schwächer.",
+      ships: ["pulse"],
+      price: () => 148 + spreadLevel * 88,
+      can() {
+        return spreadLevel < 3 && shipClass === "pulse";
+      },
+      buy() {
+        spreadLevel++;
+      },
+    },
+    {
       id: "cool",
-      label: "Kühlkörper",
-      detail: "Nur Strahljäger",
-      price: () => 38 + coolShopLevel * 26,
+      tier: "std",
+      tag: "Strahl",
+      label: "Kühlrippe",
+      detail: "Strahl erzeugt weniger Hitze; Passivkühlung steigt.",
+      ships: ["beam"],
+      price: () => 40 + coolShopLevel * 28,
       can() {
         return shipClass === "beam" && coolShopLevel < 6;
       },
@@ -937,60 +1941,88 @@
       },
     },
     {
-      id: "rapid",
-      label: "Schneller feuern",
-      detail: "Nur Pulsjäger",
-      price: () => 54 + Math.floor((1 / fireMul) * 12),
+      id: "beam_sink",
+      tier: "rare",
+      tag: "Strahl",
+      label: "Wärmesenke",
+      detail: "Solange du strahlst: Hitze staut langsamer.",
+      ships: ["beam"],
+      price: () => 84 + beamDissipLevel * 46 + wave * 5,
       can() {
-        return shipClass === "pulse" && fireMul > 0.38;
+        return shipClass === "beam" && beamDissipLevel < 4;
       },
       buy() {
-        fireMul *= 0.903;
+        beamDissipLevel++;
       },
     },
     {
-      id: "spread",
-      label: "Spread (Seiten schwächer)",
-      price: () => 102 + spreadLevel * 52,
+      id: "beam_coil",
+      tier: "rare",
+      tag: "Strahl",
+      label: "Teilfokus-Spule",
+      detail: "Strahl tickt schneller = mehr Treffer pro Sekunde.",
+      ships: ["beam"],
+      price: () => 102 + beamCoilLevel * 52 + wave * 6,
       can() {
-        return spreadLevel < 3 && shipClass === "pulse";
+        return shipClass === "beam" && beamCoilLevel < 4;
       },
       buy() {
-        spreadLevel++;
+        beamCoilLevel++;
       },
     },
     {
-      id: "shield",
-      label: "Schild +1",
-      price: () => 34,
+      id: "capacitor",
+      tier: "std",
+      tag: "Strahl",
+      label: "Kondensator",
+      detail: "Wenn du nicht strahlst: Leiste sinkt schneller.",
+      ships: ["beam"],
+      price: () => 56 + capacitorLevel * 34,
       can() {
-        return shieldCharges < 7;
+        return shipClass === "beam" && capacitorLevel < 3;
       },
       buy() {
-        shieldCharges++;
+        capacitorLevel++;
       },
     },
     {
-      id: "life",
-      label: "Extra Leben",
-      price: () => 120 + lifeBuys * 65,
+      id: "overheat_vent",
+      tier: "std",
+      tag: "Strahl",
+      label: "Sicherheitsventil",
+      detail: "Kürzere Überhitzung und schnelleres Freigeben der Waffe.",
+      ships: ["beam"],
+      price: () => 78 + overheatServoLevel * 46,
       can() {
-        return lifeBuys < 4 && lives < 8;
+        return shipClass === "beam" && overheatServoLevel < 3;
       },
       buy() {
-        lifeBuys++;
-        lives++;
+        overheatServoLevel++;
       },
     },
-  ];
-
-  const SHOP_LEGEND = [
+    {
+      id: "nova_prism",
+      ships: ["pulse", "beam"],
+      tier: "epic",
+      tag: "Nova",
+      label: "Entlade-Prisma",
+      detail: "Kürzere Nova-Wartezeit — nur sinnvoll mit Nova-Kern.",
+      price: () => 180 + novaCdReliefLevel * 70 + wave * 22,
+      can() {
+        return hasNovaCore && novaCdReliefLevel < 5;
+      },
+      buy() {
+        novaCdReliefLevel++;
+      },
+    },
     {
       id: "rocket_splash",
-      label: "Fragmentation (einmal)",
-      detail: "Raketen: Flächenschaden am Einschlag",
-      price: () => 265 + wave * 48,
-      once: true,
+      ships: ["pulse", "beam"],
+      tier: "epic",
+      tag: "Episch",
+      label: "Fragmentation",
+      detail: "Einmalig: Raketen machen Flächenschaden am Einschlag.",
+      price: () => 285 + wave * 52,
       can() {
         return !hasRocketSplash;
       },
@@ -1000,10 +2032,12 @@
     },
     {
       id: "nova_core",
-      label: "Nova-Kern (einmal)",
-      detail: "Taste Q: Schockwelle, großer Radius",
-      price: () => 395 + wave * 72,
-      once: true,
+      ships: ["pulse", "beam"],
+      tier: "epic",
+      tag: "Episch",
+      label: "Nova-Kern",
+      detail: "Einmalig: Taste Q — große Schockwelle.",
+      price: () => 418 + wave * 78,
       can() {
         return !hasNovaCore;
       },
@@ -1013,6 +2047,10 @@
       },
     },
   ];
+
+  function shopTierRank(t) {
+    return t === "epic" ? 2 : t === "rare" ? 1 : 0;
+  }
 
   function showToast(msg) {
     toastEl.textContent = msg;
@@ -1071,11 +2109,48 @@
     );
   }
 
+  function comboRefreshMs() {
+    return 820 + comboExtendLevel * 125;
+  }
+
+  function syncComboStage() {
+    if (!comboStage || !comboBigNum || !comboBarFill) return;
+    const show = running && phase === "combat" && combo > 1;
+    comboStage.hidden = !show;
+    if (!show) return;
+    comboBigNum.textContent = String(combo);
+    const denom = Math.max(1, comboTimerMax);
+    const pct = Math.max(0, Math.min(100, (comboTimerMs / denom) * 100));
+    comboBarFill.style.width = `${pct}%`;
+    comboStage.classList.toggle("comboStage--hot", combo >= 6);
+    comboStage.classList.toggle("comboStage--mega", combo >= 12 && combo < 20);
+    comboStage.classList.toggle("comboStage--insane", combo >= 20);
+  }
+
   function syncHud() {
-    if (heatWrap) {
-      heatWrap.hidden = shipClass !== "beam" || phase !== "combat" || !running;
+    const showBeamHeat = shipClass === "beam" && phase === "combat" && running;
+    if (canvasWrap) canvasWrap.classList.toggle("canvasWrap--strahlHud", showBeamHeat);
+    if (heatDock) {
+      heatDock.hidden = !showBeamHeat;
+      if (showBeamHeat && heatFill && heatPct) {
+        const h = Math.min(100, Math.max(0, heat));
+        heatFill.style.width = `${h}%`;
+        heatPct.textContent = `${Math.round(h)}%`;
+        if (heatLabel) {
+          heatLabel.textContent = overheatLock > 0 ? "Überhitzung" : "Wärme";
+        }
+        heatDock.classList.toggle("heatDock--warn", h >= 52 && overheatLock <= 0);
+        heatDock.classList.toggle("heatDock--hot", h >= 68 && overheatLock <= 0);
+        heatDock.classList.toggle("heatDock--critical", h >= 82 && overheatLock <= 0);
+        heatDock.classList.toggle("heatDock--locked", overheatLock > 0);
+        heatDock.setAttribute(
+          "aria-valuetext",
+          overheatLock > 0 ? "Überhitzung, Waffe gesperrt" : `Wärme ${Math.round(h)} von 100`
+        );
+      } else if (heatDock) {
+        heatDock.classList.remove("heatDock--warn", "heatDock--hot", "heatDock--critical", "heatDock--locked");
+      }
     }
-    if (heatMeter) heatMeter.value = Math.min(100, heat);
     creditsEl.textContent = String(credits);
     if (phase === "combat" && waveSpawnBudget > 0) {
       const rest = waveSpawnBudget - waveSpawned + ufos.length;
@@ -1105,26 +2180,52 @@
     if (hasRocketSplash) bits.push("Frag");
     if (hasNovaCore) bits.push("Nova");
     if (shipClass === "beam" && coolShopLevel > 0) bits.push(`Kühl ×${coolShopLevel}`);
+    if (creditKillBonusLevel > 0) bits.push(`Kopfgeld ×${creditKillBonusLevel}`);
+    if (missileDmgShopLevel > 0) bits.push(`Rkt+${missileDmgShopLevel}`);
+    if (thrusterShopLevel > 0) bits.push(`Schub ×${thrusterShopLevel}`);
+    if (shipClass === "beam" && beamCoilLevel > 0) bits.push(`Spule ×${beamCoilLevel}`);
+    if (hangarKickbackLevel > 0) bits.push(`Tower+×${hangarKickbackLevel}`);
+    if (weaponMod !== "standard") bits.push(`Mod: ${MOD_LABELS[weaponMod] || weaponMod}`);
     upTag.textContent = bits.length ? bits.join(" · ") : "—";
+    syncComboStage();
   }
 
   function renderShop() {
     if (shopSubline) {
       shopSubline.textContent =
         shipClass === "beam"
-          ? "Strahl: Kühl-Upgrades senken die Wärme. Rapid-Pickups werden zu Credits."
-          : "Puls: Rapid verkürzt die Pause zwischen Bolzen — kein Wärme-Balken.";
+          ? "Strahl: Kühlung & Wärme bändigen, Spule für mehr DPS. Unten: Weiter in die nächste Welle."
+          : "Puls: Feuertempo & Zielhilfe — Spread für Breite (Außen schwächer). Unten: Weiter.";
     }
+    if (shopCreditsVal) shopCreditsVal.textContent = String(credits);
     shopGrid.innerHTML = "";
     const shopActive = phase === "shop";
-    const allShop = SHOP_CORE.concat(SHOP_LEGEND);
-    for (const item of allShop) {
+    const rows = SHOP_CATALOG.filter((item) => (item.ships || []).includes(shipClass));
+    rows.sort(
+      (a, b) =>
+        shopTierRank(a.tier || "std") - shopTierRank(b.tier || "std") || String(a.id).localeCompare(String(b.id))
+    );
+    for (const item of rows) {
       const price = shopPriceCredits(item.price());
       const btn = document.createElement("button");
       btn.type = "button";
+      const tier = item.tier === "epic" ? "epic" : item.tier === "rare" ? "rare" : "std";
+      btn.className = `shopCard shopCard--${tier}`;
       btn.disabled = !shopActive || !item.can() || credits < price;
-      const sub = item.detail ? `<span style="display:block;font-weight:600;opacity:.88;margin-top:4px;font-size:0.58rem">${item.detail}</span>` : "";
-      btn.innerHTML = `${item.label}${sub}<span class="price">${price} ₡</span>`;
+      const detailLine =
+        shipClass === "beam" && item.detailBeam
+          ? item.detailBeam
+          : shipClass === "pulse" && item.detailPulse
+            ? item.detailPulse
+            : item.detail;
+      const tag = item.tag || (tier === "epic" ? "EPISCH" : tier === "rare" ? "RAR" : "HANGAR");
+      const esc = (s) =>
+        String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      btn.innerHTML = `<span class="shopCard-inner"><span class="shopCard-tag">${esc(tag)}</span><span class="shopCard-title">${esc(item.label)}</span><span class="shopCard-detail">${esc(detailLine || " ")}</span><span class="shopCard-price">${price} ₡</span></span>`;
       btn.addEventListener("click", () => {
         if (phase !== "shop") return;
         const p = shopPriceCredits(item.price());
@@ -1168,7 +2269,30 @@
     dmgShopLevel = 0;
     coolShopLevel = 0;
     lifeBuys = 0;
-    jet.x = 160;
+    creditKillBonusLevel = 0;
+    missileDmgShopLevel = 0;
+    thrusterShopLevel = 0;
+    beamCoilLevel = 0;
+    beamDissipLevel = 0;
+    missileServoLevel = 0;
+    boltFocusLevel = 0;
+    overheatServoLevel = 0;
+    capacitorLevel = 0;
+    comboExtendLevel = 0;
+    healKitBuys = 0;
+    creditInjectBuys = 0;
+    novaCdReliefLevel = 0;
+    hangarKickbackLevel = 0;
+    pickupCreditsBonus = 0;
+    combo = 0;
+    comboTimerMs = 0;
+    comboTimerMax = 1;
+    comboRumble = 0;
+    hitstopMs = 0;
+    lastOneLifeVoiceWave = -999;
+    if (shipClass === "beam" && weaponMod === "bbulk") shieldCharges = 1;
+    if (shipClass === "pulse" && weaponMod === "pwolke") spreadLevel = 1;
+    jet.x = Math.min(jetXMax, Math.max(jetXMin, 160));
     jet.y = H / 2 - jet.h / 2;
     ufos.length = 0;
     particles.length = 0;
@@ -1239,11 +2363,15 @@
   function tickBeamDamage(now) {
     const { target, x0, y0 } = findBeamTarget();
     if (target) {
-      const beamDmg = Math.max(0.55, bulletDmg * 0.48);
+      let beamDmg = Math.max(0.55, bulletDmg * 0.48);
+      if (weaponMod === "bflux") beamDmg *= 1.12;
+      if (weaponMod === "bbreach" && target.kind === "tank") beamDmg *= 1.28;
       target.hp -= beamDmg;
       burst(x0 + 20, y0, "rgba(255,200,180,0.9)", 3, { add: true, spd0: 40, spd1: 120, lifeM: 0.35 });
       if (target.boss && target.hp > 0) {
         bossHitFx = Math.min(1, bossHitFx + 0.08);
+        triggerHitstop(36);
+        shake = Math.min(42, shake + 5);
         if (now - lastBossHitSfx > 130) {
           lastBossHitSfx = now;
           sfxBossHit();
@@ -1270,10 +2398,11 @@
     const py = jet.y + jet.h * 0.5;
     const R = 236;
     const dmg = Math.ceil(2.4 + bulletDmg * 1.05);
-    novaCooldownMs = 12800;
+    novaCooldownMs = Math.max(6800, 12800 - novaCdReliefLevel * 620);
     screenFlash = Math.min(1, 0.52);
     screenFlashKind = "boss";
     shake = Math.min(44, shake + 22);
+    triggerHitstop(68);
     sfxNova();
     burst(px, py, "#ffd76a", 46, { add: true, lifeM: 1.1 });
     burst(px, py, "#9ad0ff", 32, { grav: 28 });
@@ -1405,22 +2534,110 @@
       });
       return;
     }
+    if (st === 3) {
+      ufos.push({
+        kind: "boss",
+        bossStyle: 3,
+        boss: true,
+        hp: Math.round(hp * 1.06),
+        maxHp: Math.round(hp * 1.06),
+        x: W + 28,
+        y: H / 2 - 72,
+        w: 262,
+        h: 144,
+        vx: -52 * vm,
+        vy: 0,
+        t: 0,
+        shootT: 620,
+        pts: 440 + wave * 62,
+        drop: 0.86,
+        bmul,
+      });
+      return;
+    }
+    if (st === 4) {
+      ufos.push({
+        kind: "boss",
+        bossStyle: 4,
+        boss: true,
+        hp: Math.round(hp * 1.08),
+        maxHp: Math.round(hp * 1.08),
+        x: W + 20,
+        y: H / 2 - 70,
+        w: 298,
+        h: 128,
+        vx: -40 * vm,
+        vy: 0,
+        t: 0,
+        shootT: 880,
+        pts: 460 + wave * 64,
+        drop: 0.9,
+        bmul,
+      });
+      return;
+    }
+    if (st === 5) {
+      const baseY = 90 + Math.random() * (H - 240);
+      ufos.push({
+        kind: "boss",
+        bossStyle: 5,
+        boss: true,
+        hp: Math.round(hp * 0.96),
+        maxHp: Math.round(hp * 0.96),
+        x: W + 44,
+        y: baseY,
+        baseY,
+        w: 248,
+        h: 52,
+        vx: -132 * vm,
+        vy: 0,
+        t: 0,
+        shootT: 280,
+        pts: 420 + wave * 58,
+        drop: 0.88,
+        bmul,
+      });
+      return;
+    }
+    if (st === 6) {
+      const cy = H * 0.5;
+      ufos.push({
+        kind: "boss",
+        bossStyle: 6,
+        boss: true,
+        hp: Math.round(hp * 1.14),
+        maxHp: Math.round(hp * 1.14),
+        x: W + 26,
+        y: cy - 96,
+        w: 196,
+        h: 196,
+        vx: -32 * vm,
+        vy: 0,
+        t: 0,
+        shootT: 1420,
+        centerY: cy,
+        pts: 480 + wave * 66,
+        drop: 0.87,
+        bmul,
+      });
+      return;
+    }
     ufos.push({
       kind: "boss",
-      bossStyle: 3,
+      bossStyle: 7,
       boss: true,
-      hp: Math.round(hp * 1.06),
-      maxHp: Math.round(hp * 1.06),
-      x: W + 28,
-      y: H / 2 - 72,
-      w: 262,
-      h: 144,
-      vx: -52 * vm,
+      hp: Math.round(hp * 1.1),
+      maxHp: Math.round(hp * 1.1),
+      x: W + 30,
+      y: H / 2 - 78,
+      w: 272,
+      h: 152,
+      vx: -48 * vm,
       vy: 0,
       t: 0,
-      shootT: 620,
-      pts: 440 + wave * 62,
-      drop: 0.86,
+      shootT: 520,
+      pts: 500 + wave * 68,
+      drop: 0.85,
       bmul,
     });
   }
@@ -1454,6 +2671,7 @@
         drop: 0.08,
         shootT: 9999,
       });
+      decorateElite(ufos[ufos.length - 1]);
       return;
     }
     if (kind === "scout") {
@@ -1474,6 +2692,7 @@
         drop: 0.15,
         shootT: 9999,
       });
+      decorateElite(ufos[ufos.length - 1]);
       return;
     }
     if (kind === "wobbler") {
@@ -1497,6 +2716,7 @@
         drop: 0.24,
         shootT: 9999,
       });
+      decorateElite(ufos[ufos.length - 1]);
       return;
     }
     if (kind === "hunter") {
@@ -1517,6 +2737,7 @@
         drop: 0.22,
         shootT: 9999,
       });
+      decorateElite(ufos[ufos.length - 1]);
       return;
     }
     const h = 58 + Math.random() * 22;
@@ -1540,10 +2761,34 @@
       drop: 0.62,
       shootT: Math.max(380, 1600 + Math.random() * 800 - wave * 35) * dTankCd,
     });
+    decorateElite(ufos[ufos.length - 1]);
+  }
+
+  function spreadSideBoltDamage() {
+    if (spreadLevel <= 0) return bulletDmg;
+    const mult = Math.max(0.13, 0.28 - spreadLevel * 0.065);
+    return Math.max(1, Math.round(bulletDmg * mult));
+  }
+
+  function missileCooldownMs() {
+    return Math.max(232, 400 - missileServoLevel * 52);
+  }
+
+  function beamTickIntervalMs() {
+    return Math.max(46, 78 - beamCoilLevel * 7);
   }
 
   function spawnPickup(x, y) {
-    const kinds = ["rapid", "dmg", "spread", "shield", "credits", "credits"];
+    const kinds = [
+      "rapid",
+      "dmg",
+      "dmg",
+      "shield",
+      "credits",
+      "credits",
+      "credits",
+      "spread",
+    ];
     const kind = kinds[Math.floor(Math.random() * kinds.length)];
     pickups.push({
       kind,
@@ -1560,14 +2805,16 @@
   function tryShoot(now) {
     if (shipClass === "beam") return;
     if (phase !== "combat") return;
-    const cd = pulseBaseCooldownMs * fireMul;
+    const salveMul = weaponMod === "psalve" ? 0.88 : 1;
+    const cd = pulseBaseCooldownMs * fireMul * salveMul;
     if (now - lastShot < cd) return;
     lastShot = now;
     sfxShoot();
 
     const baseY = jet.y + jet.h / 2 - 4;
     const baseX = jet.x + jet.w - 8;
-    const sideDmg = Math.max(1, Math.round(bulletDmg * 0.42));
+    const sideDmg = spreadSideBoltDamage();
+    const centerDmg = Math.max(1, Math.round(bulletDmg * (1 + 0.09 * boltFocusLevel)));
     const push = (angDeg, vxBoost, dmgOverride) => {
       const rad = (angDeg * Math.PI) / 180;
       const spd = 980 + vxBoost;
@@ -1582,7 +2829,7 @@
         dmg: dm,
       });
     };
-    push(0, bulletDmg * 48, bulletDmg);
+    push(0, bulletDmg * 48, centerDmg);
     if (spreadLevel >= 1) {
       push(-6.5, 0, sideDmg);
       push(6.5, 0, sideDmg);
@@ -1599,7 +2846,7 @@
 
   function tryMissile(now) {
     if (phase !== "combat" || missileStock <= 0) return;
-    if (now - lastMissile < 400) return;
+    if (now - lastMissile < missileCooldownMs()) return;
     lastMissile = now;
     missileStock--;
     sfxMissile();
@@ -1611,7 +2858,7 @@
       vx: 560,
       vy: 0,
       r: 11,
-      dmg: 3 + Math.floor(bulletDmg * 0.88),
+      dmg: 3 + missileDmgShopLevel + Math.floor(bulletDmg * 0.88),
       life: 3.2,
     });
     syncHud();
@@ -1629,7 +2876,7 @@
       else credits += 14 + wave;
     }
     else if (p.kind === "shield") shieldCharges = Math.min(7, shieldCharges + 1);
-    else if (p.kind === "credits") credits += 10 + Math.floor(wave * 2);
+    else if (p.kind === "credits") credits += 10 + Math.floor(wave * 2) + pickupCreditsBonus * 5;
     sfxPickup();
     syncHud();
     renderShop();
@@ -1637,21 +2884,36 @@
 
   function onUfoDestroyed(u, cx, cy) {
     const cr = Math.max(2, Math.floor(u.pts / 4) + 2 + wave);
-    credits += Math.max(1, Math.floor(cr * diff().creditFromKillMul));
+    const bountyMul = 1 + Math.min(0.25, creditKillBonusLevel * 0.05);
+    credits += Math.max(1, Math.floor(cr * diff().creditFromKillMul * bountyMul));
     score += u.pts;
+    combo += 1;
+    comboTimerMax = Math.max(1, comboRefreshMs());
+    comboTimerMs = comboTimerMax;
+    comboRumble = Math.min(36, comboRumble + 1.15 + combo * 0.52);
+    if (combo > 1) {
+      const cb = Math.floor((combo - 1) * 2.2);
+      if (cb > 0) score += cb;
+    }
+    if (combo >= 8 && combo % 4 === 0) shake = Math.min(40, shake + 10);
+    if (u.elite) {
+      triggerHitstop(48);
+      shake = Math.min(36, shake + 14);
+    }
     if (u.boss) {
       sfxBossDead();
+      triggerHitstop(95);
       burst(cx, cy, "#ffd76a", 44, { add: true, lifeM: 1.3, spd0: 100, spd1: 540 });
       burst(cx, cy, "#56e8ff", 38, { grav: 20, lifeM: 1.15 });
       ringBurst(cx, cy, "#ff9dff", 18);
       screenFlash = Math.min(1, 0.75);
       screenFlashKind = "boss";
-      shake = Math.min(50, shake + 34);
-      credits += Math.max(0, Math.floor((32 + wave * 14) * diff().creditFromKillMul));
+      shake = Math.min(56, shake + 38);
+      credits += Math.max(0, Math.floor((32 + wave * 14) * diff().creditFromKillMul * bountyMul));
     } else {
       sfxExplode();
       burst(cx, cy, "#9ad0ff", 24, { grav: 48 });
-      shake = Math.min(18, shake + 6);
+      shake = Math.min(22, shake + (u.elite ? 10 : 6));
     }
     if (Math.random() < u.drop) spawnPickup(u.x + u.w * 0.3, u.y + u.h * 0.35);
     scoreEl.textContent = String(score);
@@ -1694,6 +2956,10 @@
         grd.addColorStop(0, "rgba(255,160,90,0.85)");
         grd.addColorStop(0.45, "rgba(255,90,40,0.35)");
         grd.addColorStop(1, "transparent");
+      } else if (unlockTrail) {
+        grd.addColorStop(0, "rgba(120,255,210,0.82)");
+        grd.addColorStop(0.5, "rgba(60,200,255,0.4)");
+        grd.addColorStop(1, "transparent");
       } else {
         grd.addColorStop(0, "rgba(130,210,255,0.75)");
         grd.addColorStop(1, "transparent");
@@ -1732,6 +2998,11 @@
     ctx.strokeStyle = beamShip ? "rgba(255, 220, 200, 0.55)" : "rgba(220, 240, 255, 0.65)";
     ctx.lineWidth = 2.5;
     ctx.stroke();
+    if (unlockHullChrome) {
+      ctx.strokeStyle = "rgba(255,255,255,0.35)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -1870,14 +3141,21 @@
     }
 
     ctx.save();
-    if (u.bossStyle === 0) {
+    if (u.bossStyle === 0 || u.bossStyle === 4) {
       ctx.translate(ix, iy);
       ctx.rotate(Math.sin(t * 0.0011) * 0.06);
       const g = ctx.createRadialGradient(-20, -18, 8, 0, 0, u.w * 0.55);
-      g.addColorStop(0, "#c8ffd8");
-      g.addColorStop(0.35, "#3cff9a");
-      g.addColorStop(0.7, "#0a6a42");
-      g.addColorStop(1, "#021810");
+      if (u.bossStyle === 4) {
+        g.addColorStop(0, "#ffd8c8");
+        g.addColorStop(0.35, "#ff8844");
+        g.addColorStop(0.7, "#6a2010");
+        g.addColorStop(1, "#180808");
+      } else {
+        g.addColorStop(0, "#c8ffd8");
+        g.addColorStop(0.35, "#3cff9a");
+        g.addColorStop(0.7, "#0a6a42");
+        g.addColorStop(1, "#021810");
+      }
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.ellipse(0, 0, u.w * 0.42, u.h * 0.4, 0, 0, Math.PI * 2);
@@ -1891,15 +3169,23 @@
       ctx.beginPath();
       ctx.ellipse(u.w * 0.1, -6, u.w * 0.18, u.h * 0.16, -0.4, 0, Math.PI * 2);
       ctx.fill();
-    } else if (u.bossStyle === 1) {
+    } else if (u.bossStyle === 1 || u.bossStyle === 5) {
       ctx.translate(ix, iy);
       ctx.rotate(Math.sin(t * 0.0024) * 0.12);
       const gr = ctx.createLinearGradient(-u.w * 0.5, 0, u.w * 0.5, 0);
-      gr.addColorStop(0, "#1a0a28");
-      gr.addColorStop(0.25, "#ff4d8a");
-      gr.addColorStop(0.55, "#ffb8e8");
-      gr.addColorStop(0.75, "#ff2a6a");
-      gr.addColorStop(1, "#120818");
+      if (u.bossStyle === 5) {
+        gr.addColorStop(0, "#061820");
+        gr.addColorStop(0.3, "#44e8ff");
+        gr.addColorStop(0.55, "#b8fff8");
+        gr.addColorStop(0.78, "#2288aa");
+        gr.addColorStop(1, "#041018");
+      } else {
+        gr.addColorStop(0, "#1a0a28");
+        gr.addColorStop(0.25, "#ff4d8a");
+        gr.addColorStop(0.55, "#ffb8e8");
+        gr.addColorStop(0.75, "#ff2a6a");
+        gr.addColorStop(1, "#120818");
+      }
       ctx.fillStyle = gr;
       ctx.beginPath();
       ctx.moveTo(u.w * 0.46, 0);
@@ -1917,24 +3203,41 @@
       ctx.arc(u.w * 0.28, -u.h * 0.08, 5, 0, Math.PI * 2);
       ctx.arc(u.w * 0.28, u.h * 0.08, 5, 0, Math.PI * 2);
       ctx.fill();
-    } else if (u.bossStyle === 2) {
+    } else if (u.bossStyle === 2 || u.bossStyle === 6) {
       ctx.translate(ix, iy);
       ctx.rotate(t * 0.0009);
       const R = Math.min(u.w, u.h) * 0.44;
-      for (let k = 0; k < 6; k++) {
-        const a = (Math.PI / 3) * k + t * 0.0012;
-        ctx.fillStyle = k % 2 ? "#7a9fff" : "#c8a8ff";
+      const petals = u.bossStyle === 6 ? 7 : 6;
+      for (let k = 0; k < petals; k++) {
+        const a = ((Math.PI * 2) / petals) * k + t * 0.0012;
+        ctx.fillStyle =
+          u.bossStyle === 6
+            ? k % 2
+              ? "#9aff66"
+              : "#d8ff88"
+            : k % 2
+              ? "#7a9fff"
+              : "#c8a8ff";
         ctx.beginPath();
         ctx.moveTo(Math.cos(a) * R * 0.2, Math.sin(a) * R * 0.2);
         ctx.lineTo(Math.cos(a) * R, Math.sin(a) * R);
-        ctx.lineTo(Math.cos(a + Math.PI / 3) * R, Math.sin(a + Math.PI / 3) * R);
+        ctx.lineTo(
+          Math.cos(a + (Math.PI * 2) / petals) * R,
+          Math.sin(a + (Math.PI * 2) / petals) * R
+        );
         ctx.closePath();
         ctx.fill();
       }
       const core = ctx.createRadialGradient(0, 0, 2, 0, 0, R * 0.5);
-      core.addColorStop(0, "#ffffff");
-      core.addColorStop(0.4, "#56a7ff");
-      core.addColorStop(1, "#1a2050");
+      if (u.bossStyle === 6) {
+        core.addColorStop(0, "#ffffff");
+        core.addColorStop(0.45, "#b8ff66");
+        core.addColorStop(1, "#1a4020");
+      } else {
+        core.addColorStop(0, "#ffffff");
+        core.addColorStop(0.4, "#56a7ff");
+        core.addColorStop(1, "#1a2050");
+      }
       ctx.fillStyle = core;
       ctx.beginPath();
       ctx.arc(0, 0, R * 0.32, 0, Math.PI * 2);
@@ -1943,16 +3246,23 @@
       ctx.translate(ix, iy);
       const wob = Math.sin(t * 0.0018) * 10;
       const ng = ctx.createRadialGradient(-30 + wob, -20, 4, 0, 0, u.w * 0.5);
-      ng.addColorStop(0, "#e8d8ff");
-      ng.addColorStop(0.35, "#8b62ff");
-      ng.addColorStop(0.65, "#3a1a6a");
-      ng.addColorStop(1, "#0a0418");
+      if (u.bossStyle === 7) {
+        ng.addColorStop(0, "#ffe0e0");
+        ng.addColorStop(0.35, "#ff4466");
+        ng.addColorStop(0.65, "#6a1020");
+        ng.addColorStop(1, "#120408");
+      } else {
+        ng.addColorStop(0, "#e8d8ff");
+        ng.addColorStop(0.35, "#8b62ff");
+        ng.addColorStop(0.65, "#3a1a6a");
+        ng.addColorStop(1, "#0a0418");
+      }
       ctx.fillStyle = ng;
       ctx.beginPath();
       ctx.ellipse(0, 0, u.w * 0.44, u.h * 0.42, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.globalAlpha = 0.4 + pulse * 0.35;
-      ctx.strokeStyle = "#c4a8ff";
+      ctx.strokeStyle = u.bossStyle === 7 ? "#ff8899" : "#c4a8ff";
       ctx.lineWidth = 3;
       ctx.setLineDash([14, 10]);
       ctx.beginPath();
@@ -2006,6 +3316,15 @@
     ctx.strokeStyle = "rgba(255, 255, 255, 0.32)";
     ctx.lineWidth = 2;
     ctx.stroke();
+    if (u.elite) {
+      ctx.strokeStyle = "rgba(255, 215, 106, 0.92)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([7, 7]);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, u.w * 0.52, u.h * 0.94, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.restore();
     ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
     ctx.beginPath();
@@ -2109,6 +3428,48 @@
     }
     ctx.restore();
 
+    if (envMode === 1) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.14;
+      for (let j = 0; j < 6; j++) {
+        const px = ((j * 337 + t * 14) % (W + 100)) - 50;
+        const py = 120 + Math.sin(t * 0.0011 + j * 0.9) * (H * 0.35);
+        const rg = ctx.createRadialGradient(px, py, 0, px, py, 140);
+        rg.addColorStop(0, "rgba(90, 255, 200, 0.38)");
+        rg.addColorStop(1, "transparent");
+        ctx.fillStyle = rg;
+        ctx.beginPath();
+        ctx.arc(px, py, 130, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    } else if (envMode === 2) {
+      ctx.save();
+      ctx.globalAlpha = 0.2;
+      for (let j = 0; j < 16; j++) {
+        const px = ((j * 173 + t * 22) % (W + 80)) - 40;
+        const py = ((j * 97 + t * 11) % (H + 50)) - 25;
+        const sz = 5 + (j % 4) * 7;
+        ctx.fillStyle = j % 2 ? "rgba(130, 150, 190, 0.5)" : "rgba(70, 80, 110, 0.4)";
+        ctx.fillRect(px, py, sz, sz * 0.75);
+      }
+      ctx.restore();
+    } else if (envMode === 3) {
+      ctx.save();
+      ctx.globalAlpha = 0.13;
+      for (let j = 0; j < 10; j++) {
+        const y = ((j * 151 + t * (18 + j * 0.15)) % (H + 70)) - 35;
+        const gr = ctx.createLinearGradient(0, y, W, y + 4);
+        gr.addColorStop(0, "transparent");
+        gr.addColorStop(0.5, "rgba(255, 150, 90, 0.45)");
+        gr.addColorStop(1, "transparent");
+        ctx.fillStyle = gr;
+        ctx.fillRect(0, y, W, 4);
+      }
+      ctx.restore();
+    }
+
     for (const s of stars) {
       const spd = 0.12 + s.layer * 0.34;
       const a = 0.2 + s.layer * 0.16 + Math.sin(t * 0.0016 + s.tw) * 0.32;
@@ -2143,7 +3504,7 @@
     ctx.fillStyle = "#ffd76a";
     ctx.font = "bold 28px system-ui,sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(`UPGRADE  ${(upgradeTimeMs / 1000).toFixed(1)}s`, W / 2, 46);
+    ctx.fillText("HANGAR  —  Weiter unten", W / 2, 46);
     ctx.restore();
   }
 
@@ -2170,14 +3531,15 @@
     const uc = u.x + u.w * 0.32;
     const uy = u.y + u.h * 0.5;
     const bmul = u.bmul ?? diff().tankBulletSpdMul;
+    const st = u.bossStyle;
 
-    if (u.bossStyle === 0) {
+    if (st === 0 || st === 4) {
       const aim = jcy - (u.y + u.h / 2);
       u.y += aim * Math.min(1.7, 2.2 * sec);
       u.y = Math.max(34, Math.min(H - u.h - 34, u.y));
-    } else if (u.bossStyle === 1) {
+    } else if (st === 1 || st === 5) {
       u.y = u.baseY + Math.sin(u.t * 0.00275) * 124;
-    } else if (u.bossStyle === 2) {
+    } else if (st === 2 || st === 6) {
       if (u.vx !== 0) {
         u.x += (u.vx * dt) / 1000;
         if (u.x < hold) {
@@ -2194,7 +3556,7 @@
       u.y = Math.max(30, Math.min(H - u.h - 30, u.y));
     }
 
-    if (u.bossStyle !== 2) {
+    if (st !== 2 && st !== 6) {
       u.x += (u.vx * dt) / 1000;
       if (u.x < hold) {
         u.x = hold;
@@ -2208,42 +3570,88 @@
     const baseAng = Math.atan2(jcy - uy, jcx - uc);
     const sp = (172 + wave * 9) * bmul;
 
-    if (u.bossStyle === 0) {
+    if (st === 0) {
       for (const off of [-0.4, -0.14, 0.14, 0.4]) {
         pushBossBullet(u.x + 8, uy, baseAng + off, sp * 0.9, 13);
       }
       u.shootT = 1320 * diff().tankShootCooldownMul;
-    } else if (u.bossStyle === 1) {
+    } else if (st === 4) {
+      for (const off of [-0.55, -0.28, 0, 0.28, 0.55]) {
+        pushBossBullet(u.x + 8, uy, baseAng + off, sp * 0.88, 13);
+      }
+      u.shootT = 1180 * diff().tankShootCooldownMul;
+    } else if (st === 1) {
       pushBossBullet(u.x, uy, baseAng, sp * 1.42, 12);
       u.shootT = 340 * diff().tankShootCooldownMul;
-    } else if (u.bossStyle === 2) {
+    } else if (st === 5) {
+      for (const off of [-0.18, 0, 0.18]) {
+        pushBossBullet(u.x, uy, baseAng + off, sp * 1.48, 11);
+      }
+      u.shootT = 300 * diff().tankShootCooldownMul;
+    } else if (st === 2) {
       for (let i = 0; i < 8; i++) {
         const ang = (Math.PI * 2 * i) / 8 + u.t * 0.00035;
         pushBossBullet(uc, uy, ang, sp * 0.72, 13);
       }
       u.shootT = 1980 * diff().tankShootCooldownMul;
-    } else {
+    } else if (st === 6) {
+      for (let i = 0; i < 10; i++) {
+        const ang = (Math.PI * 2 * i) / 10 + u.t * 0.00042;
+        pushBossBullet(uc, uy, ang, sp * 0.68, 12);
+      }
+      u.shootT = 1680 * diff().tankShootCooldownMul;
+    } else if (st === 3) {
       pushBossBullet(u.x + 4, uy - 22, baseAng, sp * 1.02, 14);
       pushBossBullet(u.x + 4, uy + 22, baseAng, sp * 1.02, 14);
       u.shootT = 820 * diff().tankShootCooldownMul;
+    } else {
+      pushBossBullet(u.x + 4, uy - 28, baseAng - 0.06, sp * 1.05, 14);
+      pushBossBullet(u.x + 4, uy, baseAng, sp * 1.08, 14);
+      pushBossBullet(u.x + 4, uy + 28, baseAng + 0.06, sp * 1.05, 14);
+      u.shootT = 680 * diff().tankShootCooldownMul;
+    }
+  }
+
+  function togglePause(force) {
+    if (!running || phase !== "combat") return;
+    if (typeof force === "boolean") paused = force;
+    else paused = !paused;
+    if (pauseOverlay) pauseOverlay.hidden = !paused;
+    if (paused) {
+      [
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "KeyW",
+        "KeyS",
+        "KeyA",
+        "KeyD",
+        "Space",
+        "KeyE",
+        "KeyQ",
+      ].forEach((c) => keys.delete(c));
+      const anyBoss = ufos.some((u) => u.boss);
+      setBgmLayer(anyBoss ? "boss" : "shop");
+    } else {
+      const anyBoss = ufos.some((u) => u.boss);
+      setBgmLayer(anyBoss ? "boss" : "combat");
     }
   }
 
   function update(dt, now) {
     const sec = dt / 1000;
-    if (overheatLock > 0) overheatLock -= dt;
+    tickVoice(dt);
+    if (paused && phase === "combat") {
+      syncHud();
+      return;
+    }
+    if (overheatLock > 0) overheatLock -= dt * (1 + overheatServoLevel * 0.22);
     screenFlash = Math.max(0, screenFlash - sec * 2.5);
     bossHitFx *= Math.pow(0.87, dt / 16);
     if (novaCooldownMs > 0) novaCooldownMs -= dt;
 
     if (phase === "shop") {
-      upgradeTimeMs -= dt;
-      const s = Math.max(0, Math.ceil(upgradeTimeMs / 1000));
-      upgradeSec.textContent = String(s);
-      if (upgradeTimeMs <= 0) {
-        upgradeTimeMs = 0;
-        exitShopPhase();
-      }
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.life -= sec;
@@ -2253,25 +3661,38 @@
         if (p.spin) p.rot = (p.rot || 0) + p.spin * dt * 0.08;
         if (p.life <= 0) particles.splice(i, 1);
       }
+      tickVoice(dt);
       syncHud();
       return;
     }
 
     const up = keys.has("ArrowUp") || keys.has("KeyW");
     const down = keys.has("ArrowDown") || keys.has("KeyS");
+    const left = keys.has("ArrowLeft") || keys.has("KeyA");
+    const right = keys.has("ArrowRight") || keys.has("KeyD");
     const fire = keys.has("Space");
     const miss = keys.has("KeyE");
-    if (up) jet.y -= jetSpeedPps * sec;
-    if (down) jet.y += jetSpeedPps * sec;
+    const jMove = jetSpeedPps * (1 + thrusterShopLevel * 0.088);
+    if (up) jet.y -= jMove * sec;
+    if (down) jet.y += jMove * sec;
+    if (left) jet.x -= jMove * sec;
+    if (right) jet.x += jMove * sec;
 
     if (aimTouchId != null && aimTouchY != null) {
       const rect = canvas.getBoundingClientRect();
       const scaleY = H / rect.height;
+      const scaleX = W / rect.width;
       const targetY = (aimTouchY - rect.top) * scaleY - jet.h / 2;
       jet.y += (targetY - jet.y) * Math.min(1, 11 * sec);
+      if (aimTouchX != null) {
+        const rawX = (aimTouchX - rect.left) * scaleX - jet.w / 2;
+        const targetX = Math.max(jetXMin, Math.min(jetXMax, rawX));
+        jet.x += (targetX - jet.x) * Math.min(1, 9 * sec);
+      }
     }
 
     jet.y = Math.max(14, Math.min(H - jet.h - 14, jet.y));
+    jet.x = Math.max(jetXMin, Math.min(jetXMax, jet.x));
 
     const novaQ = keys.has("KeyQ");
     if (novaQ && !novaKeyLatch && hasNovaCore && novaCooldownMs <= 0 && phase === "combat") {
@@ -2283,11 +3704,13 @@
     if (shipClass === "pulse" && fire) tryShoot(now);
     else if (shipClass === "beam" && fire && overheatLock <= 0 && phase === "combat") {
       if (heat >= 92) {
-        overheatLock = 820;
+        overheatLock = Math.max(540, 820 - overheatServoLevel * 96);
         sfxOverheat();
       } else {
-        heat += 64 * sec * diff().heatGainMul;
-        if (now - lastBeamTick >= 78) {
+        const fluxM = weaponMod === "bflux" ? 1.09 : 1;
+        const dissip = 1 - Math.min(0.16, beamDissipLevel * 0.042);
+        heat += 64 * sec * diff().heatGainMul * fluxM * dissip;
+        if (now - lastBeamTick >= beamTickIntervalMs()) {
           lastBeamTick = now;
           tickBeamDamage(now);
         }
@@ -2300,7 +3723,7 @@
          die Leiste unter ~92 und es gibt keine Überhitzung. */
       const passiveCool = !(fire && overheatLock <= 0 && phase === "combat");
       if (passiveCool) {
-        const cool = (40 + (heat > 70 ? 26 : 0)) * coolBonus;
+        const cool = (40 + (heat > 70 ? 26 : 0)) * coolBonus * (1 + 0.055 * capacitorLevel);
         heat = Math.max(0, heat - cool * sec);
         if (heat < 26 && overheatLock <= 0) heat *= 0.987;
       }
@@ -2308,6 +3731,17 @@
       heat = 0;
       overheatLock = 0;
     }
+
+    if (comboTimerMs > 0) {
+      comboTimerMs -= dt * (1.62 + combo * 0.065);
+      if (comboTimerMs <= 0) {
+        combo = 0;
+        comboTimerMs = 0;
+        comboTimerMax = 1;
+      }
+    }
+    if (comboRumble > 0.08) comboRumble *= Math.pow(0.9, dt / 16);
+    else comboRumble = 0;
 
     spawnAcc += dt;
     const spawnMs = spawnIntervalMs();
@@ -2363,7 +3797,9 @@
         const cx = u.x + u.w / 2;
         const cy = u.y + u.h / 2;
         if ((cx - m.x) ** 2 + (cy - m.y) ** 2 < (m.r + Math.max(u.w, u.h) * 0.36) ** 2) {
-          u.hp -= m.dmg;
+          let md = m.dmg;
+          if ((weaponMod === "pbreach" || weaponMod === "bbreach") && u.kind === "tank") md *= 1.28;
+          u.hp -= md;
           missiles.splice(mi, 1);
           burst(m.x, m.y, "#ffcc66", 26);
           shake = Math.min(22, shake + 9);
@@ -2375,6 +3811,7 @@
           }
           if (u.boss && u.hp > 0) {
             bossHitFx = Math.min(1, bossHitFx + 0.35);
+            triggerHitstop(40);
             burst(m.x, m.y, "#fff5cc", 14, { add: true, spd0: 100, spd1: 400, lifeM: 0.55 });
             if (now - lastBossHitSfx > 100) {
               lastBossHitSfx = now;
@@ -2408,6 +3845,10 @@
           shieldCharges--;
           syncHud();
         } else {
+          combo = 0;
+          comboTimerMs = 0;
+          comboTimerMax = 1;
+          comboRumble = 0;
           lives--;
           livesEl.textContent = String(lives);
           shake = 22;
@@ -2416,9 +3857,20 @@
           burst(jet.x + jet.w / 2, jet.y + jet.h / 2, "#ff6666", 22, { spd0: 90, spd1: 340 });
           if (lives <= 0) {
             running = false;
+            recordMetaWave(wave);
+            stopBgm();
+            combo = 0;
+            comboTimerMs = 0;
+            comboTimerMax = 1;
+            comboRumble = 0;
+            paused = false;
+            if (pauseOverlay) pauseOverlay.hidden = true;
             body.classList.remove("phase-shop");
             goText.textContent = `Game Over (${diff().label}) — ${score} Punkte · Welle ${wave} · ${credits} ₡`;
             gameOverOverlay.hidden = false;
+          } else if (lives === 1 && lastOneLifeVoiceWave !== wave) {
+            lastOneLifeVoiceWave = wave;
+            showVoiceLine("Tower: Rumpf kritisch — noch ein Treffer und du bist raus.");
           }
         }
       }
@@ -2488,6 +3940,10 @@
         u.y += u.vy * sec;
         u.y = Math.max(20, Math.min(H - u.h - 20, u.y));
       }
+      if (u.eliteWeaver) {
+        u.y += Math.sin(u.t * 0.0085) * 34 * sec;
+        u.y = Math.max(16, Math.min(H - u.h - 16, u.y));
+      }
 
       if (u.x + u.w < -60) {
         ufos.splice(ui, 1);
@@ -2506,6 +3962,10 @@
           continue;
         }
         ufos.splice(ui, 1);
+        combo = 0;
+        comboTimerMs = 0;
+        comboTimerMax = 1;
+        comboRumble = 0;
         lives -= 1;
         livesEl.textContent = String(lives);
         shake = 24;
@@ -2514,20 +3974,37 @@
         burst(jet.x + jet.w / 2, jet.y + jet.h / 2, "#ff8888", 26, { spd0: 100, spd1: 380 });
         if (lives <= 0) {
           running = false;
+          recordMetaWave(wave);
+          stopBgm();
+          combo = 0;
+          comboTimerMs = 0;
+          comboTimerMax = 1;
+          comboRumble = 0;
+          paused = false;
+          if (pauseOverlay) pauseOverlay.hidden = true;
           body.classList.remove("phase-shop");
           goText.textContent = `Game Over (${diff().label}) — ${score} Punkte · Welle ${wave} · ${credits} ₡`;
           gameOverOverlay.hidden = false;
-        } else checkWaveComplete();
+        } else {
+          if (lives === 1 && lastOneLifeVoiceWave !== wave) {
+            lastOneLifeVoiceWave = wave;
+            showVoiceLine("Tower: Rumpf kritisch — noch ein Treffer und du bist raus.");
+          }
+          checkWaveComplete();
+        }
         continue;
       }
 
       for (let bi = bullets.length - 1; bi >= 0; bi--) {
         const b = bullets[bi];
         if (!collides(u, b)) continue;
-        u.hp -= b.dmg;
+        let dmg = b.dmg;
+        if ((weaponMod === "pbreach" || weaponMod === "bbreach") && u.kind === "tank") dmg *= 1.28;
+        u.hp -= dmg;
         bullets.splice(bi, 1);
         if (u.boss && u.hp > 0) {
           bossHitFx = Math.min(1, bossHitFx + 0.16);
+          triggerHitstop(32);
           burst(b.x, b.y, "#ffffff", 6, { spd0: 70, spd1: 300, grav: 12, lifeM: 0.42, add: true });
           if (now - lastBossHitSfx > 110) {
             lastBossHitSfx = now;
@@ -2546,13 +4023,17 @@
     }
 
     if (shake > 0.4) shake *= Math.pow(0.88, dt / 16);
+    if (running && phase === "combat" && combo > 6) {
+      comboRumble = Math.min(42, comboRumble + (combo - 6) * 0.0028 * dt);
+    }
     syncHud();
   }
 
   function draw(t) {
     ctx.save();
-    if (shake > 0.5) {
-      ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    const sh = shake + comboRumble;
+    if (sh > 0.5) {
+      ctx.translate((Math.random() - 0.5) * sh, (Math.random() - 0.5) * sh);
     }
     drawBackground(t);
     for (const p of pickups) drawPickup(p);
@@ -2633,10 +4114,10 @@
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       const g = ctx.createLinearGradient(x0, y0, x1, y0);
-      g.addColorStop(0, "rgba(255,255,255,0.95)");
-      g.addColorStop(0.12, "rgba(255,220,160,0.85)");
-      g.addColorStop(0.55, "rgba(255,120,60,0.45)");
-      g.addColorStop(1, "rgba(255,80,40,0.08)");
+      g.addColorStop(0, unlockBeamTint ? "rgba(220,255,255,0.95)" : "rgba(255,255,255,0.95)");
+      g.addColorStop(0.12, unlockBeamTint ? "rgba(160,240,255,0.88)" : "rgba(255,220,160,0.85)");
+      g.addColorStop(0.55, unlockBeamTint ? "rgba(80,200,255,0.5)" : "rgba(255,120,60,0.45)");
+      g.addColorStop(1, unlockBeamTint ? "rgba(40,120,255,0.1)" : "rgba(255,80,40,0.08)");
       ctx.strokeStyle = g;
       ctx.lineWidth = 5 + (heat / 100) * 7;
       ctx.shadowColor = "#ff8844";
@@ -2705,6 +4186,13 @@
     if (!running) return;
     const dt = Math.min(50, now - (lastT || now));
     lastT = now;
+    if (hitstopMs > 0) {
+      hitstopMs -= dt;
+      if (hitstopMs < 0) hitstopMs = 0;
+      draw(now);
+      if (running) raf = requestAnimationFrame(loop);
+      return;
+    }
     update(dt, now);
     draw(now);
     if (running) raf = requestAnimationFrame(loop);
@@ -2714,6 +4202,8 @@
     resumeAudio();
     stopShipPreview();
     startOverlay.hidden = true;
+    paused = false;
+    if (pauseOverlay) pauseOverlay.hidden = true;
     resetGame();
     gameOverOverlay.hidden = true;
     running = true;
@@ -2730,6 +4220,9 @@
   document.getElementById("btnRestart").addEventListener("click", start);
   document.getElementById("btnMenu").addEventListener("click", () => {
     stopLoop();
+    stopBgm();
+    paused = false;
+    if (pauseOverlay) pauseOverlay.hidden = true;
     gameOverOverlay.hidden = true;
     startOverlay.hidden = false;
     body.classList.remove("phase-shop");
@@ -2746,12 +4239,81 @@
       syncDifficultyChips();
     });
   });
-  btnSkipUpgrade.addEventListener("click", () => {
-    if (phase === "shop") exitShopPhase();
+  if (btnShopContinue) {
+    btnShopContinue.addEventListener("click", () => {
+      if (phase === "shop") exitShopPhase();
+    });
+  }
+
+  btnPause.addEventListener("click", () => togglePause());
+  btnResume.addEventListener("click", () => togglePause(false));
+  btnPauseMenu.addEventListener("click", () => {
+    togglePause(false);
+    stopLoop();
+    stopBgm();
+    body.classList.remove("phase-shop");
+    startOverlay.hidden = false;
+    syncHud();
+    ensureShipPreviewRunning();
+  });
+  const goFs = () => requestFullscreenGame();
+  btnFs.addEventListener("click", goFs);
+  btnFsTop.addEventListener("click", goFs);
+
+  soundOn.addEventListener("change", () => {
+    if (!soundOn.checked) stopBgm();
+    else if (running) {
+      const bossHere = ufos.some((u) => u.boss);
+      setBgmLayer(phase === "shop" ? "shop" : bossHere ? "boss" : "combat");
+    }
+  });
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (btnInstallTop) btnInstallTop.hidden = false;
+  });
+  if (btnInstallTop) {
+    btnInstallTop.addEventListener("click", async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      btnInstallTop.hidden = true;
+      deferredInstallPrompt = null;
+    });
+  }
+
+  document.querySelectorAll(".modChip").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const m = btn.getAttribute("data-mod");
+      if (!allowedWeaponMods().has(m)) return;
+      weaponMod = m;
+      saveWeaponMod();
+      syncModChips();
+    });
   });
 
   window.addEventListener("keydown", (e) => {
-    if (e.code === "Space" || e.code === "KeyE" || e.code === "KeyQ") e.preventDefault();
+    if (e.code === "Escape") {
+      if (running && startOverlay.hidden && gameOverOverlay.hidden) {
+        e.preventDefault();
+        togglePause();
+      }
+      return;
+    }
+    if (paused && running && phase === "combat" && startOverlay.hidden && gameOverOverlay.hidden) {
+      e.preventDefault();
+      return;
+    }
+    if (
+      e.code === "Space" ||
+      e.code === "KeyE" ||
+      e.code === "KeyQ" ||
+      e.code === "ArrowLeft" ||
+      e.code === "ArrowRight" ||
+      e.code === "ArrowUp" ||
+      e.code === "ArrowDown"
+    )
+      e.preventDefault();
     keys.add(e.code);
   });
   window.addEventListener("keyup", (e) => keys.delete(e.code));
@@ -2763,7 +4325,15 @@
   };
   touchBar.querySelectorAll("button").forEach((btn) => {
     const act = btn.getAttribute("data-act");
-    const map = { up: "ArrowUp", down: "ArrowDown", fire: "Space", missile: "KeyE", nova: "KeyQ" };
+    const map = {
+      up: "ArrowUp",
+      down: "ArrowDown",
+      left: "ArrowLeft",
+      right: "ArrowRight",
+      fire: "Space",
+      missile: "KeyE",
+      nova: "KeyQ",
+    };
     const code = map[act];
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -2786,6 +4356,7 @@
     if (nx < W * 0.4) {
       aimTouchId = e.pointerId;
       aimTouchY = e.clientY;
+      aimTouchX = e.clientX;
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch (_) {}
@@ -2794,22 +4365,27 @@
   canvas.addEventListener("pointermove", (e) => {
     if (e.pointerId !== aimTouchId) return;
     aimTouchY = e.clientY;
+    aimTouchX = e.clientX;
   });
   canvas.addEventListener("pointerup", (e) => {
     if (e.pointerId === aimTouchId) {
       aimTouchId = null;
       aimTouchY = null;
+      aimTouchX = null;
     }
   });
   canvas.addEventListener("pointercancel", () => {
     aimTouchId = null;
     aimTouchY = null;
+    aimTouchX = null;
   });
 
+  migrateWeaponModsOnce();
   loadDifficulty();
   syncDifficultyChips();
   loadShip();
   syncShipChips();
+  loadMetaProgress();
 
   document.querySelectorAll(".shipChip").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -2818,6 +4394,7 @@
       shipClass = s;
       saveShip();
       syncShipChips();
+      syncHud();
     });
   });
 

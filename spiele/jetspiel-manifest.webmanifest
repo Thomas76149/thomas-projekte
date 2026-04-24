@@ -1,0 +1,19 @@
+{
+  "name": "Jet-Kampf",
+  "short_name": "Jet-Kampf",
+  "description": "Canvas-Arcade: Wellen, Hangar, Bosse",
+  "start_url": "./jetspiel.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape-primary",
+  "background_color": "#040814",
+  "theme_color": "#040814",
+  "icons": [
+    {
+      "src": "./jetspiel-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
