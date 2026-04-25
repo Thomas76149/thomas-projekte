@@ -24,6 +24,13 @@
     button:disabled{opacity:.45;cursor:not-allowed}
     .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.9rem}
     .pill{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px;background:rgba(0,0,0,.22)}
+    /* coin pill uses the same style, just slightly highlighted */
+    #coins, #menuCoins{
+      border-color: rgba(255,215,106,.22);
+      color: rgba(255,215,106,.92);
+      font-weight: 1000;
+      letter-spacing: .02em;
+    }
     canvas{
       width:min(1560px,98vw);
       height:auto;
@@ -99,6 +106,31 @@
     }
     .overlay{position:fixed;inset:0;display:none;place-items:center;z-index:10;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}
     .overlay.show{display:grid}
+    .miniToast{
+      position: fixed;
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      z-index: 60;
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,215,106,.25);
+      background: rgba(0,0,0,.55);
+      color: rgba(255,215,106,.95);
+      font-weight: 1000;
+      letter-spacing: .04em;
+      box-shadow: 0 12px 40px rgba(0,0,0,.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+      max-width: min(92vw, 720px);
+      text-align: center;
+    }
+    .miniToast.show{
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     .panel{
       width:min(560px,92vw);border-radius:22px;border:1px solid rgba(255,255,255,.12);
       background:linear-gradient(165deg, rgba(18, 26, 54, 0.98), rgba(6, 8, 18, 0.995));
@@ -189,6 +221,83 @@
     .winTitle{font-size:1.8rem;font-weight:1000;margin:0;color:rgba(245,245,255,.96)}
     .winSub{margin-top:4px;color:rgba(180,200,230,.88);font-weight:900}
     .winBody{margin-top:14px;display:grid;gap:12px}
+    .shopList{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 760px){ .shopList{ grid-template-columns: 1fr; } }
+    .shopItem{
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: linear-gradient(165deg, rgba(0,0,0,.22), rgba(0,0,0,.06));
+      padding: 14px 14px;
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .shopItem .ico{
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: radial-gradient(70px 52px at 35% 30%, rgba(255,215,106,.16), rgba(0,0,0,.10));
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+    }
+    .shopItem .ico svg{ width: 46px; height: 46px; opacity: .95; }
+    .shopItem .t{ font-weight: 1000; letter-spacing:.10em; text-transform: uppercase; color: rgba(220,235,255,.92); font-size: .86rem; }
+    .shopItem .d{ margin-top:6px; color: rgba(180,200,230,.86); font-weight:900; line-height:1.25; font-size:.9rem; }
+    .shopItem .row{ margin-top: 10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .shopItem .price{ color: rgba(255,215,106,.92); font-weight:1000; }
+    .shopItem .owned{ color: rgba(93,255,180,.92); font-weight:1000; }
+
+    /* Campaign map */
+    .campMap{
+      margin-top: 12px;
+      position: relative;
+      width: min(820px, 92vw);
+      aspect-ratio: 16 / 9;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: radial-gradient(520px 320px at 30% 20%, rgba(93,255,180,.10), rgba(0,0,0,.18));
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .campMap svg{ position:absolute; inset:0; width:100%; height:100%; }
+    .campNode{
+      position:absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      padding: 10px 12px;
+      min-height: 44px;
+      min-width: 44px;
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.25);
+      color: rgba(245,245,255,.95);
+      font-weight: 1000;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .campNode.primary{
+      border-color: rgba(93,255,180,.45);
+      background: linear-gradient(165deg, rgba(50,120,95,.75), rgba(0,0,0,.12));
+    }
+    .campNode:disabled{
+      opacity: .35;
+      cursor:not-allowed;
+      filter: grayscale(.35);
+    }
+    .campNode small{
+      display:block;
+      margin-top: 2px;
+      font-size: .68rem;
+      color: rgba(255,215,106,.86);
+      font-weight: 1000;
+      letter-spacing: .02em;
+    }
     .setRow{
       display:flex;
       gap:12px;
@@ -202,6 +311,10 @@
       color:rgba(220,235,255,.92);
     }
     .setRow input{width:22px;height:22px}
+    .setRow input[type="range"]{
+      width: min(320px, 46vw);
+      height: 22px;
+    }
     .setHint{color:rgba(200,220,255,.70);font-weight:800;line-height:1.3}
     #towerMenu.show{display:grid}
     #towerMenu .panel{

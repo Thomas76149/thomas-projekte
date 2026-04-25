@@ -9,7 +9,9 @@ const c = document.getElementById("c");
     const ghost = document.getElementById("ghost");
     const moneyEl = document.getElementById("money");
     const limitEl = document.getElementById("limit");
-    const mgCostEl = document.getElementById("mgCost");
+    // Loadout is rendered dynamically (no fixed labels here).
+    const coinsEl = document.getElementById("coins");
+    const menuCoinsEl = document.getElementById("menuCoins");
     const towerMenu = document.getElementById("towerMenu");
     const btnMove = document.getElementById("btnMove");
     const btnSell = document.getElementById("btnSell");
@@ -59,11 +61,15 @@ const c = document.getElementById("c");
     const btnSettingsClose = document.getElementById("btnSettingsClose");
     const shopWin = document.getElementById("shopWin");
     const btnShopClose = document.getElementById("btnShopClose");
+    const shopCoinsEl = document.getElementById("shopCoins");
+    const shopListEl = document.getElementById("shopList");
     const chkAutostart = document.getElementById("chkAutostart");
+    const rngSfx = document.getElementById("rngSfx");
     const tutorialBox = document.getElementById("tutorialBox");
     const tutorialText = document.getElementById("tutorialText");
     const tutorialStepEl = document.getElementById("tutorialStep");
     const btnTutorialExit = document.getElementById("btnTutorialExit");
+    const miniToastEl = document.getElementById("miniToast");
 
     const AC = window.AudioContext || window.webkitAudioContext;
     let actx=null;
@@ -75,7 +81,8 @@ const c = document.getElementById("c");
         const o = actx.createOscillator();
         const g = actx.createGain();
         o.type=type; o.frequency.setValueAtTime(freq, t0);
-        g.gain.setValueAtTime(vol, t0);
+        const v = vol * clamp(settings.sfxVol ?? 0.8, 0, 1);
+        g.gain.setValueAtTime(v, t0);
         g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
         o.connect(g); g.connect(actx.destination);
         o.start(t0); o.stop(t0 + dur + 0.02);
@@ -87,6 +94,7 @@ const c = document.getElementById("c");
         if (actx.state === "suspended") actx.resume();
         const ac = actx;
         const t0 = ac.currentTime;
+        const m = clamp(settings.sfxVol ?? 0.8, 0, 1);
 
         // transient click
         const o = ac.createOscillator();
@@ -94,7 +102,7 @@ const c = document.getElementById("c");
         o.type = "square";
         o.frequency.setValueAtTime(220, t0);
         o.frequency.exponentialRampToValueAtTime(90, t0 + 0.02);
-        g.gain.setValueAtTime(vol * 0.55, t0);
+        g.gain.setValueAtTime(vol * 0.55 * m, t0);
         g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.035);
         o.connect(g); g.connect(ac.destination);
         o.start(t0); o.stop(t0 + 0.05);
@@ -111,7 +119,7 @@ const c = document.getElementById("c");
         const ns = ac.createBufferSource();
         ns.buffer = buf;
         const ng = ac.createGain();
-        ng.gain.setValueAtTime(vol * 0.85, t0);
+        ng.gain.setValueAtTime(vol * 0.85 * m, t0);
         ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
         // simple lowpass to avoid harsh hiss
         const lp = ac.createBiquadFilter();
@@ -133,6 +141,111 @@ const c = document.getElementById("c");
         bo.connect(bg); bg.connect(ac.destination);
         bo.start(t0);
         bo.stop(t0 + 0.09);
+      } catch {}
+    }
+
+    // Grenadier SFX (kept simple & mobile-friendly)
+    function grenShot(kind="grenadier", vol=0.065){
+      try{
+        actx ||= new AC();
+        if (actx.state === "suspended") actx.resume();
+        const ac = actx;
+        const t0 = ac.currentTime;
+        const m = clamp(settings.sfxVol ?? 0.8, 0, 1);
+
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = "triangle";
+        const f0 = (kind === "rocket") ? 120 : (kind === "artillery") ? 95 : 110;
+        const f1 = (kind === "rocket") ? 70 : (kind === "artillery") ? 55 : 65;
+        o.frequency.setValueAtTime(f0, t0);
+        o.frequency.exponentialRampToValueAtTime(f1, t0 + 0.08);
+        g.gain.setValueAtTime(vol * m, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.10);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t0); o.stop(t0 + 0.12);
+
+        // tiny click for "thunk"
+        const o2 = ac.createOscillator();
+        const g2 = ac.createGain();
+        o2.type = "square";
+        o2.frequency.setValueAtTime(260, t0);
+        g2.gain.setValueAtTime(vol * 0.35 * m, t0);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.02);
+        o2.connect(g2); g2.connect(ac.destination);
+        o2.start(t0); o2.stop(t0 + 0.03);
+      } catch {}
+    }
+
+    function rocketWhoosh(vol=0.04){
+      try{
+        actx ||= new AC();
+        if (actx.state === "suspended") actx.resume();
+        const ac = actx;
+        const t0 = ac.currentTime;
+        const m = clamp(settings.sfxVol ?? 0.8, 0, 1);
+        const dur = 0.12;
+        const sr = ac.sampleRate;
+        const buf = ac.createBuffer(1, Math.floor(sr * dur), sr);
+        const ch = buf.getChannelData(0);
+        for (let i=0; i<ch.length; i++){
+          const w = 1 - i / ch.length;
+          ch[i] = (Math.random()*2-1) * (w*w);
+        }
+        const ns = ac.createBufferSource();
+        ns.buffer = buf;
+        const bp = ac.createBiquadFilter();
+        bp.type = "bandpass";
+        bp.frequency.setValueAtTime(900, t0);
+        bp.frequency.exponentialRampToValueAtTime(520, t0 + dur);
+        bp.Q.setValueAtTime(0.9, t0);
+        const ng = ac.createGain();
+        ng.gain.setValueAtTime(vol * m, t0);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        ns.connect(bp); bp.connect(ng); ng.connect(ac.destination);
+        ns.start(t0);
+      } catch {}
+    }
+
+    function boom(vol=0.07){
+      try{
+        actx ||= new AC();
+        if (actx.state === "suspended") actx.resume();
+        const ac = actx;
+        const t0 = ac.currentTime;
+        const m = clamp(settings.sfxVol ?? 0.8, 0, 1);
+        // make grenadier explosions feel loud (while still user-controlled)
+        const v = clamp(vol * 1.75, 0, 0.16) * m;
+        // low thump
+        const o = ac.createOscillator();
+        const g = ac.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(92, t0);
+        o.frequency.exponentialRampToValueAtTime(38, t0 + 0.12);
+        g.gain.setValueAtTime(v, t0);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+        o.connect(g); g.connect(ac.destination);
+        o.start(t0); o.stop(t0 + 0.18);
+        // short noise burst
+        const dur = 0.09;
+        const sr = ac.sampleRate;
+        const buf = ac.createBuffer(1, Math.floor(sr * dur), sr);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < ch.length; i++){
+          const w = 1 - i / ch.length;
+          ch[i] = (Math.random()*2-1) * (w*w*w);
+        }
+        const ns = ac.createBufferSource();
+        ns.buffer = buf;
+        const lp = ac.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.setValueAtTime(900, t0);
+        lp.frequency.exponentialRampToValueAtTime(420, t0 + dur);
+        const ng = ac.createGain();
+        ng.gain.setValueAtTime(v * 0.65, t0);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        ns.connect(lp); lp.connect(ng); ng.connect(ac.destination);
+        ns.start(t0);
       } catch {}
     }
     function vibr(p){ try{ if (navigator.vibrate) navigator.vibrate(p); } catch{} }
@@ -203,6 +316,7 @@ const c = document.getElementById("c");
     let hoverEnemyId = 0;
     let nextEnemyId = 1;
     let gameMode = "menu"; // menu | tutorial | campaign | shop | settings
+    let lastNonMenuMode = "campaign";
     let tutorialOn = false;
     let tutorialStep = 0;
     let tutorialSpots = []; // {x,y,done}
@@ -211,6 +325,8 @@ const c = document.getElementById("c");
     let menuAnimT = 0;
     let menuRaf = 0;
     let menuDots = [];
+    let pendingNextWave = false;
+    let pendingLoadout = null; // {id,sx,sy,slot,tid,type,started}
 
     // Campaign (Kapitel 1)
     const CAMP_KEY = "td_campaign_unlocked_c1";
@@ -219,47 +335,191 @@ const c = document.getElementById("c");
     let campLevel = 1; // 1..10
 
     const CH1_LEVELS = [
-      {name:"Wiese 1", waves:[14,18,22], path: () => {
+      // waves: number = normal wave size, {boss:'mini'|'big'} = boss wave
+      // Level 1-3 should be VERY easy
+      {name:"Wiese 1", waves:[6,7,8,9,10], path: () => {
         const y = WORLD_H*0.52;
         return [{x:-120,y},{x:WORLD_W*0.55,y},{x:WORLD_W+200,y}];
       }},
-      {name:"Wiese 2", waves:[18,22,26], path: () => {
+      {name:"Wiese 2", waves:[7,8,9,10,11,12], path: () => {
         const y = WORLD_H*0.45;
         return [{x:-120,y},{x:WORLD_W*0.40,y},{x:WORLD_W*0.40,y:WORLD_H*0.70},{x:WORLD_W+200,y:WORLD_H*0.70}];
       }},
-      {name:"Wiese 3", waves:[20,26,30], path: () => {
+      {name:"Wiese 3", waves:[8,9,10,11,12,13], path: () => {
         return [{x:-120,y:WORLD_H*0.30},{x:WORLD_W*0.55,y:WORLD_H*0.30},{x:WORLD_W*0.55,y:WORLD_H*0.62},{x:WORLD_W+200,y:WORLD_H*0.62}];
       }},
-      {name:"Wiese 4", waves:[22,28,34], path: () => {
+      // From here: more waves, so you can actually build/max towers.
+      {name:"Wiese 4", waves:[11,13,15,17,19,21,23,25], path: () => {
         return [{x:-120,y:WORLD_H*0.62},{x:WORLD_W*0.30,y:WORLD_H*0.62},{x:WORLD_W*0.30,y:WORLD_H*0.36},{x:WORLD_W*0.72,y:WORLD_H*0.36},{x:WORLD_W+200,y:WORLD_H*0.36}];
       }},
-      {name:"Wiese 5", waves:[26,34,42], path: () => {
+      // Level 5 ends with a mini boss
+      {name:"Wiese 5", waves:[12,14,16,18,20,22,24,26,28,{boss:"mini"}], path: () => {
         return [{x:-120,y:WORLD_H*0.38},{x:WORLD_W*0.30,y:WORLD_H*0.38},{x:WORLD_W*0.30,y:WORLD_H*0.78},{x:WORLD_W*0.68,y:WORLD_H*0.78},{x:WORLD_W*0.68,y:WORLD_H*0.28},{x:WORLD_W+200,y:WORLD_H*0.28}];
       }},
-      {name:"Wiese 6", waves:[28,38,48], path: () => {
+      {name:"Wiese 6", waves:[13,15,17,20,23,26,30,34,38,42,46,50], path: () => {
         return [{x:-120,y:WORLD_H*0.52},{x:WORLD_W*0.22,y:WORLD_H*0.52},{x:WORLD_W*0.22,y:WORLD_H*0.28},{x:WORLD_W*0.48,y:WORLD_H*0.28},{x:WORLD_W*0.48,y:WORLD_H*0.72},{x:WORLD_W*0.78,y:WORLD_H*0.72},{x:WORLD_W+200,y:WORLD_H*0.72}];
       }},
-      {name:"Wiese 7", waves:[30,42,56], path: () => {
+      {name:"Wiese 7", waves:[14,16,19,22,26,30,34,38,42,46,50,56,62,68], path: () => {
         return [{x:-120,y:WORLD_H*0.26},{x:WORLD_W*0.60,y:WORLD_H*0.26},{x:WORLD_W*0.60,y:WORLD_H*0.56},{x:WORLD_W*0.34,y:WORLD_H*0.56},{x:WORLD_W*0.34,y:WORLD_H*0.76},{x:WORLD_W+200,y:WORLD_H*0.76}];
       }},
-      {name:"Wiese 8", waves:[34,48,66], path: () => {
+      {name:"Wiese 8", waves:[15,18,22,26,30,34,38,42,46,50,56,62,68,74,80,86], path: () => {
         return [{x:-120,y:WORLD_H*0.70},{x:WORLD_W*0.40,y:WORLD_H*0.70},{x:WORLD_W*0.40,y:WORLD_H*0.40},{x:WORLD_W*0.78,y:WORLD_H*0.40},{x:WORLD_W*0.78,y:WORLD_H*0.62},{x:WORLD_W+200,y:WORLD_H*0.62}];
       }},
-      {name:"Wiese 9", waves:[38,56,76], path: () => {
+      {name:"Wiese 9", waves:[16,20,24,28,32,36,40,44,50,56,62,68,74,80,88,96,104,112], path: () => {
         return [{x:-120,y:WORLD_H*0.40},{x:WORLD_W*0.28,y:WORLD_H*0.40},{x:WORLD_W*0.28,y:WORLD_H*0.64},{x:WORLD_W*0.52,y:WORLD_H*0.64},{x:WORLD_W*0.52,y:WORLD_H*0.32},{x:WORLD_W*0.76,y:WORLD_H*0.32},{x:WORLD_W*0.76,y:WORLD_H*0.76},{x:WORLD_W+200,y:WORLD_H*0.76}];
       }},
-      {name:"Wiese 10", waves:[44,68,96], path: () => {
+      // Level 10 ends with the big boss
+      {name:"Wiese 10", waves:[18,22,26,30,34,38,42,46,52,58,66,74,82,90,98,106,114,122,130,{boss:"big"}], path: () => {
         return [{x:-120,y:WORLD_H*0.52},{x:WORLD_W*0.22,y:WORLD_H*0.52},{x:WORLD_W*0.22,y:WORLD_H*0.22},{x:WORLD_W*0.52,y:WORLD_H*0.22},{x:WORLD_W*0.52,y:WORLD_H*0.80},{x:WORLD_W*0.82,y:WORLD_H*0.80},{x:WORLD_W*0.82,y:WORLD_H*0.36},{x:WORLD_W+200,y:WORLD_H*0.36}];
       }},
     ];
 
     // Settings
     const SET_KEY = "td_settings_v1";
+    const COIN_KEY = "td_coins_v1";
+    const TUT_REWARD_KEY = "td_tutorial_rewarded_v1"; // legacy (kept for old saves)
+    const OWNED_KEY = "td_owned_towers_v1";
+    const CAMP_COIN_CLAIM_KEY = "td_campaign_coin_claimed_c1";
     const settings = (() => {
       try{
         return JSON.parse(localStorage.getItem(SET_KEY) || "{}") || {};
       } catch { return {}; }
     })();
+    // sfx volume (0..1)
+    if (typeof settings.sfxVol !== "number") settings.sfxVol = 0.8;
+
+    // owned towers (unlocks)
+    let owned = new Set(["pistol"]);
+    try{
+      const raw = JSON.parse(localStorage.getItem(OWNED_KEY) || "null");
+      if (raw && Array.isArray(raw)){
+        owned = new Set(raw.filter(x => typeof x === "string"));
+        owned.add("pistol");
+      }
+    } catch {}
+    function saveOwned(){
+      try{ localStorage.setItem(OWNED_KEY, JSON.stringify([...owned])); } catch {}
+    }
+
+    // Loadout: what is equipped (owned != equipped)
+    const LOADOUT_KEY = "td_loadout_v1";
+    /** @type {(null|string)[]} */
+    let loadout = ["pistol", null, null, null, null];
+    try{
+      const raw = JSON.parse(localStorage.getItem(LOADOUT_KEY) || "null");
+      if (raw && Array.isArray(raw) && raw.length === 5){
+        loadout = raw.map(x => (typeof x === "string" ? x : null));
+        loadout[0] ||= "pistol";
+      }
+    } catch {}
+    function saveLoadout(){
+      try{ localStorage.setItem(LOADOUT_KEY, JSON.stringify(loadout)); } catch {}
+    }
+
+    function towerCardData(id){
+      if (id === "pistol"){
+        return {
+          id,
+          name: "Pistole",
+          cost: MG_COST,
+          svg: `<svg class="sico" viewBox="0 0 64 64" aria-hidden="true">
+            <path fill="rgba(220,235,255,.92)" d="M10 28h30c2 0 4 2 4 4v6h-6v-4H24v10c0 2-2 4-4 4H10v-6h8V28z"/>
+            <path fill="rgba(255,215,106,.75)" d="M40 28h10v6H40z"/>
+            <path fill="rgba(34,211,238,.35)" d="M18 44h8v4h-8z"/>
+          </svg>`
+        };
+      }
+      if (id === "grenadier"){
+        return {
+          id,
+          name: "Grenadier",
+          cost: GREN_COST,
+          svg: `<svg class="sico" viewBox="0 0 64 64" aria-hidden="true">
+            <path fill="rgba(255,215,106,.90)" d="M14 34h34v8H14z"/>
+            <path fill="rgba(220,235,255,.85)" d="M18 26h18v8H18z"/>
+            <path fill="rgba(34,211,238,.45)" d="M40 24h6v20h-6z"/>
+            <circle cx="22" cy="46" r="6" fill="rgba(255,107,107,.65)"/>
+          </svg>`
+        };
+      }
+      if (id === "minigunner"){
+        return {
+          id,
+          name: "Minigunner",
+          cost: MINI_COST,
+          svg: `<svg class="sico" viewBox="0 0 64 64" aria-hidden="true">
+            <path fill="rgba(255,215,106,.90)" d="M14 36h36v8H14z"/>
+            <path fill="rgba(220,235,255,.80)" d="M18 26h18v10H18z"/>
+            <path fill="rgba(34,211,238,.45)" d="M38 28h10v6H38z"/>
+            <path fill="rgba(255,107,107,.35)" d="M44 22h4v22h-4z"/>
+          </svg>`
+        };
+      }
+      return { id, name: id, cost: 0, svg: "" };
+    }
+
+    function renderLoadout(){
+      if (!loadoutEl) return;
+      for (let i=0;i<5;i++){
+        const slot = loadoutEl.querySelector(`.slot[data-slot="${i}"]`);
+        if (!slot) continue;
+        const tid = loadout[i];
+        slot.innerHTML = "";
+        if (!tid){
+          slot.classList.add("empty");
+          slot.style.opacity = "0.35";
+          slot.innerHTML = `<div><b>—</b><small>leer</small></div>`;
+          continue;
+        }
+        const d = towerCardData(tid);
+        slot.classList.remove("empty");
+        slot.style.opacity = "1";
+        slot.innerHTML = `
+          <div style="display:grid;place-items:center;gap:6px">
+            ${d.svg}
+            <div><b>${d.name}</b><small>€${d.cost}</small></div>
+          </div>
+        `;
+        slot.classList.toggle("canbuy", money >= d.cost);
+        slot.classList.toggle("cantbuy", money < d.cost);
+      }
+    }
+
+    let coins = 0;
+    try{
+      coins = +(localStorage.getItem(COIN_KEY) || "0") || 0;
+    } catch { coins = 0; }
+    coins = Math.max(0, coins|0);
+
+    function saveCoins(){
+      try{ localStorage.setItem(COIN_KEY, String(coins|0)); } catch {}
+    }
+    function addCoins(n){
+      coins = Math.max(0, (coins|0) + (n|0));
+      saveCoins();
+      syncUI();
+    }
+
+    function spendCoins(n){
+      n = n|0;
+      if (coins < n) return false;
+      coins -= n;
+      saveCoins();
+      syncUI();
+      return true;
+    }
+
+    function awardTutorialCoinsOnce(){
+      try{
+        if (localStorage.getItem(TUT_REWARD_KEY)) return false;
+        localStorage.setItem(TUT_REWARD_KEY, "1");
+      } catch {
+        if (awardTutorialCoinsOnce._done) return false;
+        awardTutorialCoinsOnce._done = true;
+      }
+      addCoins(50);
+      return true;
+    }
     if (typeof settings.autostart !== "boolean") settings.autostart = false; // user requested default OFF
     function saveSettings(){
       try{ localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch {}
@@ -267,28 +527,74 @@ const c = document.getElementById("c");
     let spawnAcc=0, waveLeft=0, waveSpawned=0;
     let campWave = 1;
     let campWaveCount = 1;
+    let campWaveBoss = null; // "mini" | "big" | null
+    // Campaign enemy progression is per LEVEL (not per wave)
     let shake=0, flash=0;
     let money = 120;
     const MG_COST = 50;
+    const GREN_COST = 120;
+    const MINI_COST = 550;
     const KILL_REWARD = 10;
     const TOWER_LIMIT = 20;
     const TOWER_TABOO_R = 34;
     const UP_MAX = 5;
 
-    const PATH_A = [
+    const PISTOL_PATH_A = [
       {name:"Halbautomatik‑Kit", desc:"leicht höhere Feuerrate (kontrolliert)"},
       {name:"Abzug‑Tuning", desc:"noch etwas schneller (bleibt präzise)"},
       {name:"Maschinengewehr", desc:"richtiges MG: sehr hohe RPM + großer Spread"},
       {name:"Hochdruck‑System", desc:"noch mehr RPM, wilderes Feuer"},
       {name:"Doppel‑MG", desc:"endgame: brutal schnell + maximaler Spray"},
     ];
-    const PATH_B = [
+    const PISTOL_PATH_B = [
       {name:"Größeres Kaliber", desc:"mehr Schaden + etwas mehr Range"},
       {name:"Match‑Munition", desc:"noch mehr Schaden + Range"},
       {name:"Scharfschützengewehr", desc:"sehr viel Schaden + große Range, aber low RPM"},
       {name:"Panzerbrecher", desc:"noch mehr Damage, noch mehr Range"},
       {name:"Rail‑Prototype", desc:"max Damage + max Range, ultra langsam"},
     ];
+
+    const GREN_PATH_A = [
+      {name:"Stabiler Zünder", desc:"Granaten explodieren zuverlässiger (mehr AoE)"},
+      {name:"Raketen‑Motoren", desc:"erste Mini‑Rockets: schneller, gerader Flug"},
+      {name:"Raketenwerfer", desc:"Rockets statt Granaten: schneller, größere Explosion"},
+      {name:"Split‑Rockets", desc:"Explosion spawnt Mini‑Splitter‑Explosionen"},
+      {name:"Vierfach‑Salve", desc:"endgame: 4 langsam homing Rockets (fächern aus, finden das Ziel)"},
+    ];
+    const GREN_PATH_B = [
+      {name:"Schweres Rohr", desc:"mehr Schaden, etwas mehr Range (langsamer)"},
+      {name:"Mörser‑Ladung", desc:"Vorbereitung: größerer AoE, schwerer Schuss (noch kein Bogen)"},
+      {name:"Artillerie", desc:"ab jetzt Lob‑Schüsse (Bogen) + massiver Radius + Slow"},
+      {name:"Druckwelle", desc:"Slow stärker & länger, riesige Zone"},
+      {name:"Belagerungs‑Kanone", desc:"L5: extrem Range + extrem Schaden (teuer, aber brutal)"},
+    ];
+
+    const MINI_PATH_A = [
+      {name:"Vorschub‑Motor", desc:"leicht höhere ROF (kontrolliert)"},
+      {name:"Barrel‑Stabilizer", desc:"weniger Spread + etwas mehr Turn"},
+      {name:"Minigun", desc:"extreme ROF, Spool‑Up (kurz), mehr Spread"},
+      {name:"Overdrive‑Gears", desc:"noch mehr ROF + längere Salven"},
+      {name:"Twin‑Feed", desc:"L5: 2 Projektile pro Schuss (teuer, aber krank)"},
+    ];
+    const MINI_PATH_B = [
+      {name:"Präzisions‑Gurt", desc:"mehr Range + weniger Spread"},
+      {name:"AP‑Munition", desc:"mehr Damage + etwas Bullet‑Speed"},
+      {name:"Long‑Range Minigun", desc:"mehr Range + stabiler Strahl, aber weniger ROF"},
+      {name:"Durchschlag", desc:"Projektile piercen 2 Gegner"},
+      {name:"Hyper‑Pierce", desc:"L5: pierce 4 + hoher Damage"},
+    ];
+
+    function towerPaths(t){
+      if (t && t.baseType === "grenadier") return {A: GREN_PATH_A, B: GREN_PATH_B};
+      if (t && t.baseType === "minigunner") return {A: MINI_PATH_A, B: MINI_PATH_B};
+      return {A: PISTOL_PATH_A, B: PISTOL_PATH_B};
+    }
+
+    function towerBaseName(t){
+      if (t && t.baseType === "grenadier") return "Grenadier";
+      if (t && t.baseType === "minigunner") return "Minigunner";
+      return "Pistole";
+    }
 
     function showOverlay(title, text){
       ovTitle.textContent = title;
@@ -311,10 +617,89 @@ const c = document.getElementById("c");
     }
     function openSettings(){
       chkAutostart.checked = !!settings.autostart;
+      if (rngSfx) rngSfx.value = String(Math.round(clamp(settings.sfxVol, 0, 1) * 100));
       openWin(settingsWin);
     }
     function openShop(){
+      renderShopWin();
       openWin(shopWin);
+    }
+
+    function renderShopWin(){
+      if (shopCoinsEl) shopCoinsEl.textContent = `🪙${coins|0}`;
+      if (!shopListEl) return;
+      shopListEl.className = "shopList";
+      const items = [
+        {
+          id: "grenadier",
+          title: "Grenadier",
+          price: 200,
+          desc: "AoE‑Tower: Granaten/Rockets/Artillerie. Gut gegen Gruppen, später Slow/DoT‑Zonen.",
+          svg: `<svg viewBox="0 0 64 64" aria-hidden="true">
+            <path fill="rgba(255,215,106,.90)" d="M14 34h34v8H14z"/>
+            <path fill="rgba(220,235,255,.85)" d="M18 26h18v8H18z"/>
+            <path fill="rgba(34,211,238,.45)" d="M40 24h6v20h-6z"/>
+            <circle cx="22" cy="46" r="6" fill="rgba(255,107,107,.65)"/>
+          </svg>`
+        },
+        {
+          id: "minigunner",
+          title: "Minigunner",
+          price: 500,
+          desc: "Dauerfeuer‑Tower: Minigun. Pfad A: Spool‑Up/Overdrive. Pfad B: Präzision/Pierce. Bis 2‑2 harmonisch.",
+          svg: `<svg viewBox="0 0 64 64" aria-hidden="true">
+            <path fill="rgba(255,215,106,.90)" d="M14 36h36v8H14z"/>
+            <path fill="rgba(220,235,255,.80)" d="M18 26h18v10H18z"/>
+            <path fill="rgba(34,211,238,.45)" d="M38 28h10v6H38z"/>
+            <path fill="rgba(255,107,107,.35)" d="M44 22h4v22h-4z"/>
+          </svg>`
+        }
+      ];
+      shopListEl.innerHTML = "";
+      for (const it of items){
+        const isOwned = owned.has(it.id);
+        const canBuy = !isOwned && coins >= it.price;
+        const isEquipped = loadout.includes(it.id);
+        const el = document.createElement("div");
+        el.className = "shopItem";
+        el.innerHTML = `
+          <div class="ico">${it.svg}</div>
+          <div style="min-width:0;flex:1">
+            <div class="t">${it.title}</div>
+            <div class="d">${it.desc}</div>
+            <div class="row">
+              <span class="${isOwned ? "owned" : "price"}">${isOwned ? "GEKAUFT" : `Preis: 🪙${it.price}`}</span>
+              <button type="button" class="primary" data-buy="${it.id}" ${(!isOwned && !canBuy) ? "disabled" : ""}>${isOwned ? (isEquipped ? "Ausgerüstet" : "Ausrüsten") : "Kaufen"}</button>
+            </div>
+          </div>
+        `;
+        const btn = el.querySelector("button[data-buy]");
+        if (btn){
+          btn.addEventListener("click", ()=>{
+            if (!owned.has(it.id)){
+              if (!spendCoins(it.price)) { tone(160,0.08,"sawtooth",0.05); vibr(10); return; }
+              owned.add(it.id);
+              saveOwned();
+              tone(720,0.06,"triangle",0.05);
+              vibr(12);
+              renderShopWin();
+              syncUI();
+              return;
+            }
+            // owned: equip into loadout (not in tutorial)
+            if (tutorialOn) return;
+            if (loadout.includes(it.id)) return;
+            const idx = loadout.findIndex(x => !x);
+            if (idx < 0) { tone(160,0.08,"sawtooth",0.05); vibr(10); return; }
+            loadout[idx] = it.id;
+            saveLoadout();
+            tone(540,0.06,"triangle",0.04);
+            renderShopWin();
+            syncUI();
+          });
+        }
+        shopListEl.appendChild(el);
+      }
     }
 
     function pauseGame(reason="Pause"){
@@ -335,20 +720,29 @@ const c = document.getElementById("c");
       ovAgain.textContent = "Nochmal";
       last = performance.now();
     }
+
+    let toastTimer = 0;
+    function showMiniToast(text, ms=900){
+      if (!miniToastEl) return;
+      miniToastEl.textContent = text;
+      miniToastEl.classList.add("show");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=> miniToastEl.classList.remove("show"), ms);
+    }
     function syncUI(){
-      waveEl.textContent = `Wave: ${wave}`;
+      if (gameMode === "campaign"){
+        waveEl.textContent = `Level: ${campLevel} · Welle: ${campWave}/${campWaveCount}`;
+      } else {
+        waveEl.textContent = `Wave: ${wave}`;
+      }
       killsEl.textContent = `Kills: ${kills}`;
       moneyEl.textContent = `€${money|0}`;
+      if (coinsEl) coinsEl.textContent = `🪙${coins|0}`;
+      if (menuCoinsEl) menuCoinsEl.textContent = `🪙${coins|0}`;
       limitEl.textContent = `Türme: ${towers.length}/${TOWER_LIMIT}`;
       hpEl.textContent = `Base: ${baseHP}`;
-      mgCostEl.textContent = `€${MG_COST}`;
       btnSpeed.textContent = `Speed: ${timeScale.toFixed(1)}×`;
-      // loadout affordability
-      const slot0 = loadoutEl.querySelector('.slot[data-slot="0"]');
-      if (slot0){
-        slot0.classList.toggle("canbuy", money >= MG_COST);
-        slot0.classList.toggle("cantbuy", money < MG_COST);
-      }
+      renderLoadout();
       // live update panel (so upgrade buttons enable immediately when money changes)
       if (towerMenu.classList.contains("show") && selectedTowerId){
         renderTowerPanel();
@@ -356,24 +750,225 @@ const c = document.getElementById("c");
     }
 
     function upCost(nextLevel){
-      // simple placeholder economy: gets pricier per level
+      // generic baseline curve
       return 25 + nextLevel*25;
+    }
+
+    function upCostFor(t, path, nextLevel){
+      let c = upCost(nextLevel);
+      if (t && t.baseType === "grenadier"){
+        // Grenadier Artillerie should be noticeably more expensive (endgame nuke).
+        if (path === "B" && nextLevel >= 3){
+          c = Math.round(c * 2.4 + 80 * (nextLevel - 2));
+        }
+        // Rocket path gets a smaller surcharge at high levels.
+        if (path === "A" && nextLevel >= 4){
+          c = Math.round(c * 1.35 + 40 * (nextLevel - 3));
+        }
+      }
+      if (t && t.baseType === "minigunner"){
+        // Minigunner gets pricier fast (high DPS tower).
+        if (path === "A" && nextLevel >= 3) c = Math.round(c * 1.55 + 60 * (nextLevel - 2));
+        if (path === "B" && nextLevel >= 3) c = Math.round(c * 1.40 + 50 * (nextLevel - 2));
+      }
+      return c;
     }
 
     function towerTotalValue(t){
       // basis + already bought upgrades (deterministic cost curve)
       const a = t.upA || 0;
       const b = t.upB || 0;
-      let v = MG_COST;
-      for (let i=1;i<=a;i++) v += upCost(i);
-      for (let i=1;i<=b;i++) v += upCost(i);
+      const base = (t.baseType === "grenadier") ? GREN_COST : (t.baseType === "minigunner") ? MINI_COST : MG_COST;
+      let v = base;
+      for (let i=1;i<=a;i++) v += upCostFor(t, "A", i);
+      for (let i=1;i<=b;i++) v += upCostFor(t, "B", i);
       return v;
     }
 
     function recomputeTowerStats(t){
+      // default base type (backwards compatible)
+      if (!t.baseType){
+        t.baseType =
+          (t.kind === "grenadier" || t.kind === "rocket" || t.kind === "artillery") ? "grenadier"
+          : (t.kind === "minigun") ? "minigunner"
+          : "pistol";
+      }
       // Base: Pistolenturm
       const a = t.upA || 0;
       const b = t.upB || 0;
+
+      if (t.baseType === "grenadier"){
+        // Base: Grenadier (slow AoE)
+        t.kind = "grenadier";
+        t.range = 280;
+        t.turnSp = 2.2;
+        t.fireMs = 1400; // long reload feel
+        t.spreadMax = 3 * (Math.PI/180);
+        t.dmg = 10;
+        t.projSp = 520;
+        t.aoeR = 70;
+        t.slowMul = 1.0;
+        t.slowSec = 0;
+        t.dotDps = 0;
+        t.dotSec = 0;
+        t.lob = false;
+        t.grav = 0;
+        t.multi = 1;
+        t.homing = 0;
+
+        // A path -> rockets (single big rocket fantasy)
+        if (a === 1){ t.aoeR = 82; t.dmg = 11; }
+        if (a === 2){ t.projSp = 520; t.fireMs = 1350; t.homing = 0.05; t.range += 40; }
+        if (a >= 3){
+          t.kind = "rocket";
+          // rockets: slower-ish but track (cool feeling)
+          t.range = 440;
+          t.projSp = 380; // slow rocket
+          t.fireMs = 2600; // very slow reload
+          t.aoeR = 95;
+          t.dmg = 14;
+          t.homing = 0.14; // always tracks hard
+          t.multi = 1;     // IMPORTANT: only one rocket
+          t.spreadMax = 3.0 * (Math.PI/180);
+        }
+        if (a >= 4){
+          // split rockets -> extra small splashes
+          t.split = 2;
+        } else t.split = 0;
+        if (a >= 5){
+          // L5: ONE huge rocket, even slower, big boom
+          t.multi = 1;
+          t.fireMs = 3400;
+          t.range = 520;
+          t.projSp = 340; // even slower, but strong tracking
+          t.homing = 0.18;
+          t.spreadMax = 2.5 * (Math.PI/180);
+          t.aoeR = 125;
+          t.dmg = 18.5;
+        }
+
+        // B path -> artillery
+        if (b === 1){ t.dmg += 3; t.range += 20; t.fireMs += 80; }
+        // b==2 is still a "pre-artillery" upgrade (no lob yet)
+        if (b === 2){ t.aoeR += 26; t.fireMs += 140; t.dmg += 2; }
+        if (b >= 3){
+          t.kind = "artillery";
+          t.lob = true;
+          t.grav = 1250;
+          // IMPORTANT: when going Artillery, do NOT inherit rocket-style homing/split from A<=2.
+          // Otherwise mixed builds like 2-5 can feel "buggy" (shell tries to home mid-arc).
+          t.homing = 0;
+          t.split = 0;
+          t.spreadMax = 2.5 * (Math.PI/180);
+
+          // heavy reload fantasy (slow)
+          t.fireMs = 2400;
+          t.range = 360;
+          t.dmg = 18 + (a>=3?2:0);
+          t.aoeR = 120;
+          t.slowMul = 0.62;
+          t.slowSec = 1.6;
+        }
+        if (b >= 4){
+          t.aoeR = 145;
+          t.fireMs = Math.max(t.fireMs, 3000);
+          t.slowMul = 0.52;
+          t.slowSec = 2.2;
+        }
+        if (b >= 5){
+          // L5 artillery: extreme range + damage (expensive endgame nuke)
+          t.kind = "artillery";
+          t.lob = true;
+          t.grav = 1400;
+          t.homing = 0;
+          t.split = 0;
+          t.spreadMax = 2.2 * (Math.PI/180);
+          t.fireMs = 3800;
+          t.range = 560;
+          t.dmg = 55;
+          t.aoeR = 190;
+          // keep the CC flavor but focus on the nuke fantasy
+          t.slowMul = 0.70;
+          t.slowSec = 1.3;
+          t.dotDps = 0;
+          t.dotSec = 0;
+        }
+
+        // Cross-path small synergies (levels 1-2 only)
+        if (a > 0 && a < 3 && b >= 3){
+          t.aoeR += 10;
+          t.dmg += 1;
+        }
+        if (b > 0 && b < 3 && a >= 3){
+          t.aoeR += 8;
+        }
+        return;
+      }
+
+      if (t.baseType === "minigunner"){
+        const a = t.upA || 0;
+        const b = t.upB || 0;
+        t.kind = "minigun";
+        t.range = 260;
+        t.turnSp = 2.0;
+        // Starts fast already (minigun fantasy)
+        t.fireMs = 55;
+        t.spreadMax = 11 * (Math.PI/180);
+        t.dmg = 1.35;
+        t.projSp = 920;
+        t.multi = 1;
+        t.spool = 0.0; // 0..1 (ramps when firing)
+        t.pierceBase = 1;
+
+        // Cross‑path harmony up to 2‑2: both sides always give value.
+        if (a >= 1){ t.fireMs = Math.max(28, t.fireMs - 6); }
+        if (b >= 1){ t.range += 30; t.spreadMax *= 0.85; }
+        if (a >= 2){ t.turnSp += 0.25; t.fireMs = Math.max(26, t.fireMs - 6); }
+        if (b >= 2){ t.dmg += 0.55; t.projSp += 90; }
+
+        // Specialize at 3+
+        if (a >= 3){
+          // Minigun storm
+          t.fireMs = 36;
+          t.spreadMax = 14 * (Math.PI/180);
+          t.dmg = 1.25 + (b>=2?0.30:0);
+          t.projSp = 980;
+          t.spoolUp = 0.95; // faster spool
+        } else {
+          t.spoolUp = 0.60;
+        }
+        if (a >= 4){
+          t.fireMs = 30;
+          t.spreadMax = 16 * (Math.PI/180);
+          t.dmg += 0.20;
+        }
+        if (a >= 5){
+          // Twin‑feed: 2 projectiles per tick (very strong, very expensive path)
+          t.multi = 2;
+          t.fireMs = 34;
+          t.spreadMax = 14 * (Math.PI/180);
+        }
+
+        if (b >= 3){
+          // Long‑range minigun (precision line)
+          t.range = 340 + (a>=2?10:0);
+          t.fireMs = 72;
+          t.spreadMax = 4.2 * (Math.PI/180);
+          t.dmg = 2.8 + (a>=2?0.2:0);
+          t.projSp = 980;
+          t.spoolUp = 0.40;
+        }
+        if (b >= 4){
+          t.pierceBase = 2;
+          t.dmg += 0.35;
+        }
+        if (b >= 5){
+          t.pierceBase = 4;
+          t.dmg += 0.65;
+          t.range += 30;
+        }
+        return;
+      }
 
       t.kind = "pistol";
       t.range = 230;
@@ -449,11 +1044,15 @@ const c = document.getElementById("c");
       t.upB = t.upB || 0;
       recomputeTowerStats(t);
 
+      const paths = towerPaths(t);
+      const PATH_A = paths.A;
+      const PATH_B = paths.B;
+
       const totalV = towerTotalValue(t);
       const sellBack = Math.floor(totalV * 0.5);
       const moveCost = Math.ceil(totalV * 0.10);
       const rof = (1000/(t.fireMs||420)).toFixed(1);
-      towerInfo.textContent = `Pistolenturm · DMG ${t.dmg|0} · Range ${t.range|0} · ROF ${rof}/s · Wert €${totalV}`;
+      towerInfo.textContent = `${towerBaseName(t)} · DMG ${t.dmg|0} · Range ${t.range|0} · ROF ${rof}/s · Wert €${totalV}`;
       const lock = (t.upA > 2) ? "B max 2" : (t.upB > 2) ? "A max 2" : "frei bis 2-2";
       towerUpRule.textContent = `Regel: ${lock}`;
 
@@ -472,17 +1071,17 @@ const c = document.getElementById("c");
       upATitle.textContent = t.upA >= UP_MAX ? (PATH_A[UP_MAX-1]?.name || "MAX") : (PATH_A[nextA-1]?.name || "Upgrade");
       upADesc.textContent = t.upA >= UP_MAX ? "Maximal" : (PATH_A[nextA-1]?.desc || "—");
       upALvl.textContent = `${t.upA}/${UP_MAX}`;
-      upACost.textContent = t.upA >= UP_MAX ? "MAX" : `€${upCost(nextA)}`;
+      upACost.textContent = t.upA >= UP_MAX ? "MAX" : `€${upCostFor(t, "A", nextA)}`;
 
       upBTitle.textContent = t.upB >= UP_MAX ? (PATH_B[UP_MAX-1]?.name || "MAX") : (PATH_B[nextB-1]?.name || "Upgrade");
       upBDesc.textContent = t.upB >= UP_MAX ? "Maximal" : (PATH_B[nextB-1]?.desc || "—");
       upBLvl.textContent = `${t.upB}/${UP_MAX}`;
-      upBCost.textContent = t.upB >= UP_MAX ? "MAX" : `€${upCost(nextB)}`;
+      upBCost.textContent = t.upB >= UP_MAX ? "MAX" : `€${upCostFor(t, "B", nextB)}`;
 
       const aOk = canUpgradePath(t, "A");
       const bOk = canUpgradePath(t, "B");
-      const aCost = upCost(nextA);
-      const bCost = upCost(nextB);
+      const aCost = upCostFor(t, "A", nextA);
+      const bCost = upCostFor(t, "B", nextB);
       btnUpA.disabled = !aOk || money < aCost;
       btnUpB.disabled = !bOk || money < bCost;
       btnUpA.classList.toggle("locked", !aOk && t.upA < UP_MAX);
@@ -502,15 +1101,15 @@ const c = document.getElementById("c");
       const nextBDesc = PATH_B[nextB-1]?.desc || "MAX";
       upADetailTitle.textContent = `Oben – ${t.upA >= UP_MAX ? "MAX" : nextAName}`;
       upADetail.innerHTML =
-        `<b>Jetzt:</b> ${(t.upA||0)===0 ? "Pistole" : (PATH_A[(t.upA||0)-1]?.name || "—")}<br>` +
+        `<b>Jetzt:</b> ${(t.upA||0)===0 ? towerBaseName(t) : (PATH_A[(t.upA||0)-1]?.name || "—")}<br>` +
         `<b>Nächstes:</b> ${t.upA >= UP_MAX ? "—" : nextADesc}<br>` +
-        `<b>Konzept:</b> mehr Feuerrate → ab L3 echtes MG.`;
+        `<b>Konzept:</b> ${(t.baseType==="grenadier") ? "Rockets: (später) Tracking + große Explosionen." : "mehr Feuerrate → ab L3 echtes MG."}`;
 
       upBDetailTitle.textContent = `Unten – ${t.upB >= UP_MAX ? "MAX" : nextBName}`;
       upBDetail.innerHTML =
-        `<b>Jetzt:</b> ${(t.upB||0)===0 ? "Pistole" : (PATH_B[(t.upB||0)-1]?.name || "—")}<br>` +
+        `<b>Jetzt:</b> ${(t.upB||0)===0 ? towerBaseName(t) : (PATH_B[(t.upB||0)-1]?.name || "—")}<br>` +
         `<b>Nächstes:</b> ${t.upB >= UP_MAX ? "—" : nextBDesc}<br>` +
-        `<b>Konzept:</b> mehr Damage+Range → ab L3 Sniper.`;
+        `<b>Konzept:</b> ${(t.baseType==="grenadier") ? "Artillerie: ab L3 Lob‑Schüsse (Bogen) + riesige Zone + Slow." : "mehr Damage+Range → ab L3 Sniper."}`;
 
       // icons
       setIcon(upAIco, iconForName(upATitle.textContent));
@@ -520,19 +1119,24 @@ const c = document.getElementById("c");
     function iconForName(name){
       const n = (name||"").toLowerCase();
       if (n.includes("maschinen") || n.includes("mg")) return "mg";
+      if (n.includes("mini") || n.includes("gat") || n.includes("minigun")) return "mg";
       if (n.includes("scharf") || n.includes("sniper") || n.includes("rail")) return "sniper";
       if (n.includes("kaliber") || n.includes("munition") || n.includes("panzer")) return "caliber";
+      if (n.includes("raket") || n.includes("artiller") || n.includes("mörser") || n.includes("granat") || n.includes("druckwelle")) return "gren";
       return "pistol";
     }
     function setIcon(el, kind){
       const col = (kind === "sniper") ? "rgba(93,255,180,.92)"
         : (kind === "mg") ? "rgba(255,215,106,.92)"
+        : (kind === "gren") ? "rgba(255,215,106,.92)"
         : (kind === "caliber") ? "rgba(255,107,107,.88)"
         : "rgba(220,235,255,.92)";
       if (kind === "mg"){
         el.innerHTML = `<svg viewBox="0 0 64 64"><path fill="${col}" d="M10 28h26c2 0 4 2 4 4v6h-6v-4H22v10c0 2-2 4-4 4H10v-6h6V28z"/><path fill="rgba(255,215,106,.55)" d="M38 24h16v8H38z"/><path fill="rgba(255,215,106,.55)" d="M38 34h16v8H38z"/></svg>`;
       } else if (kind === "sniper"){
         el.innerHTML = `<svg viewBox="0 0 64 64"><path fill="${col}" d="M10 32h44v6H10z"/><path fill="rgba(34,211,238,.45)" d="M22 24h16v6H22z"/><path fill="rgba(255,255,255,.18)" d="M46 28h8v14h-8z"/></svg>`;
+      } else if (kind === "gren"){
+        el.innerHTML = `<svg viewBox="0 0 64 64"><path fill="${col}" d="M12 34h40v8H12z"/><path fill="rgba(220,235,255,.35)" d="M18 26h18v8H18z"/><path fill="rgba(34,211,238,.35)" d="M42 24h8v20h-8z"/><circle cx="22" cy="46" r="6" fill="rgba(255,107,107,.55)"/></svg>`;
       } else if (kind === "caliber"){
         el.innerHTML = `<svg viewBox="0 0 64 64"><path fill="${col}" d="M14 26h28c2 0 4 2 4 4v6h-6v-4H28v12c0 2-2 4-4 4H14v-6h8V26z"/><path fill="rgba(255,215,106,.55)" d="M46 26h6v12h-6z"/></svg>`;
       } else {
@@ -552,9 +1156,16 @@ const c = document.getElementById("c");
       towers=[];
       nextTowerId = 1;
       spawnAcc=0; waveLeft=0; waveSpawned=0;
+      pendingNextWave = false;
       shake=0; flash=0;
-      money = 120;
+      money = (gameMode === "campaign") ? 250 : 120;
       timeScale = 1.0;
+      // Campaign: on defeat/restart you go back to wave 1 of the SAME level.
+      if (gameMode === "campaign"){
+        campWave = 1;
+        campWaveBoss = null;
+        campWaveCount = (CH1_LEVELS[clamp(campLevel,1,10)-1]?.waves?.length) || campWaveCount || 1;
+      }
       hideOverlay();
       syncUI();
       draw();
@@ -572,6 +1183,7 @@ const c = document.getElementById("c");
     }
 
     function showMenu(){
+      if (gameMode !== "menu") lastNonMenuMode = gameMode;
       gameMode = "menu";
       mainMenu.classList.add("show");
       mainMenu.setAttribute("aria-hidden","false");
@@ -585,6 +1197,13 @@ const c = document.getElementById("c");
       mainMenu.classList.remove("show");
       mainMenu.setAttribute("aria-hidden","true");
       stopMenuAnim();
+    }
+
+    function closeMenuAndReturn(){
+      hideMenu();
+      gameMode = lastNonMenuMode || "campaign";
+      syncUI();
+      draw();
     }
 
     function startMenuAnim(){
@@ -634,6 +1253,7 @@ const c = document.getElementById("c");
       // Tutorial should be the "old" map (the one we had before)
       path = basePath.map(p => ({x: p.x * PATH_SCALE, y: p.y * PATH_SCALE}));
       camX = 0; camY = 0;
+      rebuildPathCache();
     }
 
     function setMapCampaignLevel(lv){
@@ -643,6 +1263,7 @@ const c = document.getElementById("c");
       const mid = path[(path.length/2)|0];
       camX = clamp(mid.x - c.width*0.35, 0, Math.max(0, WORLD_W - c.width));
       camY = clamp(mid.y - c.height*0.55, 0, Math.max(0, WORLD_H - c.height));
+      rebuildPathCache();
     }
 
     function startTutorial(){
@@ -650,6 +1271,9 @@ const c = document.getElementById("c");
       gameMode = "tutorial";
       tutorialOn = true;
       tutorialStep = 1;
+      // Tutorial loadout: only pistol equipped.
+      loadout = ["pistol", null, null, null, null];
+      saveLoadout();
       reset();
       // override reset state
       tutorialOn = true;
@@ -702,7 +1326,6 @@ const c = document.getElementById("c");
 
     function claimTutorialSpotIfAny(tx, ty){
       if (!tutorialOn) return false;
-      if (tutorialStep !== 1) return false;
       let best = -1, bestD = 1e9;
       for (let i=0;i<tutorialSpots.length;i++){
         const s = tutorialSpots[i];
@@ -720,7 +1343,8 @@ const c = document.getElementById("c");
           parts.push({x:s.x,y:s.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.30+Math.random()*0.22,col:"rgba(93,255,180,0.75)",s:2+Math.random()*3.4});
         }
         flash = Math.min(1, flash + 0.10);
-        shake = Math.max(shake, 4);
+        // Tutorial: keep it subtle (no "screen vibration").
+        shake = Math.max(shake, tutorialOn ? 1.2 : 4);
         return true;
       }
       return false;
@@ -737,10 +1361,16 @@ const c = document.getElementById("c");
       // campaign difficulty per level
       wave = campLevel;
       campWave = 1;
+      money = 250;
       const cfg = CH1_LEVELS[clamp(campLevel,1,10)-1];
       campWaveCount = (cfg.waves && cfg.waves.length) ? cfg.waves.length : 1;
       beginWave();
-      start();
+      // Level should only start when the user presses Start.
+      running = false;
+      paused = false;
+      pendingNextWave = false;
+      syncUI();
+      draw();
     }
 
     function updateTutorialUI(){
@@ -751,12 +1381,13 @@ const c = document.getElementById("c");
       if (tutorialStep === 1) tutorialText.textContent = "Zieh unten die Pistole aufs Feld (nicht auf den Pfad).";
       else if (tutorialStep === 2) tutorialText.textContent = "Drück Start und lass die Pistole 5 Gegner erledigen.";
       else if (tutorialStep === 3) tutorialText.textContent = "Tippe deinen Turm an und kaufe 1 Upgrade (oben oder unten).";
-      else tutorialText.textContent = "Nice. Tutorial geschafft! Du kannst jetzt Kampagne starten.";
+      else tutorialText.textContent = "Nice. Tutorial geschafft! +50 Münzen. Du kannst jetzt Kampagne starten.";
     }
 
     function checkTutorialProgress(){
       if (!tutorialOn) return;
-      if (tutorialStep === 1 && towers.length >= 1){
+      // Step 1 should only complete when the player actually uses a suggested spot.
+      if (tutorialStep === 1 && (tutorialSpots || []).some(s => s && s.done)){
         tutorialStep = 2;
         updateTutorialUI();
       } else if (tutorialStep === 2 && kills >= 5){
@@ -767,6 +1398,7 @@ const c = document.getElementById("c");
         if (t0 && ((t0.upA||0) + (t0.upB||0)) >= 1){
           tutorialStep = 4;
           updateTutorialUI();
+          awardTutorialCoinsOnce();
         }
       }
     }
@@ -777,7 +1409,15 @@ const c = document.getElementById("c");
         const list = (cfg.waves && cfg.waves.length) ? cfg.waves : [cfg.enemies || 18];
         campWaveCount = list.length;
         const idx = clamp(campWave, 1, campWaveCount) - 1;
-        waveLeft = list[idx];
+        const w = list[idx];
+        campWaveBoss = null;
+        if (typeof w === "number") waveLeft = w;
+        else if (w && typeof w === "object" && w.boss){
+          campWaveBoss = (w.boss === "big") ? "big" : "mini";
+          waveLeft = 1;
+        } else {
+          waveLeft = 18;
+        }
       } else {
         // Tutorial should be forgiving and consistent.
         if (tutorialOn) waveLeft = 6;
@@ -808,16 +1448,72 @@ const c = document.getElementById("c");
         return;
       }
 
-      const baseHp = 26 + wave*6;
-      const baseSp = 82 + wave*3;
+      // Campaign bosses (single spawn waves)
+      if (gameMode === "campaign" && campWaveBoss && waveSpawned === 0){
+        const baseHp = 70 + (campLevel * 26);
+        const kind = (campWaveBoss === "big") ? "boss" : "miniboss";
+        const name = (campWaveBoss === "big") ? "Boss" : "Mini‑Boss";
+        const hp = (campWaveBoss === "big") ? Math.round(baseHp * 6.2) : Math.round(baseHp * 2.8);
+        const sp = (campWaveBoss === "big") ? (78 + campLevel*2) : (92 + campLevel*2.5);
+        const r = (campWaveBoss === "big") ? 28 : 20;
+        enemies.push({id: nextEnemyId++, kind, name, t:0, hp, hpMax: hp, sp, r, hit:0, vx:0, vy:0});
+        waveSpawned++;
+        waveLeft--;
+        return;
+      }
+
+      const diffWave = (gameMode === "campaign") ? (campLevel + campWave - 1) : wave;
+      // Early campaign (Grasland) should be really easy: low HP + low speed.
+      let baseHp = 26 + diffWave*6;
+      let baseSp = 82 + diffWave*3;
+      if (gameMode === "campaign"){
+        if (campLevel <= 3){
+          baseHp = 18 + diffWave*4;
+          baseSp = 64 + diffWave*2.2;
+        } else if (campLevel <= 5){
+          baseHp = 22 + diffWave*5;
+          baseSp = 74 + diffWave*2.6;
+        }
+      }
       let kind = "normal";
-      if (wave >= 2 && Math.random() < 0.28) kind = "speedy";
-      if (wave >= 4 && Math.random() < 0.22) kind = "tanky";
-      // ensure sometimes we actually see them
-      if (wave >= 6 && (waveSpawned % 7) === 0) kind = "tanky";
-      if (wave >= 3 && (waveSpawned % 5) === 0) kind = "speedy";
+      // Campaign: unlock enemy types per LEVEL
+      if (gameMode === "campaign"){
+        const L = campLevel|0;
+        const r = Math.random();
+        if (L >= 6){
+          // all types can appear
+          if (r < 0.14) kind = "shield";
+          else if (r < 0.30) kind = "regen";
+          else if (r < 0.50) kind = "speedy";
+          else if (r < 0.70) kind = "tanky";
+        } else if (L >= 5){
+          if (r < 0.14) kind = "shield";
+          else if (r < 0.34) kind = "regen";
+          else if (r < 0.58) kind = "speedy";
+          else if (r < 0.78) kind = "tanky";
+        } else if (L >= 4){
+          if (r < 0.22) kind = "regen";
+          else if (r < 0.52) kind = "speedy";
+          else if (r < 0.74) kind = "tanky";
+        } else if (L >= 3){
+          if (r < 0.30) kind = "speedy";
+          else if (r < 0.52) kind = "tanky";
+        } else if (L >= 2){
+          if (r < 0.30) kind = "speedy";
+        }
+        // tiny deterministic spice, but still per-level rule
+        if (L >= 3 && (waveSpawned % 9) === 0) kind = "tanky";
+        if (L >= 2 && (waveSpawned % 7) === 0) kind = "speedy";
+      } else {
+        // non-campaign (endless): scale with wave number
+        if (wave >= 2 && Math.random() < 0.28) kind = "speedy";
+        if (wave >= 4 && Math.random() < 0.22) kind = "tanky";
+        if (wave >= 6 && (waveSpawned % 7) === 0) kind = "tanky";
+        if (wave >= 3 && (waveSpawned % 5) === 0) kind = "speedy";
+      }
 
       let hp = baseHp, sp = baseSp, r = 12, name = "Normal";
+      let shieldHp = 0, regen = 0;
       if (kind === "speedy"){
         name = "Speedy";
         hp = Math.round(baseHp * 0.70);
@@ -828,8 +1524,20 @@ const c = document.getElementById("c");
         hp = Math.round(baseHp * 2.35);
         sp = baseSp * 0.75;
         r = 15;
+      } else if (kind === "regen"){
+        name = "Regenerator";
+        hp = Math.round(baseHp * 1.25);
+        sp = baseSp * 0.92;
+        r = 13;
+        regen = 7 + diffWave*0.6; // hp/s
+      } else if (kind === "shield"){
+        name = "Shield";
+        hp = Math.round(baseHp * 1.05);
+        sp = baseSp * 1.00;
+        r = 13;
+        shieldHp = 24 + diffWave*3;
       }
-      enemies.push({id: nextEnemyId++, kind, name, t:0, hp, hpMax: hp, sp, r, hit:0, vx:0, vy:0});
+      enemies.push({id: nextEnemyId++, kind, name, t:0, hp, hpMax: hp, shieldHp, regen, sp, r, hit:0, vx:0, vy:0});
       waveSpawned++;
       waveLeft--;
     }
@@ -860,9 +1568,48 @@ const c = document.getElementById("c");
       }
       return s;
     }
-    const PATH_LEN = totalPathLen();
+    let PATH_LEN = totalPathLen();
+
+    // Cache sampled points along the path for fast/pretty arrow animation.
+    let pathCache = []; // [{x,y,dx,dy,ang}]
+    function rebuildPathCache(){
+      PATH_LEN = totalPathLen();
+      const step = 22 * PATH_SCALE; // dense enough to smooth corners
+      const pts = [];
+      for (let d=0; d<=PATH_LEN; d+=step){
+        const p = pathPos(d);
+        pts.push({x:p.x, y:p.y, dx:p.dx||1, dy:p.dy||0});
+      }
+      // smooth tangent using neighbors
+      for (let i=0;i<pts.length;i++){
+        const p0 = pts[Math.max(0, i-1)];
+        const p1 = pts[Math.min(pts.length-1, i+1)];
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+        const len = hypot(dx,dy) || 1;
+        pts[i].dx = dx/len;
+        pts[i].dy = dy/len;
+        pts[i].ang = Math.atan2(pts[i].dy, pts[i].dx);
+      }
+      pathCache = pts;
+    }
 
     function dmgEnemy(e, dmg, hx, hy){
+      if (e.dead) return;
+      if (e.shieldHp && e.shieldHp > 0){
+        const s = Math.min(e.shieldHp, dmg);
+        e.shieldHp -= s;
+        dmg -= s;
+        for (let i=0;i<3;i++){
+          const a = Math.random()*Math.PI*2;
+          const sp = rand(60, 160);
+          parts.push({x:hx, y:hy, vx: Math.cos(a)*sp, vy: Math.sin(a)*sp, life: rand(0.10, 0.22), s: rand(2.2, 4.0), col:"rgba(120,220,255,0.55)"});
+        }
+        if (dmg <= 0){
+          e.hit = 0.08;
+          return;
+        }
+      }
       e.hp -= dmg;
       e.hit = 0.08;
       flash = Math.min(1, flash + 0.03);
@@ -875,7 +1622,8 @@ const c = document.getElementById("c");
       }
       if (e.hp <= 0){
         kills++;
-        money += KILL_REWARD;
+        // progressive money: later campaign levels pay slightly more per kill
+        money += KILL_REWARD + ((gameMode === "campaign") ? Math.floor(campLevel * 0.8) : 0);
         // Tutorial: keep screen shake mild (otherwise it can feel like constant vibration).
         shake = Math.max(shake, tutorialOn ? 2.2 : 7);
         flash = Math.min(1, flash + 0.18);
@@ -887,6 +1635,46 @@ const c = document.getElementById("c");
         }
         // kill sound OFF for now
         e.dead = true;
+      }
+    }
+
+    function explodeAt(x, y, r, dmg, opts={}){
+      // sound (throttled to avoid spam)
+      explodeAt.sfxT = Math.max(0, (explodeAt.sfxT || 0) - 1);
+      if ((explodeAt.sfxT || 0) <= 0){
+        boom(clamp(0.045 + r/900, 0.045, 0.095));
+        explodeAt.sfxT = 2; // only every few explosions
+      }
+      // big boom fx
+      flash = Math.min(1, flash + 0.14);
+      shake = Math.max(shake, tutorialOn ? 1.6 : 5.5);
+      for (let i=0;i<34;i++){
+        const a = Math.random()*Math.PI*2;
+        const sp = 90 + Math.random()*520;
+        parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.22+Math.random()*0.22,col:"rgba(255,215,106,0.75)",s:2+Math.random()*3.6});
+      }
+      for (let i=0;i<18;i++){
+        const a = Math.random()*Math.PI*2;
+        const sp = 40 + Math.random()*240;
+        parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.30+Math.random()*0.18,col:"rgba(34,211,238,0.45)",s:2+Math.random()*3.2, sq:true, rot:Math.random()*Math.PI*2, vr:(Math.random()*2-1)*10});
+      }
+      // damage in radius
+      for (const e of enemies){
+        if (e.dead) continue;
+        const dx = e.x - x, dy = e.y - y;
+        const d = hypot(dx, dy);
+        if (d > r + e.r) continue;
+        // small falloff (center feels stronger)
+        const mul = clamp(1 - d / (r + 1), 0.35, 1);
+        dmgEnemy(e, (dmg * mul), x, y);
+        if (opts.slowSec && opts.slowMul && opts.slowMul < 0.99){
+          e.slowT = Math.max(e.slowT || 0, opts.slowSec);
+          e.slowMul = Math.min(e.slowMul || 1, opts.slowMul);
+        }
+        if (opts.dotSec && opts.dotDps){
+          e.dotT = Math.max(e.dotT || 0, opts.dotSec);
+          e.dotDps = Math.max(e.dotDps || 0, opts.dotDps);
+        }
       }
     }
 
@@ -1005,6 +1793,112 @@ const c = document.getElementById("c");
         tower.idleT = 0;
         tower.fireHoldT = 0.25; // don't stop instantly when target leaves range
         const projSp = tower.projSp || 640;
+        // Grenadier uses explosive projectiles (AoE) and can lob shells.
+        if (tower.baseType === "grenadier"){
+          const aim = leadAim(target.x, target.y, target.vx||0, target.vy||0, tower.x, tower.y, projSp, 0.9);
+          const dx0 = aim.x - tower.x, dy0 = aim.y - tower.y;
+          const ang0 = Math.atan2(dy0, dx0);
+          // We'll rotate towards the actual shot direction (especially important for lob shots),
+          // otherwise the turret can "snap" or wobble.
+          if (tower.cdMs > 0) return;
+          if (!tower.lob && !hasTowerLOS(tower, target.x, target.y)) return;
+
+          const maxSpread = tower.spreadMax || (3 * (Math.PI/180));
+          const multi = tower.multi || 1;
+          for (let i=0;i<multi;i++){
+            const spread = rand(-maxSpread, maxSpread);
+            const shotAng = tower.ang + spread;
+            const muzzleLen = 34;
+            let bx = tower.x + Math.cos(shotAng)*muzzleLen;
+            let by = tower.y + Math.sin(shotAng)*muzzleLen;
+
+            let vx = Math.cos(shotAng) * projSp;
+            let vy = Math.sin(shotAng) * projSp;
+            let life = tower.lob ? 1.45 : 1.05;
+            // Artillery lob: compute a ballistic shot that lands on the predicted aim spot.
+            if (tower.lob && tower.grav){
+              const g = tower.grav;
+              // Important: spawn from the tower center for lob shots.
+              // Otherwise a "rotating muzzle offset" makes the shell miss and look like it falls down.
+              bx = tower.x;
+              by = tower.y;
+              const ax = aim.x - bx;
+              const ay = aim.y - by;
+              const dist = Math.max(1, hypot(ax, ay));
+              // Choose a flight time that produces a consistent arc.
+              // Slightly longer than "direct" time => nicer parabola and less weird jitter.
+              let T = clamp(dist / (projSp * 0.85), 0.80, 1.55);
+              vx = ax / T;
+              vy = (ay / T) - 0.5 * g * T;
+              // If the required speed is too high, increase time until it's feasible.
+              for (let it=0; it<5; it++){
+                const spReq = hypot(vx, vy);
+                if (spReq <= projSp * 1.05) break;
+                T *= 1.10;
+                vx = ax / T;
+                vy = (ay / T) - 0.5 * g * T;
+              }
+              const angShot = Math.atan2(vy, vx);
+              // rotate turret towards the computed ballistic direction (no snapping)
+              let da = angShot - tower.ang;
+              while (da > Math.PI) da -= Math.PI*2;
+              while (da < -Math.PI) da += Math.PI*2;
+              const maxTurn = (tower.turnSp * 0.55) * sec;
+              tower.ang += clamp(da, -maxTurn, maxTurn);
+              // only fire when reasonably aligned with the ballistic shot direction
+              if (Math.abs(da) > 0.22) return;
+              life = clamp(T + 0.35, 0.95, 2.10);
+            }
+            // Non-lob grenadier: rotate towards direct aim and only fire if aligned a bit
+            if (!tower.lob){
+              let da0 = ang0 - tower.ang;
+              while (da0 > Math.PI) da0 -= Math.PI*2;
+              while (da0 < -Math.PI) da0 += Math.PI*2;
+              const maxTurn0 = (tower.turnSp * 0.55) * sec;
+              tower.ang += clamp(da0, -maxTurn0, maxTurn0);
+              if (Math.abs(da0) > 0.65) return;
+            }
+
+            tower.cdMs = tower.fireMs || 980;
+            bullets.push({
+              x: bx, y: by,
+              vx, vy,
+              g: tower.grav || 0,
+              life: (tower.kind === "rocket") ? 12.0 : life,
+              dmg: tower.dmg || 10,
+              kind: tower.kind || "grenadier",
+              aoe: tower.aoeR || 70,
+              slowMul: tower.slowMul || 1.0,
+              slowSec: tower.slowSec || 0,
+              dotDps: tower.dotDps || 0,
+              dotSec: tower.dotSec || 0,
+              split: tower.split || 0,
+              homing: tower.homing || 0,
+              targetId: target.id,
+              // big rockets
+              size: (tower.kind === "rocket") ? (((tower.upA||0) >= 5) ? 2.25 : 1.35) : (tower.kind === "artillery") ? 1.35 : 1,
+              spd: (tower.kind === "rocket") ? (hypot(vx, vy) || (tower.projSp||340)) : undefined,
+              homeX: tower.x, homeY: tower.y,
+              // Artillery should always explode where it was aimed (even if it "misses")
+              explodeX: tower.lob ? aim.x : undefined,
+              explodeY: tower.lob ? aim.y : undefined,
+            });
+
+            // muzzle FX
+            for (let k=0;k<7;k++){
+              const a = shotAng + rand(-0.8, 0.8);
+              const s = 80 + Math.random()*320;
+              parts.push({x:bx,y:by,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.12+Math.random()*0.10,col:"rgba(255,215,106,0.75)",s:2+Math.random()*2.6});
+            }
+          }
+          tower.recoil = 1.0;
+          tower.heat = Math.min(1, (tower.heat||0) + 0.18);
+          // Grenadier SFX: heavy thunk + (rocket) whoosh
+          tower.sfxAcc += 1;
+          if ((tower.sfxAcc % 1) === 0) grenShot(tower.kind || "grenadier", 0.070);
+          if ((tower.kind === "rocket") && ((tower.sfxAcc % 2) === 0)) rocketWhoosh(0.040);
+          return;
+        }
         const maxLeadT = (tower.kind === "sniper") ? 1.6 : 0.55;
         const aim = leadAim(target.x, target.y, target.vx||0, target.vy||0, tower.x, tower.y, projSp, maxLeadT);
         const dx = aim.x - tower.x, dy = aim.y - tower.y;
@@ -1025,7 +1919,14 @@ const c = document.getElementById("c");
           // don't shoot "through" other towers
           if (!hasTowerLOS(tower, shootEnemy.x, shootEnemy.y)) return;
           // MG: faster fire rate with small spread
-          tower.cdMs = tower.fireMs || 50;
+          // Minigunner: spool-up + sustained fire feel
+          if (tower.kind === "minigun"){
+            tower.spool = clamp((tower.spool || 0) + (dt/1000) * (tower.spoolUp || 0.60), 0, 1);
+            const spMul = 1.0 - 0.45 * (tower.spool || 0); // faster when spooled
+            tower.cdMs = Math.max(14, (tower.fireMs || 55) * spMul);
+          } else {
+            tower.cdMs = tower.fireMs || 50;
+          }
           const sp = tower.projSp || projSp;
           const maxSpread = (tower.spreadMax || (20 * (Math.PI/180)));
           const spread = rand(-maxSpread, maxSpread);
@@ -1038,7 +1939,9 @@ const c = document.getElementById("c");
           const muzzleLen = (tower.kind === "sniper") ? 44 : (tower.kind === "mg") ? 33 : 29;
           const bx = tower.x + Math.cos(shotAng)*muzzleLen;
           const by = tower.y + Math.sin(shotAng)*muzzleLen;
-          const pierce = (tower.kind === "sniper" && (tower.upB||0) >= 5) ? 3 : 1;
+          const pierce =
+            (tower.kind === "sniper" && (tower.upB||0) >= 5) ? 3
+            : (tower.kind === "minigun" ? (tower.pierceBase || 1) : 1);
           const multi = (tower.kind === "mg" && (tower.upA||0) >= 5) ? 2 : 1;
           const ox = -Math.sin(shotAng), oy = Math.cos(shotAng);
           const sep = (tower.kind === "mg" && multi === 2) ? 6 : 0;
@@ -1047,23 +1950,51 @@ const c = document.getElementById("c");
             const px = bx + ox * sep * sgn;
             const py = by + oy * sep * sgn;
             const aShot = (tower.kind === "mg" && multi === 2) ? (shotAng + rand(-0.02, 0.02)) : shotAng;
-            bullets.push({x:px,y:py,vx:Math.cos(aShot)*sp,vy:Math.sin(aShot)*sp,life:0.95, dmg: tower.dmg || 2, kind: tower.kind || "pistol", pierce});
+            bullets.push({
+              x:px,y:py,
+              vx:Math.cos(aShot)*sp,vy:Math.sin(aShot)*sp,
+              life: (tower.kind === "minigun") ? 0.55 : 0.95,
+              dmg: tower.dmg || 2,
+              kind: tower.kind || "pistol",
+              pierce,
+              // bigger, cooler rockets
+              size: (tower.kind === "rocket") ? 1.75 : (tower.kind === "artillery") ? 1.35 : 1,
+              homeX: tower.x, homeY: tower.y,
+            });
           }
           tower.recoil = 1.0;
-          tower.heat = Math.min(1, (tower.heat||0) + 0.22);
+          // Minigun: more heat buildup (visual spin/juice)
+          tower.heat = Math.min(1, (tower.heat||0) + ((tower.kind === "minigun") ? 0.16 : 0.22));
           // muzzle flash
-          for (let i=0;i<3;i++){
+          const mfN = (tower.kind === "minigun") ? 2 : 3;
+          for (let i=0;i<mfN;i++){
             const a = shotAng + rand(-0.7, 0.7);
             const s = 90 + Math.random()*340;
-            parts.push({x:bx,y:by,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.10+Math.random()*0.08,col:"rgba(255,215,106,0.85)",s:2+Math.random()*2.4});
+            const col = (tower.kind === "minigun") ? "rgba(34,211,238,0.75)" : "rgba(255,215,106,0.85)";
+            parts.push({x:bx,y:by,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:0.09+Math.random()*0.06,col,s:2+Math.random()*2.4});
           }
-          // MG sound: faster + louder (still throttled a bit)
+          // Minigun: eject a casing sometimes
+          if (tower.kind === "minigun" && (Math.random() < 0.35)){
+            const ca = shotAng + Math.PI/2 + rand(-0.7, 0.7);
+            const cs = 120 + Math.random()*260;
+            parts.push({x: tower.x, y: tower.y, vx: Math.cos(ca)*cs, vy: Math.sin(ca)*cs, life: 0.35+Math.random()*0.18, s: 2.2+Math.random()*2.2, col:"rgba(255,215,106,0.55)", sq:true, rot:rand(0,Math.PI*2), vr:rand(-10,10)});
+          }
+          // SFX
           tower.sfxAcc += 1;
-          if ((tower.sfxAcc % 2) === 0) gunShot(0.080);
+          if (tower.kind === "minigun"){
+            if ((tower.sfxAcc % 3) === 0) gunShot(0.055);
+          } else {
+            // MG sound: faster + louder (still throttled a bit)
+            if ((tower.sfxAcc % 2) === 0) gunShot(0.080);
+          }
           // no vibrate spam
         }
       } else {
         tower.fireHoldT = Math.max(0, tower.fireHoldT - sec);
+        if (tower.kind === "minigun"){
+          // spool down when not shooting
+          tower.spool = clamp((tower.spool || 0) - (dt/1000) * 0.55, 0, 1);
+        }
         // idle: wait 3s, then slowly return to "rest" angle (0°)
         tower.idleT += dt/1000;
           if (tower.idleT >= 3){
@@ -1082,27 +2013,60 @@ const c = document.getElementById("c");
       // wave spawns
       if (waveLeft > 0){
         spawnAcc += dt;
-        const every = tutorialOn ? 900 : Math.max(280, 760 - wave*30);
+        const diffWave = (gameMode === "campaign") ? (campLevel + campWave - 1) : wave;
+        const every = tutorialOn ? 900 : Math.max(280, 760 - diffWave*30);
         while (spawnAcc >= every && waveLeft > 0){
           spawnAcc -= every;
           spawnEnemy();
         }
       } else if (enemies.length === 0 && running){
+        // wave clear reward (progressively more money)
+        if (gameMode === "campaign"){
+          const bonus = 20 + campLevel*8 + campWave*5;
+          money += bonus;
+        } else if (!tutorialOn){
+          money += 10 + wave*3;
+        }
         // next wave
         if (gameMode === "campaign"){
           if (campWave < campWaveCount){
-            campWave++;
-            // little pacing bump
-            wave++;
-            beginWave();
+            if (settings.autostart){
+              campWave++;
+              beginWave();
+            } else {
+              running = false;
+              pendingNextWave = true;
+              overlayMode = "restart";
+              // stop any lingering screen shake between waves
+              shake = 0;
+              flash = 0;
+              showMiniToast(`Welle ${campWave}/${campWaveCount} bewältigt`);
+              // user can now build and press Start when ready
+              return;
+            }
           } else {
             // all waves done -> handled by campaign completion check below
           }
         } else {
-          // Tutorial: don't auto-chain waves (otherwise players "fail" even when following instructions).
-          if (!tutorialOn){
-            wave++;
-            beginWave();
+          if (tutorialOn){
+            // Tutorial: spawn more mini-waves until the step requirement is met.
+            // Otherwise you can end up with "no enemies left" but still <5 kills.
+            if (tutorialStep === 2 && kills < 5){
+              beginWave(); // keep wave number stable
+            }
+          } else {
+            if (settings.autostart){
+              wave++;
+              beginWave();
+            } else {
+              running = false;
+              pendingNextWave = true;
+              overlayMode = "restart";
+              shake = 0;
+              flash = 0;
+              showMiniToast(`Welle ${wave} bewältigt`);
+              return;
+            }
           }
         }
       }
@@ -1110,11 +2074,27 @@ const c = document.getElementById("c");
       // enemies move
       for (const e of enemies){
         if (e.dead) continue;
-        e.t += e.sp * sec;
+        if (e.regen && e.hp > 0 && e.hp < e.hpMax){
+          e.hp = Math.min(e.hpMax, e.hp + e.regen * sec);
+        }
+        // debuffs (slow + dot)
+        if (e.slowT && e.slowT > 0){
+          e.slowT = Math.max(0, e.slowT - sec);
+        } else {
+          e.slowMul = 1;
+        }
+        if (e.dotT && e.dotT > 0){
+          e.dotT = Math.max(0, e.dotT - sec);
+          if (e.dotDps) dmgEnemy(e, e.dotDps * sec, e.x, e.y);
+        } else {
+          e.dotDps = 0;
+        }
+        const spMul = (e.slowMul || 1);
+        e.t += e.sp * spMul * sec;
         const p = pathPos(e.t);
         e.x = p.x; e.y = p.y;
-        e.vx = (p.dx || 0) * e.sp;
-        e.vy = (p.dy || 0) * e.sp;
+        e.vx = (p.dx || 0) * e.sp * spMul;
+        e.vy = (p.dy || 0) * e.sp * spMul;
         if (p.end || e.t > PATH_LEN + 40){
           e.dead = true;
           baseHP--;
@@ -1122,19 +2102,34 @@ const c = document.getElementById("c");
           flash = Math.min(1, flash + 0.22);
           if (baseHP <= 0){
             running=false;
-            showOverlay("Game Over", `Waves: ${wave} · Kills: ${kills}`);
+            if (gameMode === "campaign"){
+              showOverlay("Game Over", `Level ${campLevel} · Welle ${campWave}/${campWaveCount}`);
+            } else {
+              showOverlay("Game Over", `Waves: ${wave} · Kills: ${kills}`);
+            }
           }
         }
         e.hit = Math.max(0, e.hit - sec);
       }
       enemies = enemies.filter(e => !e.dead);
 
-      // campaign level complete check
-      if (gameMode === "campaign" && waveLeft <= 0 && enemies.length === 0 && running && !paused){
+      // campaign level complete check (ONLY after the last wave of the level)
+      if (gameMode === "campaign" && campWave >= campWaveCount && waveLeft <= 0 && enemies.length === 0 && running && !paused){
         running = false;
         overlayMode = "next";
         showOverlay(`Kapitel 1 · Level ${campLevel} geschafft`, "Weiter zum nächsten Level?");
         ovAgain.textContent = (campLevel >= 10) ? "Fertig" : "Nächstes";
+
+        // Reward: progressive coins per level (first-time per level).
+        // L1=50, L2=60, L3=70, ...
+        try{
+          const claimed = +(localStorage.getItem(CAMP_COIN_CLAIM_KEY) || "0") || 0;
+          if (campLevel > claimed){
+            localStorage.setItem(CAMP_COIN_CLAIM_KEY, String(campLevel));
+            const reward = 50 + (campLevel - 1) * 10;
+            addCoins(reward);
+          }
+        } catch {}
       }
 
       // tower shooting
@@ -1169,6 +2164,55 @@ const c = document.getElementById("c");
       // bullets
       for (const b of bullets){
         const prevX = b.x, prevY = b.y;
+        if (b.g) b.vy += b.g * (dt/1000);
+        // rocket trail
+        if (b.kind === "rocket"){
+          const a = Math.atan2(b.vy, b.vx);
+          const back = a + Math.PI + rand(-0.55, 0.55);
+          const sp2 = rand(40, 160);
+          parts.push({x: b.x - Math.cos(a)*8, y: b.y - Math.sin(a)*8, vx: Math.cos(back)*sp2, vy: Math.sin(back)*sp2, life: rand(0.10, 0.20), s: rand(2.4, 4.8), col:"rgba(255,255,255,0.12)"});
+          parts.push({x: b.x, y: b.y, vx: rand(-30,30), vy: rand(-30,30), life: rand(0.06, 0.12), s: rand(1.6, 3.0), col:"rgba(255,215,106,0.20)"});
+        }
+
+        // homing (rockets should keep tracking until hit, even if they "miss" once)
+        if (b.homing){
+          let te = null;
+          if (b.targetId){
+            te = enemies.find(e => e.id === b.targetId && !e.dead) || null;
+          }
+          // reacquire if target died or was never set (rocket keeps hunting)
+          if (!te && b.kind === "rocket"){
+            let best = null, bestD = 1e18;
+            for (const e of enemies){
+              if (e.dead) continue;
+              const d = (e.x-b.x)*(e.x-b.x) + (e.y-b.y)*(e.y-b.y);
+              if (d < bestD){ bestD = d; best = e; }
+            }
+            if (best){ te = best; b.targetId = best.id; }
+          }
+          if (te){
+            const ang = Math.atan2(te.y - b.y, te.x - b.x);
+            let sp = (b.kind === "rocket" ? (b.spd || 0) : 0) || hypot(b.vx, b.vy) || 1;
+            if (!isFinite(sp) || sp < 1) sp = (b.kind === "rocket" ? (b.spd || 340) : 340);
+            // rockets should NOT be too agile: heavy turn, still reliable tracking
+            const turn = (b.kind === "rocket") ? clamp(b.homing, 0, 0.065) : clamp(b.homing, 0, 0.28);
+            let nvx = lerp(b.vx, Math.cos(ang)*sp, turn);
+            let nvy = lerp(b.vy, Math.sin(ang)*sp, turn);
+            if (!isFinite(nvx) || !isFinite(nvy)){
+              nvx = Math.cos(ang)*sp;
+              nvy = Math.sin(ang)*sp;
+            }
+            // keep rockets from "stalling" due to numeric drift
+            if (b.kind === "rocket"){
+              const l = hypot(nvx, nvy) || 1;
+              const want = b.spd || sp;
+              nvx = (nvx / l) * want;
+              nvy = (nvy / l) * want;
+            }
+            b.vx = nvx;
+            b.vy = nvy;
+          }
+        }
         b.x += b.vx*sec;
         b.y += b.vy*sec;
         b.life -= sec;
@@ -1186,18 +2230,49 @@ const c = document.getElementById("c");
           if (dx*dx + dy*dy <= (e.r+3)*(e.r+3)){
             if (b.hit.has(e.id)) continue;
             b.hit.add(e.id);
-            dmgEnemy(e, b.dmg || 2, b.x, b.y);
-            b.pierce = (b.pierce ?? 1) - 1;
-            if (b.pierce <= 0){
+            if (b.aoe){
+              explodeAt(b.x, b.y, b.aoe, b.dmg || 10, {
+                slowMul: b.slowMul || 1,
+                slowSec: b.slowSec || 0,
+                dotDps: b.dotDps || 0,
+                dotSec: b.dotSec || 0
+              });
+              if (b.split){
+                for (let k=0;k<b.split;k++){
+                  const a = Math.random()*Math.PI*2;
+                  const rr = (b.aoe || 70) * 0.55;
+                  explodeAt(b.x + Math.cos(a)*rr, b.y + Math.sin(a)*rr, (b.aoe||70)*0.55, (b.dmg||10)*0.45, {});
+                }
+              }
               b.life = -1;
               break;
+            } else {
+              dmgEnemy(e, b.dmg || 2, b.x, b.y);
+              b.pierce = (b.pierce ?? 1) - 1;
+              if (b.pierce <= 0){
+                b.life = -1;
+                break;
+              }
+              break;
             }
-            break;
           }
         }
         // lifetime ended => small ground impact
         if (b.life <= 0){
-          bulletImpactFX(b.x, b.y, bang);
+          if (b.aoe){
+            const ex = (typeof b.explodeX === "number") ? b.explodeX : b.x;
+            const ey = (typeof b.explodeY === "number") ? b.explodeY : b.y;
+            // Visual consistency: snap the shell to its intended impact point.
+            b.x = ex; b.y = ey;
+            explodeAt(ex, ey, b.aoe, b.dmg || 10, {
+              slowMul: b.slowMul || 1,
+              slowSec: b.slowSec || 0,
+              dotDps: b.dotDps || 0,
+              dotSec: b.dotSec || 0
+            });
+          } else {
+            bulletImpactFX(b.x, b.y, bang);
+          }
         }
       }
       bullets = bullets.filter(b => b.life > 0);
@@ -1252,6 +2327,71 @@ const c = document.getElementById("c");
       for (let i=1;i<path.length;i++) ctx.lineTo(path[i].x, path[i].y);
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Start/End markers + direction arrows (readability)
+      const s = path[0];
+      const e = path[path.length-1];
+      if (s && e){
+        // start marker
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.fillStyle = "rgba(93,255,180,0.22)";
+        ctx.strokeStyle = "rgba(93,255,180,0.55)";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(s.x, s.y, 22, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(93,255,180,0.85)";
+        ctx.font = "1000 12px system-ui,Segoe UI,Roboto";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText("START", s.x, s.y-32);
+
+        // end marker
+        ctx.fillStyle = "rgba(255,107,107,0.18)";
+        ctx.strokeStyle = "rgba(255,107,107,0.55)";
+        ctx.beginPath(); ctx.arc(e.x, e.y, 24, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(255,107,107,0.88)";
+        ctx.fillText("ZIEL", e.x, e.y-34);
+        ctx.restore();
+      }
+
+      // Static direction arrows on the path (NO animation -> no lag)
+      if (!running && gameMode !== "menu" && pathCache.length > 2){
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        const spacing = 140 * PATH_SCALE;
+        const cacheStep = 22 * PATH_SCALE;
+        const maxIdx = pathCache.length - 1;
+        const n = Math.max(6, Math.ceil(PATH_LEN / spacing) + 1);
+        for (let k=0;k<n;k++){
+          const d = (k + 0.35) * spacing;
+          const idx = Math.max(0, Math.min(maxIdx, Math.round(d / cacheStep)));
+          const p = pathCache[idx];
+          if (!p) continue;
+          const ang = p.ang || 0;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(ang);
+          ctx.globalAlpha = 0.26;
+          ctx.fillStyle = "rgba(255,215,106,0.30)";
+          ctx.beginPath();
+          ctx.moveTo(28, 0);
+          ctx.lineTo(-14, -12);
+          ctx.lineTo(-7, 0);
+          ctx.lineTo(-14, 12);
+          ctx.closePath();
+          ctx.fill();
+          ctx.globalAlpha = 0.34;
+          ctx.fillStyle = "rgba(255,255,255,0.16)";
+          ctx.beginPath();
+          ctx.moveTo(22, 0);
+          ctx.lineTo(-10, -8);
+          ctx.lineTo(-5, 0);
+          ctx.lineTo(-10, 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+        ctx.restore();
+      }
       ctx.restore();
     }
 
@@ -1261,25 +2401,51 @@ const c = document.getElementById("c");
       ctx.translate(tower.x, tower.y);
       // base
       ctx.globalCompositeOperation = "screen";
-      ctx.fillStyle = "rgba(34,211,238,0.22)";
-      ctx.strokeStyle = "rgba(255,255,255,0.16)";
+      const isMini = tower.baseType === "minigunner";
+      ctx.fillStyle = isMini ? "rgba(255,215,106,0.18)" : "rgba(34,211,238,0.22)";
+      ctx.strokeStyle = isMini ? "rgba(255,215,106,0.22)" : "rgba(255,255,255,0.16)";
       ctx.lineWidth = 2;
-      roundRect(-18,-18,36,36,10);
-      ctx.fill(); ctx.stroke();
+      if (isMini){
+        // heavier base plate
+        roundRect(-22,-18,44,36,12);
+        ctx.fill(); ctx.stroke();
+        ctx.globalAlpha = alpha * 0.75;
+        ctx.strokeStyle = "rgba(34,211,238,0.22)";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, 20, 0, Math.PI*2); ctx.stroke();
+        ctx.globalAlpha = alpha;
+      } else {
+        roundRect(-18,-18,36,36,10);
+        ctx.fill(); ctx.stroke();
+      }
 
       // turret body
       ctx.rotate(tower.ang);
       const recoil = (tower.recoil||0);
       ctx.translate(-recoil*2.2, 0);
-      ctx.fillStyle = "rgba(255,255,255,0.16)";
-      ctx.strokeStyle = "rgba(93,255,180,0.35)";
+      ctx.fillStyle = isMini ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.16)";
+      ctx.strokeStyle = isMini ? "rgba(255,215,106,0.42)" : "rgba(93,255,180,0.35)";
       ctx.lineWidth = 2;
-      roundRect(-8,-10, 26, 20, 8);
-      ctx.fill(); ctx.stroke();
+      if (isMini){
+        // wider body + ammo box
+        roundRect(-10,-12, 30, 24, 9);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(0,0,0,0.22)";
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = 2;
+        roundRect(-18,-10, 10, 20, 6);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "rgba(255,215,106,0.20)";
+        ctx.fillRect(-16, -6, 6, 2);
+        ctx.fillRect(-16,  0, 6, 2);
+      } else {
+        roundRect(-8,-10, 26, 20, 8);
+        ctx.fill(); ctx.stroke();
+      }
 
       // inner neon slit
       ctx.globalAlpha = alpha * 0.7;
-      ctx.strokeStyle = "rgba(34,211,238,0.35)";
+      ctx.strokeStyle = isMini ? "rgba(255,215,106,0.26)" : "rgba(34,211,238,0.35)";
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(-3, 0); ctx.lineTo(12, 0);
@@ -1288,7 +2454,33 @@ const c = document.getElementById("c");
 
       // weapon barrels (changes with upgrades)
       ctx.lineCap = "round";
-      if (tower.kind === "sniper"){
+      if (tower.baseType === "grenadier"){
+        const rocketBig = (tower.kind === "rocket") && ((tower.upA||0) >= 5);
+        const tubeW = (tower.kind === "rocket") ? (rocketBig ? 12 : 8) : (tower.kind === "artillery") ? 7 : 6;
+        const tubeL = (tower.kind === "rocket") ? (rocketBig ? 46 : 40) : (tower.kind === "artillery") ? 46 : 34;
+        // launcher tube
+        ctx.strokeStyle = (tower.kind === "artillery") ? "rgba(93,255,180,0.55)" : "rgba(255,215,106,0.55)";
+        ctx.lineWidth = tubeW;
+        ctx.beginPath();
+        ctx.moveTo(10, 0); ctx.lineTo(tubeL, 0);
+        ctx.stroke();
+        // muzzle ring
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.strokeStyle = (tower.kind === "rocket") ? "rgba(255,107,107,0.30)" : (tower.kind === "artillery") ? "rgba(93,255,180,0.26)" : "rgba(255,215,106,0.24)";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(tubeL+1.0, 0, (tower.kind === "rocket") ? (rocketBig ? 9.4 : 7.8) : 7.2, 0, Math.PI*2); ctx.stroke();
+        if (tower.kind === "rocket"){
+          ctx.globalAlpha = alpha * 0.5;
+          ctx.fillStyle = "rgba(0,0,0,0.22)";
+          ctx.beginPath();
+          ctx.ellipse(tubeL+1.0, 0, rocketBig ? 9.2 : 7.6, rocketBig ? 6.0 : 5.0, 0, 0, Math.PI*2);
+          ctx.fill();
+          ctx.globalAlpha = alpha;
+        } else {
+          ctx.globalAlpha = alpha;
+        }
+      }
+      else if (tower.kind === "sniper"){
         ctx.strokeStyle = "rgba(93,255,180,0.55)";
         ctx.lineWidth = 4;
         ctx.beginPath();
@@ -1311,6 +2503,30 @@ const c = document.getElementById("c");
         ctx.lineWidth = 3;
         ctx.beginPath(); ctx.arc(33.2, 0, 7.5, 0, Math.PI*2); ctx.stroke();
         ctx.globalAlpha = alpha;
+      } else if (tower.kind === "minigun"){
+        // spinning barrel cluster
+        const spin = (tower.heat || 0) * 18 + (tower.recoil || 0) * 12;
+        ctx.save();
+        ctx.translate(22, 0);
+        ctx.rotate(spin);
+        ctx.strokeStyle = "rgba(255,215,106,0.55)";
+        ctx.lineWidth = 3.4;
+        for (let k=0;k<6;k++){
+          const a = (k/6)*Math.PI*2;
+          const ox = Math.cos(a)*5.2;
+          const oy = Math.sin(a)*5.2;
+          ctx.beginPath();
+          ctx.moveTo(-6 + ox, oy);
+          ctx.lineTo(16 + ox, oy);
+          ctx.stroke();
+        }
+        ctx.restore();
+        // front ring
+        ctx.globalAlpha = alpha * 0.75;
+        ctx.strokeStyle = "rgba(34,211,238,0.30)";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(33.6, 0, 8.0, 0, Math.PI*2); ctx.stroke();
+        ctx.globalAlpha = alpha;
       } else {
         const thick = (tower.kind === "pistol_caliber" || tower.kind === "pistol_caliber2") ? 4.6 : 3.6;
         const len = (tower.kind === "pistol_fast") ? 30 : 28;
@@ -1329,10 +2545,16 @@ const c = document.getElementById("c");
       // muzzle glow
       const heat = (tower.heat||0);
       ctx.globalAlpha = alpha * (0.25 + heat*0.55);
-      ctx.fillStyle = (tower.kind === "sniper") ? "rgba(93,255,180,0.25)" : (tower.kind === "mg") ? "rgba(255,215,106,0.35)" : "rgba(220,235,255,0.22)";
-      ctx.shadowColor = (tower.kind === "sniper") ? "rgba(93,255,180,0.45)" : (tower.kind === "mg") ? "rgba(255,215,106,0.55)" : "rgba(220,235,255,0.35)";
+      ctx.fillStyle = (tower.kind === "sniper") ? "rgba(93,255,180,0.25)"
+        : (tower.kind === "mg") ? "rgba(255,215,106,0.35)"
+        : (tower.baseType === "grenadier") ? "rgba(255,215,106,0.30)"
+        : "rgba(220,235,255,0.22)";
+      ctx.shadowColor = (tower.kind === "sniper") ? "rgba(93,255,180,0.45)"
+        : (tower.kind === "mg") ? "rgba(255,215,106,0.55)"
+        : (tower.baseType === "grenadier") ? "rgba(255,215,106,0.45)"
+        : "rgba(220,235,255,0.35)";
       ctx.shadowBlur = 14 + heat*24;
-      const glowX = (tower.kind === "sniper") ? 44 : (tower.kind === "mg") ? 33 : 29.5;
+      const glowX = (tower.kind === "sniper") ? 44 : (tower.kind === "mg" || tower.kind === "minigun") ? 33 : (tower.baseType === "grenadier") ? 36 : 29.5;
       ctx.beginPath(); ctx.arc(glowX,0, 8 + heat*4, 0, Math.PI*2); ctx.fill();
 
       ctx.restore();
@@ -1421,10 +2643,18 @@ const c = document.getElementById("c");
       // placement preview (range + taboo radius)
       const preview = drag && drag.cx != null ? {x: drag.cx, y: drag.cy} : null;
       if (preview){
-        const ok = canPlaceAt(preview.x, preview.y) && towers.length < TOWER_LIMIT && (drag.fromTower ? true : (money >= MG_COST));
+        const placeCost = drag?.fromTower ? 0
+          : (drag?.type === "Grenadier") ? GREN_COST
+          : (drag?.type === "Minigunner") ? MINI_COST
+          : MG_COST;
+        const ok = canPlaceAt(preview.x, preview.y) && towers.length < TOWER_LIMIT && (drag.fromTower ? true : (money >= placeCost));
         const g = drag.fromTower && drag.old
           ? {...drag.old, x: preview.x, y: preview.y, recoil: 0, heat: 0}
-          : {id:-1, x: preview.x, y: preview.y, ang: Math.PI, upA: 0, upB: 0, recoil: 0, heat: 0, kind: "pistol"};
+          : {
+            id:-1, x: preview.x, y: preview.y, ang: Math.PI, upA: 0, upB: 0, recoil: 0, heat: 0,
+            baseType: (drag?.type === "Grenadier") ? "grenadier" : (drag?.type === "Minigunner") ? "minigunner" : "pistol",
+            kind: (drag?.type === "Grenadier") ? "grenadier" : (drag?.type === "Minigunner") ? "minigun" : "pistol"
+          };
         recomputeTowerStats(g);
         ctx.save();
         ctx.globalCompositeOperation = "screen";
@@ -1458,7 +2688,7 @@ const c = document.getElementById("c");
       }
 
       // tutorial hints (arrows + suggested placement spots)
-      if (tutorialOn){
+      if (tutorialOn && tutorialStep === 1){
         const pulse = 0.5 + 0.5*Math.sin(performance.now()*0.004);
         const spots = (tutorialSpots || []).filter(s => s && !s.done);
 
@@ -1498,16 +2728,14 @@ const c = document.getElementById("c");
         }
 
         // step-specific extra hint: step 1 highlights the spots stronger
-        if (tutorialStep === 1){
-          for (const s of spots){
-            ctx.save();
-            ctx.globalCompositeOperation = "screen";
-            ctx.strokeStyle = "rgba(34,211,238,0.20)";
-            ctx.lineWidth = 2;
-            ctx.setLineDash([6,10]);
-            ctx.beginPath(); ctx.arc(s.x, s.y, 70 + pulse*12, 0, Math.PI*2); ctx.stroke();
-            ctx.restore();
-          }
+        for (const s of spots){
+          ctx.save();
+          ctx.globalCompositeOperation = "screen";
+          ctx.strokeStyle = "rgba(34,211,238,0.20)";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6,10]);
+          ctx.beginPath(); ctx.arc(s.x, s.y, 70 + pulse*12, 0, Math.PI*2); ctx.stroke();
+          ctx.restore();
         }
       }
 
@@ -1591,27 +2819,94 @@ const c = document.getElementById("c");
       for (const b of bullets){
         const a = Math.atan2(b.vy, b.vx);
         const tx = Math.cos(a), ty = Math.sin(a);
-        const L = (b.kind === "sniper") ? 18 : (b.kind === "mg") ? 10 : 12;
+        const sz = b.size || 1;
+        const L = ((b.kind === "sniper") ? 18 : (b.kind === "minigun") ? 14 : (b.kind === "mg") ? 10 : (b.kind === "rocket") ? 16 : 12) * sz;
         ctx.save();
         ctx.globalCompositeOperation = "screen";
-        ctx.strokeStyle = (b.kind === "sniper") ? "rgba(93,255,180,0.55)" : (b.kind === "mg") ? "rgba(255,215,106,0.55)" : "rgba(220,235,255,0.45)";
-        ctx.lineWidth = (b.kind === "sniper") ? 2.4 : 2;
-        ctx.shadowColor = "rgba(255,215,106,0.25)";
-        ctx.shadowBlur = 12;
+        ctx.strokeStyle =
+          (b.kind === "sniper") ? "rgba(93,255,180,0.55)" :
+          (b.kind === "minigun") ? "rgba(34,211,238,0.55)" :
+          (b.kind === "mg") ? "rgba(255,215,106,0.55)" :
+          (b.kind === "rocket") ? "rgba(255,120,80,0.55)" :
+          "rgba(220,235,255,0.45)";
+        ctx.lineWidth = ((b.kind === "sniper") ? 2.4 : (b.kind === "rocket") ? 2.6 : (b.kind === "minigun") ? 2.0 : 2) * sz;
+        ctx.shadowColor =
+          (b.kind === "rocket") ? "rgba(255,120,80,0.35)" :
+          (b.kind === "minigun") ? "rgba(34,211,238,0.28)" :
+          "rgba(255,215,106,0.25)";
+        ctx.shadowBlur = (b.kind === "rocket") ? 18 : (b.kind === "minigun") ? 14 : 12;
         ctx.beginPath();
         ctx.moveTo(b.x - tx*L, b.y - ty*L);
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
-        // elongated bullet
+        // rocket looks like a real rocket (nose + fins + flame)
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(a);
-        ctx.fillStyle = (b.kind === "sniper") ? "rgba(93,255,180,0.95)" : (b.kind === "mg") ? "rgba(255,215,106,0.95)" : "rgba(240,248,255,0.92)";
-        ctx.shadowBlur = 16;
-        const bw = (b.kind === "sniper") ? 16 : (b.kind === "mg") ? 10 : 12;
-        const bh = (b.kind === "sniper") ? 3.0 : (b.kind === "mg") ? 3.2 : 2.8;
+        if (b.kind === "rocket"){
+          const bw = 26 * sz;
+          const bh = 7.2 * sz;
+          // flame
+          ctx.save();
+          ctx.globalAlpha = 0.75;
+          ctx.fillStyle = "rgba(255,120,80,0.30)";
+          ctx.beginPath();
+          ctx.moveTo(-bw*0.72, 0);
+          ctx.quadraticCurveTo(-bw*1.05, -bh*0.55, -bw*1.25, 0);
+          ctx.quadraticCurveTo(-bw*1.05,  bh*0.55, -bw*0.72, 0);
+          ctx.fill();
+          ctx.globalAlpha = 0.55;
+          ctx.fillStyle = "rgba(255,215,106,0.22)";
+          ctx.beginPath();
+          ctx.moveTo(-bw*0.62, 0);
+          ctx.quadraticCurveTo(-bw*0.92, -bh*0.42, -bw*1.10, 0);
+          ctx.quadraticCurveTo(-bw*0.92,  bh*0.42, -bw*0.62, 0);
+          ctx.fill();
+          ctx.restore();
+
+          // body
+          ctx.fillStyle = "rgba(255,235,220,0.16)";
+          ctx.strokeStyle = "rgba(255,160,120,0.70)";
+          ctx.lineWidth = 2.2 * sz;
+          roundRect(-bw*0.55, -bh/2, bw*0.92, bh, 3.5*sz);
+          ctx.fill(); ctx.stroke();
+
+          // nose cone
+          ctx.fillStyle = "rgba(255,160,120,0.75)";
+          ctx.beginPath();
+          ctx.moveTo(bw*0.40, 0);
+          ctx.lineTo(bw*0.18, -bh*0.52);
+          ctx.lineTo(bw*0.18,  bh*0.52);
+          ctx.closePath();
+          ctx.fill();
+
+          // fins
+          ctx.fillStyle = "rgba(34,211,238,0.18)";
+          ctx.beginPath();
+          ctx.moveTo(-bw*0.10, -bh*0.50);
+          ctx.lineTo(-bw*0.26, -bh*1.05);
+          ctx.lineTo(-bw*0.02, -bh*0.72);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.moveTo(-bw*0.10,  bh*0.50);
+          ctx.lineTo(-bw*0.26,  bh*1.05);
+          ctx.lineTo(-bw*0.02,  bh*0.72);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+        ctx.fillStyle =
+          (b.kind === "sniper") ? "rgba(93,255,180,0.95)" :
+          (b.kind === "minigun") ? "rgba(34,211,238,0.92)" :
+          (b.kind === "mg") ? "rgba(255,215,106,0.95)" :
+          (b.kind === "rocket") ? "rgba(255,160,120,0.96)" :
+          "rgba(240,248,255,0.92)";
+        ctx.shadowBlur = (b.kind === "rocket") ? 22 : (b.kind === "minigun") ? 18 : 16;
+        const bw = ((b.kind === "sniper") ? 16 : (b.kind === "minigun") ? 12 : (b.kind === "mg") ? 10 : (b.kind === "rocket") ? 22 : 12) * sz;
+        const bh = ((b.kind === "sniper") ? 3.0 : (b.kind === "minigun") ? 2.4 : (b.kind === "mg") ? 3.2 : (b.kind === "rocket") ? 5.0 : 2.8) * sz;
         roundRect(-bw*0.55, -bh/2, bw, bh, 2);
         ctx.fill();
+        }
         ctx.restore();
         ctx.restore();
       }
@@ -1750,13 +3045,17 @@ const c = document.getElementById("c");
     }
     function beginDrag(e, type="Pistol", slot=0){
       if (type === "Pistol" && money < MG_COST) { tone(160,0.08,"sawtooth",0.05); vibr(10); return; }
+      if (type === "Grenadier" && money < GREN_COST) { tone(160,0.08,"sawtooth",0.05); vibr(10); return; }
+      if (type === "Minigunner" && money < MINI_COST) { tone(160,0.08,"sawtooth",0.05); vibr(10); return; }
+      if (tutorialOn && type === "Grenadier") { tone(160,0.08,"sawtooth",0.05); vibr(10); return; } // tutorial only uses pistol
+      if (tutorialOn && type === "Minigunner") { tone(160,0.08,"sawtooth",0.05); vibr(10); return; } // tutorial only uses pistol
       if (!drag?.fromTower && towers.length >= TOWER_LIMIT) { tone(160,0.08,"sawtooth",0.05); vibr(10); return; }
       drag = {type, slot};
-      ghost.textContent = (type === "Pistol") ? "Pistole" : type;
+      ghost.textContent = (type === "Pistol") ? "Pistole" : (type === "Grenadier") ? "Grenadier" : (type === "Minigunner") ? "Minigunner" : type;
       ghostAt(e.clientX, e.clientY);
       ghostShow(true);
       buildMode = true;
-      if (!running && settings.autostart) start();
+      // Autostart should not start combat on placement; Start is explicit.
       syncUI();
       draw();
     }
@@ -1773,7 +3072,23 @@ const c = document.getElementById("c");
         } else if (drag.type === "Pistol"){
           if (money >= MG_COST){
             money -= MG_COST;
-            const t = {id: nextTowerId++, x: p.x, y: p.y, ang: Math.PI, cdMs: 0, range: 220, turnSp: 1.3, mode: "first", upA: 0, upB: 0};
+            const t = {id: nextTowerId++, baseType:"pistol", x: p.x, y: p.y, ang: Math.PI, cdMs: 0, range: 220, turnSp: 1.3, mode: "first", upA: 0, upB: 0};
+            recomputeTowerStats(t);
+            towers.push(t);
+            placed = true;
+          }
+        } else if (drag.type === "Grenadier"){
+          if (money >= GREN_COST){
+            money -= GREN_COST;
+            const t = {id: nextTowerId++, baseType:"grenadier", x: p.x, y: p.y, ang: Math.PI, cdMs: 0, range: 280, turnSp: 2.2, mode: "first", upA: 0, upB: 0};
+            recomputeTowerStats(t);
+            towers.push(t);
+            placed = true;
+          }
+        } else if (drag.type === "Minigunner"){
+          if (money >= MINI_COST){
+            money -= MINI_COST;
+            const t = {id: nextTowerId++, baseType:"minigunner", x: p.x, y: p.y, ang: Math.PI, cdMs: 0, range: 260, turnSp: 2.0, mode: "first", upA: 0, upB: 0};
             recomputeTowerStats(t);
             towers.push(t);
             placed = true;
@@ -1810,10 +3125,13 @@ const c = document.getElementById("c");
       const slot = e.target.closest(".slot");
       if (!slot) return;
       const id = +slot.dataset.slot;
-      if (id !== 0) return; // only MG active
       if (slot.classList.contains("empty")) return;
       slot.setPointerCapture(e.pointerId);
-      beginDrag(e, "Pistol", 0);
+      const tid = loadout[id];
+      if (!tid) return;
+      // Don't start placing on simple tap/click. Only start drag after moving a bit.
+      const type = (tid === "grenadier") ? "Grenadier" : (tid === "minigunner") ? "Minigunner" : "Pistol";
+      pendingLoadout = {id: e.pointerId, sx: e.clientX, sy: e.clientY, slot: id, tid, type, started:false};
     });
 
     function towerHitTest(p){
@@ -1881,7 +3199,7 @@ const c = document.getElementById("c");
       if (!t) return;
       if (!canUpgradePath(t, "A")) return;
       const next = (t.upA||0) + 1;
-      const cost = upCost(next);
+      const cost = upCostFor(t, "A", next);
       if (money < cost) return;
       money -= cost;
       t.upA = next;
@@ -1896,7 +3214,7 @@ const c = document.getElementById("c");
       if (!t) return;
       if (!canUpgradePath(t, "B")) return;
       const next = (t.upB||0) + 1;
-      const cost = upCost(next);
+      const cost = upCostFor(t, "B", next);
       if (money < cost) return;
       money -= cost;
       t.upB = next;
@@ -1928,6 +3246,16 @@ const c = document.getElementById("c");
       try{ c.setPointerCapture(e.pointerId); } catch {}
     });
     addEventListener("pointermove", (e)=>{
+      if (pendingLoadout && pendingLoadout.id === e.pointerId && !drag){
+        const dx = e.clientX - pendingLoadout.sx;
+        const dy = e.clientY - pendingLoadout.sy;
+        if (!pendingLoadout.started && (dx*dx + dy*dy) >= (10*10)){
+          pendingLoadout.started = true;
+          beginDrag(e, pendingLoadout.type, pendingLoadout.slot);
+          pendingLoadout = null;
+          return;
+        }
+      }
       if (pan && pan.id === e.pointerId && !drag){
         const dx = (e.clientX - pan.sx) * (c.width / pan.rw);
         const dy = (e.clientY - pan.sy) * (c.height / pan.rh);
@@ -1960,6 +3288,9 @@ const c = document.getElementById("c");
       draw();
     });
     addEventListener("pointerup", (e)=>{
+      if (pendingLoadout && pendingLoadout.id === e.pointerId){
+        pendingLoadout = null;
+      }
       if (pan && pan.id === e.pointerId){
         pan = null;
         try{ c.releasePointerCapture(e.pointerId); } catch {}
@@ -1978,7 +3309,19 @@ const c = document.getElementById("c");
 
     // btnBuild hidden (pads removed)
     btnBuild.addEventListener("click", ()=>{});
-    btnStart.addEventListener("click", start);
+    btnStart.addEventListener("click", ()=>{
+      if (pendingNextWave){
+        pendingNextWave = false;
+        if (gameMode === "campaign"){
+          campWave++;
+          beginWave();
+        } else {
+          wave++;
+          beginWave();
+        }
+      }
+      start();
+    });
     btnReset.addEventListener("click", ()=>{
       // "Aufgeben" with confirmation
       if (!running) { showMenu(); return; }
@@ -2000,17 +3343,32 @@ const c = document.getElementById("c");
       syncUI();
     });
     ovAgain.addEventListener("click", ()=>{
-      if (overlayMode === "resume" || paused){ resumeGame(); return; }
       if (overlayMode === "giveup_confirm"){
-        // confirm give up -> lose the run
+        // confirm give up -> back to menu
         paused = false;
         running = false;
         overlayMode = "restart";
-        showOverlay("Aufgegeben", "Run beendet. Du kannst nochmal starten.");
-        ovAgain.textContent = "Nochmal";
-        ovClose.textContent = "Schließen";
+        hideOverlay();
+        showMenu();
         return;
       }
+      if (overlayMode === "nextwave"){
+        hideOverlay();
+        overlayMode = "restart";
+        if (pendingNextWave){
+          pendingNextWave = false;
+          if (gameMode === "campaign"){
+            campWave++;
+            beginWave();
+          } else {
+            wave++;
+            beginWave();
+          }
+        }
+        start();
+        return;
+      }
+      if (overlayMode === "resume" || paused){ resumeGame(); return; }
       if (overlayMode === "next"){
         hideOverlay();
         if (campLevel >= 10){
@@ -2032,6 +3390,13 @@ const c = document.getElementById("c");
         // cancel give up
         ovClose.textContent = "Schließen";
         resumeGame();
+        return;
+      }
+      if (overlayMode === "nextwave"){
+        hideOverlay();
+        overlayMode = "restart";
+        pendingNextWave = false;
+        showMenu();
         return;
       }
       if (paused) resumeGame();
@@ -2063,6 +3428,11 @@ const c = document.getElementById("c");
       }
     });
 
+    // Persist progress even when the page is closed.
+    addEventListener("beforeunload", ()=>{
+      try{ saveCoins(); saveOwned(); saveSettings(); saveLoadout(); } catch {}
+    });
+
     addEventListener("error", (e)=>{
       try{
         paused = true;
@@ -2082,14 +3452,33 @@ const c = document.getElementById("c");
     btnMenuCampaign.addEventListener("click", ()=>{
       campUnlocked = +(localStorage.getItem(CAMP_KEY) || String(campUnlocked || 1));
       campUnlocked = clamp(campUnlocked, 1, 10);
-      let html = `<div class="subpill"><b>Kampagne</b> · Kapitel 1 (10 Levels)</div>
-      <div style="margin-top:10px;color:rgba(180,200,230,.92);font-weight:900;line-height:1.3">
-        Wähle ein Level:
+      const nodes = [
+        {x:12,y:74},{x:22,y:56},{x:32,y:70},{x:44,y:52},{x:56,y:66},
+        {x:68,y:48},{x:78,y:62},{x:86,y:40},{x:90,y:58},{x:92,y:26},
+      ];
+      let html = `<div class="subpill"><b>Kampagne</b> · Staffel 1: Grasland (10 Levels)</div>
+      <div style="margin-top:10px;color:rgba(180,200,230,.92);font-weight:900;line-height:1.35">
+        Ziele: Schaffe alle Wellen eines Levels. Pro Level‑Abschluss: <b>+50🪙</b> (einmalig).
       </div>
-      <div class="cta" style="justify-content:flex-start;margin-top:10px;gap:8px">`;
+      <div class="campMap" aria-label="Kampagnenkarte (Staffel 1)">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="pathG" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stop-color="rgba(93,255,180,.22)"/>
+              <stop offset="1" stop-color="rgba(34,211,238,.10)"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 74 L22 56 L32 70 L44 52 L56 66 L68 48 L78 62 L86 40 L90 58 L92 26"
+            fill="none" stroke="url(#pathG)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 74 L22 56 L32 70 L44 52 L56 66 L68 48 L78 62 L86 40 L90 58 L92 26"
+            fill="none" stroke="rgba(255,215,106,.10)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
       for (let i=1;i<=10;i++){
         const locked = i > campUnlocked;
-        html += `<button ${locked?'disabled':''} class="${locked?'':'primary'}" data-lv="${i}">L${i}</button>`;
+        const p = nodes[i-1];
+        const waves = (CH1_LEVELS[i-1] && CH1_LEVELS[i-1].waves) ? CH1_LEVELS[i-1].waves.length : 1;
+        html += `<button class="campNode ${locked?'':'primary'}" style="left:${p.x}%;top:${p.y}%"
+          ${locked?'disabled':''} data-lv="${i}">L${i}<small>${waves} Wellen</small></button>`;
       }
       html += `</div>
       <div style="margin-top:10px;color:rgba(200,220,255,.72);font-weight:800">Unlocked: ${campUnlocked}/10</div>`;
@@ -2110,9 +3499,7 @@ const c = document.getElementById("c");
       openSettings();
     });
     btnMenuClose.addEventListener("click", ()=>{
-      // only close menu if a game mode is running
-      hideMenu();
-      if (gameMode === "menu") { gameMode = "campaign"; startCampaign(); }
+      closeMenuAndReturn();
     });
     btnTutorialExit.addEventListener("click", ()=>{
       tutorialOn = false;
@@ -2135,6 +3522,12 @@ const c = document.getElementById("c");
       settings.autostart = chkAutostart.checked;
       saveSettings();
     });
+    if (rngSfx){
+      rngSfx.addEventListener("input", ()=>{
+        settings.sfxVol = clamp((+rngSfx.value || 0) / 100, 0, 1);
+        saveSettings();
+      });
+    }
 
     // ensure the menu has a living background on first load
     showMenu();

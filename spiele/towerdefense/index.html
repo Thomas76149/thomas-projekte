@@ -29,30 +29,23 @@
           <span class="pill" id="wave">Wave: 1</span>
           <span class="pill" id="kills">Kills: 0</span>
           <span class="pill" id="money">€0</span>
+          <span class="pill" id="coins">🪙0</span>
           <span class="pill" id="limit">Türme: 0/20</span>
           <span class="pill" id="hp">Base: 5</span>
         </div>
       </div>
       <canvas id="c" width="1560" height="900" aria-label="Tower Defense"></canvas>
       <div class="loadout" id="loadout" aria-label="Loadout">
-        <div class="slot" data-slot="0">
-          <div style="display:grid;place-items:center;gap:6px">
-            <svg class="sico" viewBox="0 0 64 64" aria-hidden="true">
-              <path fill="rgba(220,235,255,.92)" d="M10 28h30c2 0 4 2 4 4v6h-6v-4H24v10c0 2-2 4-4 4H10v-6h8V28z"/>
-              <path fill="rgba(255,215,106,.75)" d="M40 28h10v6H40z"/>
-              <path fill="rgba(34,211,238,.35)" d="M18 44h8v4h-8z"/>
-            </svg>
-            <div><b>Pistole</b><small id="mgCost">€50</small></div>
-          </div>
-        </div>
-        <div class="slot empty" data-slot="1"><div><b>—</b><small>soon</small></div></div>
-        <div class="slot empty" data-slot="2"><div><b>—</b><small>soon</small></div></div>
-        <div class="slot empty" data-slot="3"><div><b>—</b><small>soon</small></div></div>
-        <div class="slot empty" data-slot="4"><div><b>—</b><small>soon</small></div></div>
+        <div class="slot" data-slot="0"></div>
+        <div class="slot empty" data-slot="1"></div>
+        <div class="slot empty" data-slot="2"></div>
+        <div class="slot empty" data-slot="3"></div>
+        <div class="slot empty" data-slot="4"></div>
       </div>
       <div class="hint">Zieh den Turm unten aufs Feld. Turm‑Limit: 20. Kein Stapeln (Tabu‑Radius). Tippe Turm an für Move/Delete/Target‑Mode.</div>
     </div>
   </div>
+  <div class="miniToast" id="miniToast" aria-live="polite" aria-atomic="true"></div>
   <div class="ghost" id="ghost" aria-hidden="true">MG</div>
   <div class="overlay" id="towerMenu" aria-hidden="true">
     <div class="panel">
@@ -140,7 +133,10 @@
           <h2 class="title">Tower Defense</h2>
           <p class="sub">Tutorial · Kampagne · Shop · Settings</p>
         </div>
-        <div class="kbd">M = Menü</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <span class="pill" id="menuCoins">🪙0</span>
+          <div class="kbd">M = Menü</div>
+        </div>
       </div>
 
       <div class="menuGrid" aria-label="Menü">
@@ -204,10 +200,15 @@
       </div>
       <div class="winBody">
         <label class="setRow">
-          <span>Auto‑Start beim Platzieren</span>
+          <span>Autostart</span>
           <input id="chkAutostart" type="checkbox" />
         </label>
-        <div class="setHint">Wenn an: Sobald du einen Turm ziehst/platzierst, startet die Runde automatisch.</div>
+        <div class="setHint">Wenn an: Nach einer Welle startet die nächste automatisch. Wenn aus: Du drückst Start für jede Welle.</div>
+        <label class="setRow" style="margin-top:14px">
+          <span>Sound</span>
+          <input id="rngSfx" type="range" min="0" max="100" value="80" />
+        </label>
+        <div class="setHint">0 = aus · 100 = sehr laut</div>
       </div>
     </div>
   </div>
@@ -217,12 +218,13 @@
       <div class="winTop">
         <div>
           <div class="winTitle">Shop</div>
-          <div class="winSub">Neue Türme (kommt gleich)</div>
+          <div class="winSub">Neue Türme kaufen (Münzen)</div>
         </div>
         <button id="btnShopClose">Close</button>
       </div>
       <div class="winBody">
-        <div class="subpill" style="display:inline-block">Hier kaufst du später neue Türme + Loadouts.</div>
+        <div class="subpill" style="display:inline-block">Münzen: <b id="shopCoins">🪙0</b></div>
+        <div id="shopList" style="margin-top:12px"></div>
       </div>
     </div>
   </div>
