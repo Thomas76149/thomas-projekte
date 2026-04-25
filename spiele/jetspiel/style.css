@@ -41,6 +41,15 @@
       html, body { height: 100%; }
       body { overflow: hidden; height: 100dvh; }
     }
+
+    /* Mobile Layout: Canvas bekommt Resthöhe, Touchbar bleibt erreichbar */
+    @media (pointer: coarse) {
+      body {
+        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+      }
+      .gameRow { flex: 1 1 auto; min-height: 0; }
+      .canvasWrap { height: 100%; }
+    }
     /* Wenn der Hangar offen ist, soll die Seite nicht "wegscrollen". */
     body.phase-shop {
       overflow: hidden;
@@ -756,6 +765,22 @@
     }
     @media (max-width: 900px) {
       .touch { display: grid; }
+    }
+
+    /* Querformat (Handy): eine Reihe, kompakter */
+    @media (max-width: 900px) and (orientation: landscape) {
+      .touch {
+        grid-template-columns: repeat(8, 1fr);
+        gap: 6px;
+      }
+      .touch button {
+        padding: 10px 8px;
+        font-size: 0.58rem;
+        min-height: 42px;
+      }
+      /* etwas mehr Platz fürs Spielfeld */
+      .gameRow { border-radius: 14px; }
+      .canvasWrap { aspect-ratio: auto; }
     }
     .touch button {
       padding: 14px;

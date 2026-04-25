@@ -7,8 +7,10 @@
   const countLine = document.getElementById("countLine");
 
   const secGames = document.getElementById("secGames");
+  const secOnline = document.getElementById("secOnline");
   const secTests = document.getElementById("secTests");
   const gridGames = document.getElementById("gridGames");
+  const gridOnline = document.getElementById("gridOnline");
   const gridTests = document.getElementById("gridTests");
 
   let filter = "all";
@@ -29,8 +31,9 @@
   }
 
   function render() {
-    if (!gridGames || !gridTests) return;
+    if (!gridGames || !gridTests || !gridOnline) return;
     gridGames.innerHTML = "";
+    gridOnline.innerHTML = "";
     gridTests.innerHTML = "";
 
     const sorted = [...items].sort((a, b) => {
@@ -60,6 +63,7 @@
 
       const sec = (it.section || (tags.includes("test") || tags.includes("tool") ? "tests" : "games")).toLowerCase();
       if (sec === "tests") gridTests.appendChild(a);
+      else if (sec === "online") gridOnline.appendChild(a);
       else gridGames.appendChild(a);
     }
   }
@@ -69,6 +73,7 @@
     const tiles = [...document.querySelectorAll(".tile[data-tags]")];
     let shown = 0;
     let shownGames = 0;
+    let shownOnline = 0;
     let shownTests = 0;
 
     for (const t of tiles) {
@@ -80,12 +85,15 @@
       t.classList.toggle("hidden", !ok);
       if (ok) {
         shown++;
+        const sec = (t.closest(".section")?.id || "").toLowerCase();
         if (tags.includes("test") || tags.includes("tool")) shownTests++;
+        else if (sec.includes("online")) shownOnline++;
         else shownGames++;
       }
     }
 
     secGames?.classList.toggle("hidden", shownGames === 0);
+    secOnline?.classList.toggle("hidden", shownOnline === 0);
     secTests?.classList.toggle("hidden", shownTests === 0);
     if (countLine) countLine.textContent = shown ? `${shown} Treffer` : "Keine Treffer.";
   }
