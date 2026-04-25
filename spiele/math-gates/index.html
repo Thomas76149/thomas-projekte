@@ -4,18 +4,17 @@
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-  <title>Breakout · thomas.fun</title>
-  <meta name="description" content="Breakout/Arkanoid‑Lite: Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch & Keyboard." />
+  <title>Math Gates · thomas.fun</title>
+  <meta name="description" content="Runner ohne Werbung: Mathe‑Gates, Hindernisse, Boss am Ende." />
   <meta name="theme-color" content="#0c0c0f" />
-  
   <link rel="stylesheet" href="style.css" />
-  <script defer src="game.js"></script>
+  <script defer src="game.js?v=8"></script>
   <link rel="stylesheet" href="../_game-shell.css" />
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>Breakout</h1>
+      <h1>Math Gates</h1>
       <a href="../../index.html">← zurück</a>
     </header>
 
@@ -23,22 +22,23 @@
       <div class="top">
         <div class="controls">
           <button class="primary" id="btnStart">Start</button>
-          <button id="btnReset">Reset</button>
-          <select id="diff" aria-label="Schwierigkeit">
-            <option value="easy">Easy</option>
-            <option value="normal" selected>Normal</option>
-            <option value="hard">Hard</option>
-          </select>
+          <button id="btnRestart">Neu</button>
+          <div class="mode" role="group" aria-label="Schwierigkeit">
+            <button class="chip active" id="btnEasy" type="button" title="Einfacher: mehr gute Gates, weniger Gegner">Easy</button>
+            <button class="chip" id="btnHard" type="button" title="Schwerer: fiesere Gates, mehr Gegner, Boss stärker">Hard</button>
+          </div>
         </div>
         <div class="meta">
-          <span class="pill" id="score">Score: 0</span>
-          <span class="pill" id="lives">Leben: 3</span>
-          <span class="pill" id="best">Best: 0</span>
+          <span class="pill" id="count">👥 1</span>
+          <span class="pill" id="stage">Strecke: 0%</span>
+          <span class="pill" id="best">Best: —</span>
         </div>
       </div>
 
-      <canvas id="c" width="960" height="540" aria-label="Breakout Spielfeld"></canvas>
-      <div class="hint">Pfeile/A‑D oder Touch‑Drag. Zielen wenn Ball “klebt” → dann Space / Serve‑Button. (ESC = Pause)</div>
+      <canvas id="c" width="1200" height="720" aria-label="Math Gates"></canvas>
+      <div class="hint">
+        <b>Steuerung:</b> A/D oder ←/→ · Auf Handy: wischen · Ziel: am Boss genug Leute haben.
+      </div>
     </div>
   </div>
 
@@ -52,8 +52,6 @@
       </div>
     </div>
   </div>
-
-  
 </body>
 </html>
 
