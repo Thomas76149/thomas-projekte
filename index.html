@@ -252,6 +252,7 @@
         <button class="chip" type="button" data-filter="test" aria-pressed="false">Tests</button>
         <button class="chip" type="button" data-filter="arcade" aria-pressed="false">Arcade</button>
         <button class="chip" type="button" data-filter="puzzle" aria-pressed="false">Puzzle</button>
+        <button class="chip" type="button" data-filter="mobile" aria-pressed="false">Handy</button>
       </div>
     </div>
 
@@ -260,7 +261,7 @@
     <div class="section" id="secGames">
       <h2>Spiele</h2>
       <div class="grid" id="gridGames">
-      <a class="tile" data-tags="game arcade canvas" href="spiele/jetspiel.html">
+      <a class="tile" data-tags="game arcade canvas mobile" href="spiele/jetspiel.html">
         <div class="tile__emoji" aria-hidden="true">🎮</div>
         <div class="tile__label">Canvas · Arcade</div>
         <h2 class="tile__title">Jet‑Kampf</h2>
@@ -268,7 +269,7 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game board mini" href="spiele/tictactoe.html">
+      <a class="tile" data-tags="game board mini mobile" href="spiele/tictactoe.html">
         <div class="tile__emoji" aria-hidden="true">❎</div>
         <div class="tile__label">Board · Mini</div>
         <h2 class="tile__title">Tic‑Tac‑Toe</h2>
@@ -276,7 +277,7 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game puzzle memory" href="spiele/memory.html">
+      <a class="tile" data-tags="game puzzle memory mobile" href="spiele/memory.html">
         <div class="tile__emoji" aria-hidden="true">🧠</div>
         <div class="tile__label">Puzzle</div>
         <h2 class="tile__title">Memory</h2>
@@ -284,7 +285,7 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game puzzle 2048" href="spiele/2048.html">
+      <a class="tile" data-tags="game puzzle 2048 mobile" href="spiele/2048.html">
         <div class="tile__emoji" aria-hidden="true">🧩</div>
         <div class="tile__label">Puzzle</div>
         <h2 class="tile__title">2048</h2>
@@ -292,7 +293,7 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game puzzle minesweeper board" href="spiele/minesweeper.html">
+      <a class="tile" data-tags="game puzzle minesweeper board mobile" href="spiele/minesweeper.html">
         <div class="tile__emoji" aria-hidden="true">💣</div>
         <div class="tile__label">Puzzle · Board</div>
         <h2 class="tile__title">Minesweeper</h2>
@@ -300,7 +301,7 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game arcade snake" href="spiele/snake.html">
+      <a class="tile" data-tags="game arcade snake mobile" href="spiele/snake.html">
         <div class="tile__emoji" aria-hidden="true">🐍</div>
         <div class="tile__label">Arcade</div>
         <h2 class="tile__title">Snake</h2>
@@ -316,6 +317,14 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
+      <a class="tile" data-tags="game arcade breakout canvas mobile" href="spiele/breakout.html">
+        <div class="tile__emoji" aria-hidden="true">🧱</div>
+        <div class="tile__label">Canvas · Arcade</div>
+        <h2 class="tile__title">Breakout</h2>
+        <p class="tile__desc">Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch &amp; Keyboard.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
       <a class="tile" data-tags="game arcade asteroids space" href="spiele/asteroids.html">
         <div class="tile__emoji" aria-hidden="true">🪐</div>
         <div class="tile__label">Arcade · Physics</div>
@@ -324,7 +333,7 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game mini rps" href="spiele/rps.html">
+      <a class="tile" data-tags="game mini rps mobile" href="spiele/rps.html">
         <div class="tile__emoji" aria-hidden="true">🪨</div>
         <div class="tile__label">Mini</div>
         <h2 class="tile__title">Stein‑Schere‑Papier</h2>
@@ -338,7 +347,7 @@
       <h2>Tests & Tools</h2>
       <div class="grid" id="gridTests">
 
-      <a class="tile" data-tags="test tool cps" href="spiele/cps.html">
+      <a class="tile" data-tags="test tool cps mobile" href="spiele/cps.html">
         <div class="tile__emoji" aria-hidden="true">🖱️</div>
         <div class="tile__label">Test</div>
         <h2 class="tile__title">CPS‑Tester</h2>
@@ -346,7 +355,7 @@
         <div class="tile__go">Testen →</div>
       </a>
 
-      <a class="tile" data-tags="test tool reflex" href="spiele/reflex.html">
+      <a class="tile" data-tags="test tool reflex mobile" href="spiele/reflex.html">
         <div class="tile__emoji" aria-hidden="true">⚡</div>
         <div class="tile__label">Test</div>
         <h2 class="tile__title">Reflex‑Test</h2>
@@ -362,7 +371,7 @@
         <div class="tile__go">Öffnen →</div>
       </a>
 
-      <a class="tile" href="spiele/todo.html">
+      <a class="tile" data-tags="tool mobile" href="spiele/todo.html">
         <div class="tile__emoji" aria-hidden="true">✅</div>
         <div class="tile__label">App</div>
         <h2 class="tile__title">To‑Do Liste</h2>
@@ -370,7 +379,7 @@
         <div class="tile__go">Öffnen →</div>
       </a>
 
-      <a class="tile" href="spiele/spielchen.html">
+      <a class="tile" data-tags="game reflex mobile" href="spiele/spielchen.html">
         <div class="tile__emoji" aria-hidden="true">🛰️</div>
         <div class="tile__label">Reflex</div>
         <h2 class="tile__title">Satelliten‑Ping</h2>
