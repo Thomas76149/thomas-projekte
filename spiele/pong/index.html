@@ -65,6 +65,13 @@
             <option value="hard">Bot: hard</option>
           </select>
         </div>
+        <div class="controls" style="gap:10px;align-items:center">
+          <span class="pill" id="netStat" style="border-color:rgba(255,255,255,.14)">Offline</span>
+          <input id="netUrl" placeholder="wss://… (Server)" style="min-width:240px;max-width:min(46vw,420px);padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:800" />
+          <input id="room" placeholder="Room (z.B. ABCD1)" style="width:150px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:900;letter-spacing:.12em;text-transform:uppercase" />
+          <button id="btnHost" type="button">Host</button>
+          <button id="btnJoin" type="button">Join</button>
+        </div>
         <div class="controls">
           <span id="score" style="color:rgba(255,255,255,.9);font-weight:1000;letter-spacing:.12em">0 : 0</span>
         </div>
@@ -93,6 +100,11 @@
     const btnReset = document.getElementById("btnReset");
     const aiSel = document.getElementById("ai");
     const scoreEl = document.getElementById("score");
+    const netStat = document.getElementById("netStat");
+    const netUrl = document.getElementById("netUrl");
+    const roomInp = document.getElementById("room");
+    const btnHost = document.getElementById("btnHost");
+    const btnJoin = document.getElementById("btnJoin");
     const ov = document.getElementById("ov");
     const ovTitle = document.getElementById("ovTitle");
     const ovText = document.getElementById("ovText");
@@ -142,6 +154,115 @@
     let aiAimY = c.height / 2;
     let aiThinkAcc = 0;
 
+    // Online mode
+    let ws = null;
+    let online = false;
+    let mySide = "L"; // L or R
+    let roomCode = "";
+    let remotePeers = 0;
+    const keysNet = { up:false, down:false };
+
+    function setNetLabel(txt, ok=false){
+      netStat.textContent = txt;
+      netStat.style.borderColor = ok ? "rgba(93,255,180,.35)" : "rgba(255,255,255,.14)";
+      netStat.style.color = ok ? "rgba(93,255,180,.95)" : "rgba(255,255,255,.85)";
+    }
+
+    function defaultWsUrl(){
+      // If served from same host (when you later host both), auto-detect; otherwise user pastes URL.
+      const isHttps = location.protocol === "https:";
+      const proto = isHttps ? "wss://" : "ws://";
+      return proto + location.hostname + (location.port ? (":" + location.port) : "");
+    }
+    try{
+      netUrl.value = localStorage.getItem("pong_ws_url") || "";
+    } catch {}
+    if (!netUrl.value) netUrl.value = defaultWsUrl();
+
+    function connect(code){
+      const url = (netUrl.value || "").trim();
+      if (!url) return;
+      try { localStorage.setItem("pong_ws_url", url); } catch {}
+
+      // disconnect old
+      try { ws && ws.close(); } catch {}
+      ws = null;
+      online = true;
+      setNetLabel("Verbinden…");
+
+      ws = new WebSocket(url.replace(/^http/i, "ws"));
+      ws.addEventListener("open", ()=>{
+        setNetLabel("Connected", true);
+        ws.send(JSON.stringify({t:"join", code}));
+      });
+      ws.addEventListener("close", ()=>{
+        setNetLabel("Offline");
+        online = false;
+        remotePeers = 0;
+      });
+      ws.addEventListener("error", ()=>{
+        setNetLabel("Fehler");
+      });
+      ws.addEventListener("message", (ev)=>{
+        let msg=null;
+        try{ msg = JSON.parse(ev.data); }catch{}
+        if (!msg) return;
+        if (msg.t === "err"){
+          setNetLabel(msg.m || "Fehler");
+          return;
+        }
+        if (msg.t === "joined"){
+          roomCode = msg.code || "";
+          mySide = msg.side || "L";
+          roomInp.value = roomCode;
+          setNetLabel(`Online · ${roomCode} · Du: ${mySide}`, true);
+          aiSel.disabled = true;
+          resetGame();
+          draw();
+          return;
+        }
+        if (msg.t === "peers"){
+          remotePeers = Number(msg.n||0);
+          return;
+        }
+        if (msg.t === "reset"){
+          resetGame();
+          return;
+        }
+        if (msg.t === "run"){
+          // server started
+          if (!running) start();
+          return;
+        }
+        if (msg.t === "over"){
+          // server ended; show overlay locally
+          running = false;
+          cancelAnimationFrame(raf);
+          showOverlay(msg.w === mySide);
+          return;
+        }
+        if (msg.t === "state" && msg.s){
+          const s = msg.s;
+          // authoritative snapshot
+          if (typeof s.sL === "number") sL = s.sL;
+          if (typeof s.sR === "number") sR = s.sR;
+          if (s.L && typeof s.L.y === "number") left.y = s.L.y;
+          if (s.R && typeof s.R.y === "number") right.y = s.R.y;
+          if (s.B){
+            ball.x = s.B.x; ball.y = s.B.y;
+            ball.vx = s.B.vx; ball.vy = s.B.vy;
+            ball.spin = s.B.spin; ball.r = s.B.r;
+          }
+          syncScore();
+        }
+      });
+    }
+
+    function netSendInput(){
+      if (!ws || ws.readyState !== 1) return;
+      ws.send(JSON.stringify({t:"in", up: keysNet.up, down: keysNet.down}));
+    }
+
     function resetRound(dir=1){
       ball = { x:c.width/2, y:c.height/2, vx: 420*dir, vy: (Math.random()*2-1)*220, spin: 0, ...ball0 };
       left.y = c.height/2-left.h/2;
@@ -180,27 +301,39 @@
       const up = keys.has("ArrowUp") || keys.has("KeyW");
       const down = keys.has("ArrowDown") || keys.has("KeyS");
       const prevLY = left.y;
-      if (up) left.y -= left.sp*sec;
-      if (down) left.y += left.sp*sec;
-      left.y = clamp(left.y, 10, c.height-left.h-10);
-      leftVy = (left.y - prevLY) / Math.max(0.001, sec);
+      if (!online){
+        if (up) left.y -= left.sp*sec;
+        if (down) left.y += left.sp*sec;
+        left.y = clamp(left.y, 10, c.height-left.h-10);
+        leftVy = (left.y - prevLY) / Math.max(0.001, sec);
+      } else {
+        // local input belongs to my side only
+        const p = (mySide === "L") ? left : right;
+        keysNet.up = !!up;
+        keysNet.down = !!down;
+        netSendInput();
+        // movement is server-side; we keep the physics local only for rendering smoothness via snapshots
+        leftVy = (p.y - prevLY) / Math.max(0.001, sec);
+      }
 
       // AI (schlagbar): nur "denken" alle X ms, leichtes Fehlziel + capped speed + tracked nur wenn Ball auf ihn zufliegt.
-      const lvl = aiSel.value;
-      const thinkEvery = lvl === "easy" ? 260 : lvl === "hard" ? 120 : 220;
-      aiThinkAcc += dt;
-      if (aiThinkAcc >= thinkEvery) {
-        aiThinkAcc -= thinkEvery;
-        aiAimY = predictInterceptY();
-        const miss = lvl === "easy" ? 52 : lvl === "hard" ? 14 : 44;
-        aiAimY += (Math.random() - 0.5) * miss;
-        aiAimY = clamp(aiAimY, 10 + right.h / 2, c.height - 10 - right.h / 2);
+      if (!online){
+        const lvl = aiSel.value;
+        const thinkEvery = lvl === "easy" ? 260 : lvl === "hard" ? 120 : 220;
+        aiThinkAcc += dt;
+        if (aiThinkAcc >= thinkEvery) {
+          aiThinkAcc -= thinkEvery;
+          aiAimY = predictInterceptY();
+          const miss = lvl === "easy" ? 52 : lvl === "hard" ? 14 : 44;
+          aiAimY += (Math.random() - 0.5) * miss;
+          aiAimY = clamp(aiAimY, 10 + right.h / 2, c.height - 10 - right.h / 2);
+        }
+        const aim = aiAimY - (right.y + right.h/2);
+        const react = lvl==="easy"?0.68:lvl==="hard"?1.02:0.72;
+        const max = right.sp * react;
+        right.y += clamp(aim, -max*sec, max*sec);
+        right.y = clamp(right.y, 10, c.height-right.h-10);
       }
-      const aim = aiAimY - (right.y + right.h/2);
-      const react = lvl==="easy"?0.68:lvl==="hard"?1.02:0.72;
-      const max = right.sp * react;
-      right.y += clamp(aim, -max*sec, max*sec);
-      right.y = clamp(right.y, 10, c.height-right.h-10);
 
       ball.x += ball.vx*sec;
       ball.y += ball.vy*sec;
@@ -325,6 +458,9 @@
       if (running) return;
       running = true;
       last = 0;
+      if (online && ws && ws.readyState === 1){
+        ws.send(JSON.stringify({t:"start"}));
+      }
       raf = requestAnimationFrame(loop);
     }
 
@@ -394,6 +530,15 @@
     btnStart.addEventListener("click", start);
     btnReset.addEventListener("click", resetGame);
     aiSel.addEventListener("change", resetGame);
+    btnHost.addEventListener("click", ()=>{
+      const code = (roomInp.value || "").trim() || "";
+      connect(code); // server will create if missing
+    });
+    btnJoin.addEventListener("click", ()=>{
+      const code = (roomInp.value || "").trim();
+      if (!code) { setNetLabel("Room fehlt"); return; }
+      connect(code);
+    });
     resetGame();
   </script>
 </body>
