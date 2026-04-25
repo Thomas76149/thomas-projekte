@@ -651,6 +651,7 @@
   function beginCombatWave() {
     phase = "combat";
     body.classList.remove("phase-shop");
+    body.classList.add("phase-combat");
     upgradeHud.hidden = true;
     if (shopContinueBar) shopContinueBar.hidden = true;
     // QoL: always keep the game aligned (no manual scrolling).
@@ -715,6 +716,7 @@
   function beginShopPhase() {
     phase = "shop";
     body.classList.add("phase-shop");
+    body.classList.remove("phase-combat");
     recordMetaWave(wave);
     upgradeHud.hidden = false;
     if (shopContinueBar) shopContinueBar.hidden = false;
@@ -3180,6 +3182,7 @@
             paused = false;
             if (pauseOverlay) pauseOverlay.hidden = true;
             body.classList.remove("phase-shop");
+            body.classList.remove("phase-combat");
             goText.textContent = `Game Over (${diff().label}) — ${score} Punkte · Welle ${wave} · ${credits} ₡`;
             gameOverOverlay.hidden = false;
           } else if (lives === 1 && lastOneLifeVoiceWave !== wave) {
@@ -3297,6 +3300,7 @@
           paused = false;
           if (pauseOverlay) pauseOverlay.hidden = true;
           body.classList.remove("phase-shop");
+          body.classList.remove("phase-combat");
           goText.textContent = `Game Over (${diff().label}) — ${score} Punkte · Welle ${wave} · ${credits} ₡`;
           gameOverOverlay.hidden = false;
         } else {
@@ -3560,6 +3564,7 @@
     startOverlay.hidden = true;
     paused = false;
     if (pauseOverlay) pauseOverlay.hidden = true;
+    body.classList.add("phase-combat");
     resetGame();
     gameOverOverlay.hidden = true;
     running = true;
@@ -3582,6 +3587,7 @@
     gameOverOverlay.hidden = true;
     startOverlay.hidden = false;
     body.classList.remove("phase-shop");
+    body.classList.remove("phase-combat");
     syncHud();
     ensureShipPreviewRunning();
   });

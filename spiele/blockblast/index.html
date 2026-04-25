@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="de" class="thomasfun-fit">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>BlockBlast · thomas.fun</title>
+  <meta name="description" content="BlockBlast: Blöcke platzieren, Reihen/Spalten löschen, Highscore jagen." />
+  <meta name="theme-color" content="#0c0c0f" />
+  <link rel="stylesheet" href="style.css?v=1" />
+  <link rel="stylesheet" href="../_game-shell.css" />
+  <script defer src="game.js?v=1"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>BlockBlast</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button class="primary" id="btnNew" type="button">Neues Spiel</button>
+          <button id="btnUndo" type="button" disabled>Undo</button>
+        </div>
+        <div class="meta">
+          <span class="pill" id="score">Score: 0</span>
+          <span class="pill" id="best">Best: —</span>
+        </div>
+      </div>
+
+      <div class="boardWrap">
+        <canvas id="c" width="720" height="720" aria-label="BlockBlast Spielfeld"></canvas>
+      </div>
+
+      <div class="tray" aria-label="Blöcke">
+        <div class="slot" id="slot0"></div>
+        <div class="slot" id="slot1"></div>
+        <div class="slot" id="slot2"></div>
+      </div>
+
+      <div class="hint" id="hint">
+        Tippen: Block wählen → aufs Feld tippen. Oder ziehen & loslassen. Volle Reihen/Spalten werden gelöscht.
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov" aria-hidden="true">
+    <div class="panel">
+      <h2 id="ovTitle">—</h2>
+      <p id="ovText">—</p>
+      <div class="cta">
+        <button class="primary" id="ovAgain" type="button">Nochmal</button>
+        <button id="ovClose" type="button">Schließen</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

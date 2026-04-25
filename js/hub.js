@@ -14,6 +14,42 @@
   const gridTests = document.getElementById("gridTests");
 
   let filter = "all";
+  const FILTER_LS_KEY = "hub_filter_v1";
+
+  function isMobileLike() {
+    try {
+      // iPadOS meldet sich teils als Mac; pointer+touch ist hier zuverlässiger.
+      const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+      const small = Math.min(window.innerWidth || 9999, window.innerHeight || 9999) <= 900;
+      const touch = (navigator.maxTouchPoints || 0) > 1;
+      return coarse || (touch && small);
+    } catch {
+      return false;
+    }
+  }
+
+  function applyFilter(next) {
+    filter = next || "all";
+    chips.forEach((x) => x.setAttribute("aria-pressed", x.getAttribute("data-filter") === filter ? "true" : "false"));
+    try { localStorage.setItem(FILTER_LS_KEY, filter); } catch {}
+    apply();
+  }
+
+  function initialFilter() {
+    // 1) URL override: ?filter=mobile
+    try {
+      const p = new URLSearchParams(location.search);
+      const f = (p.get("filter") || "").toLowerCase().trim();
+      if (f) return f;
+    } catch {}
+    // 2) last chosen
+    try {
+      const last = (localStorage.getItem(FILTER_LS_KEY) || "").toLowerCase().trim();
+      if (last) return last;
+    } catch {}
+    // 3) auto on mobile-like devices
+    return isMobileLike() ? "mobile" : "all";
+  }
 
   function el(tag, attrs = {}, children = []) {
     const n = document.createElement(tag);
@@ -100,22 +136,18 @@
 
   chips.forEach((c) => {
     c.addEventListener("click", () => {
-      filter = c.getAttribute("data-filter") || "all";
-      chips.forEach((x) => x.setAttribute("aria-pressed", x === c ? "true" : "false"));
-      apply();
+      applyFilter(c.getAttribute("data-filter") || "all");
     });
   });
 
   q?.addEventListener("input", apply);
   btnClear?.addEventListener("click", () => {
     if (q) q.value = "";
-    filter = "all";
-    chips.forEach((x) => x.setAttribute("aria-pressed", x.getAttribute("data-filter") === "all" ? "true" : "false"));
-    apply();
+    applyFilter("all");
     q?.focus();
   });
 
   render();
-  apply();
+  applyFilter(initialFilter());
 })();
 

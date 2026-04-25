@@ -20,7 +20,9 @@
     html, body {
       margin: 0;
       height: 100%;
-      overflow: hidden; /* kein Page-Scroll (Shop/Overlays scrollen intern) */
+      overflow-x: hidden;
+      overflow-y: auto; /* Menü/Overlays dürfen scrollen */
+      -webkit-overflow-scrolling: touch;
       background:
         radial-gradient(1200px 700px at 50% -20%, rgba(86, 140, 255, 0.18), transparent 55%),
         var(--bg);
@@ -28,7 +30,7 @@
       font-family: "Segoe UI", system-ui, sans-serif;
     }
     body {
-      height: 100dvh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -39,7 +41,7 @@
     /* Auf Handys: keine Seiten-Scrollbars (Map bewegt sich im Spiel) */
     @media (pointer: coarse) {
       html, body { height: 100%; }
-      body { overflow: hidden; height: 100dvh; }
+      body { height: 100dvh; }
     }
 
     /* Mobile Layout: Canvas bekommt Resthöhe, Touchbar bleibt erreichbar */
@@ -51,8 +53,15 @@
       .canvasWrap { height: 100%; }
     }
 
-    /* Desktop ebenfalls: Spielfeld soll den Rest der Höhe nehmen, ohne Scroll */
-    .gameRow { flex: 1 1 auto; min-height: 0; }
+    /* Nur WÄHREND Kampf: kein Page-Scroll */
+    body.phase-combat {
+      overflow: hidden;
+      height: 100dvh;
+    }
+    /* während Kampf: maximaler Platz fürs Canvas */
+    body.phase-combat footer { display: none; }
+    body.phase-combat .soundRow { display: none; }
+    body.phase-combat { padding-top: 6px; }
     /* Wenn der Hangar offen ist, soll die Seite nicht "wegscrollen". */
     body.phase-shop {
       overflow: hidden;
@@ -141,11 +150,20 @@
       box-shadow: 0 28px 100px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
       background: #000;
     }
+    /* In Kampf-Phase soll das Spielfeld die Resthöhe bekommen */
+    body.phase-combat .gameRow {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
     .canvasWrap {
       position: relative;
       width: 100%;
       aspect-ratio: 16 / 9;
       background: radial-gradient(ellipse at 30% 20%, rgba(30, 50, 100, 0.4), #000);
+    }
+    body.phase-combat .canvasWrap {
+      flex: 1 1 auto;
+      min-height: 0;
     }
     .topGameBar {
       position: absolute;
