@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de" class="thomasfun-fit">
+<head>
+  <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>Breakout · thomas.fun</title>
+  <meta name="description" content="Breakout/Arkanoid‑Lite: Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch & Keyboard." />
+  <meta name="theme-color" content="#0c0c0f" />
+  
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="game.js"></script>
+  <link rel="stylesheet" href="../_game-shell.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Breakout</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button class="primary" id="btnStart">Start</button>
+          <button id="btnReset">Reset</button>
+          <select id="diff" aria-label="Schwierigkeit">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <div class="meta">
+          <span class="pill" id="score">Score: 0</span>
+          <span class="pill" id="lives">Leben: 3</span>
+          <span class="pill" id="best">Best: 0</span>
+        </div>
+      </div>
+
+      <canvas id="c" width="960" height="540" aria-label="Breakout Spielfeld"></canvas>
+      <div class="hint">Pfeile/A‑D oder Touch‑Drag. Zielen wenn Ball “klebt” → dann Space / Serve‑Button. (ESC = Pause)</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov" aria-hidden="true">
+    <div class="panel">
+      <h2 id="ovTitle">—</h2>
+      <p id="ovText">—</p>
+      <div class="cta">
+        <button class="primary" id="ovAgain">Nochmal</button>
+        <button id="ovClose">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  
+</body>
+</html>
+

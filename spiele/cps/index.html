@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de" class="thomasfun-fit">
+<head>
+  <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>CPS‑Tester · thomas.fun</title>
+  <meta name="description" content="CPS Tester: eigene Zeit 0,1s–60s, Klicks zählen beim Drücken, Bestwert." />
+  <meta name="theme-color" content="#0c0c0f" />
+  <style>
+    :root{
+      --bg:#0c0c0f;--border:#2a2a34;--text:#f4f4f5;--muted:#a1a1aa;--accent:#f97316;--accent2:#22d3ee;
+      --good:#5dffb4;--bad:#ff6b6b;--gold:#ffd76a;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Outfit,sans-serif}
+    a{color:var(--accent2);text-decoration:none}
+    .wrap{width:min(980px,92vw);display:grid;gap:14px}
+    header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:1.1rem;letter-spacing:.18em;text-transform:uppercase}
+    .card{
+      background:
+        radial-gradient(900px 420px at 20% 0%, rgba(34,211,238,.12), rgba(0,0,0,0)),
+        linear-gradient(155deg,rgba(38,52,92,.96),rgba(12,16,36,.98));
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:20px;
+      padding:16px;
+      box-shadow:0 18px 50px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button,.durRow input[type="number"]{
+      font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);
+      color:var(--text);padding:10px 14px;font-weight:900;
+      min-height:44px; touch-action: manipulation;
+    }
+    button{cursor:pointer}
+    button:hover{border-color:rgba(255,255,255,.22);filter:brightness(1.04)}
+    button:active{transform:translateY(1px)}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .durRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .durRow label{font-weight:950;color:rgba(200,220,255,.92);font-size:.92rem;white-space:nowrap}
+    .durRow input[type="number"]{
+      width:min(160px,42vw);
+      text-align:center;
+      -moz-appearance:textfield;
+      appearance:textfield;
+    }
+    .durRow input[type="number"]::-webkit-outer-spin-button,
+    .durRow input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0 }
+    .durRow input[type="range"]{
+      flex:1; min-width:160px; accent-color: var(--accent2);
+    }
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.9rem}
+    .pill{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:999px;
+      padding:6px 10px;
+      background:linear-gradient(165deg, rgba(0,0,0,.26), rgba(255,255,255,.05));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .big{
+      margin:14px 0 0;
+      font-size: clamp(2.2rem, 7vw, 3.2rem);
+      font-weight: 1000;
+      letter-spacing: .02em;
+      text-align:center;
+      text-shadow: 0 0 32px rgba(255,255,255,.12);
+      transition: transform .12s ease, opacity .12s ease;
+    }
+    .sub{margin:8px 0 10px;text-align:center;color:rgba(180,200,230,.9);font-weight:800;min-height:1.4em}
+    .zone{
+      position:relative;
+      overflow:hidden;
+      margin-top:12px;
+      border-radius:22px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: radial-gradient(700px 280px at 50% 10%, rgba(34,211,238,.14), rgba(0,0,0,.22));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      padding: 22px 14px 18px;
+      text-align:center;
+      user-select:none;
+      cursor:pointer;
+      touch-action: none;
+      transition: transform .14s cubic-bezier(.2,.9,.2,1), border-color .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .zone:hover{transform: translateY(-2px);border-color:rgba(154,208,255,.45);box-shadow:0 18px 46px rgba(86,167,255,.12), inset 0 1px 0 rgba(255,255,255,.08)}
+    .zone:active{transform: translateY(1px) scale(.985)}
+    .zone.running{
+      border-color:rgba(93,255,180,.45);
+      box-shadow:0 22px 60px rgba(93,255,180,.10), inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .zone.pulse{animation:pulse 1.6s ease-in-out infinite}
+    @keyframes pulse{
+      0%,100%{filter:saturate(1) brightness(1)}
+      50%{filter:saturate(1.08) brightness(1.05)}
+    }
+    .zone strong{display:block;font-size:1.15rem;letter-spacing:.14em;text-transform:uppercase}
+    .zone small{display:block;margin-top:8px;color:var(--muted);font-weight:800}
+    .bar{
+      position:absolute; left:0; right:0; bottom:0; height:6px;
+      background:rgba(0,0,0,.35);
+    }
+    .bar > i{
+      display:block; height:100%; width:0%;
+      background:linear-gradient(90deg, rgba(34,211,238,.25), rgba(93,255,180,.95));
+      transition: width .05s linear;
+    }
+    .hint{margin:10px 0 0;color:var(--muted);font-size:.9rem;text-align:center}
+  </style>
+  <link rel="stylesheet" href="../_game-shell.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>CPS‑Tester</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button type="button" id="btnReset">Reset</button>
+          <div class="durRow">
+            <label for="durSec">Zeit (s)</label>
+            <input id="durSec" type="number" inputmode="decimal" min="0.1" max="60" step="0.1" value="5" />
+            <input id="durRng" type="range" min="0.1" max="60" step="0.1" value="5" aria-label="Zeit Slider" />
+          </div>
+        </div>
+        <div class="meta">
+          <span class="pill" id="t">Zeit: —</span>
+          <span class="pill" id="clicks">Clicks: 0</span>
+          <span class="pill" id="best">Best: 0.00</span>
+        </div>
+      </div>
+
+      <div class="big" id="cpsBig">0.00 CPS</div>
+      <div class="sub" id="rating">Klick ins Feld – der erste Druck startet.</div>
+
+      <div class="zone pulse" id="zone" role="button" tabindex="0" aria-label="Klickbereich">
+        <strong>HIER DRÜCKEN</strong>
+        <small id="zoneHint">Jeder Druck zählt (nicht beim Loslassen).</small>
+        <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+      </div>
+
+      <div class="hint">Tipp: gleichmäßige Klicks sind oft besser als komplett random Spam.</div>
+    </div>
+  </div>
+
+  <script>
+    const btnReset = document.getElementById("btnReset");
+    const durSec = document.getElementById("durSec");
+    const durRng = document.getElementById("durRng");
+    const tEl = document.getElementById("t");
+    const clicksEl = document.getElementById("clicks");
+    const bestEl = document.getElementById("best");
+    const cpsBig = document.getElementById("cpsBig");
+    const ratingEl = document.getElementById("rating");
+    const zone = document.getElementById("zone");
+    const zoneHint = document.getElementById("zoneHint");
+    const barFill = document.getElementById("barFill");
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let actx = null;
+    function tone(freq, dur=0.06, type="sine", vol=0.05){
+      try{
+        actx ||= new AC();
+        if (actx.state === "suspended") actx.resume();
+        const t0 = actx.currentTime;
+        const o = actx.createOscillator();
+        const g = actx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t0);
+        const v0 = Math.max(0.000001, +vol || 0);
+        g.gain.setValueAtTime(v0, t0);
+        g.gain.linearRampToValueAtTime(0.000001, t0 + dur);
+        o.connect(g); g.connect(actx.destination);
+        o.start(t0); o.stop(t0 + dur + 0.02);
+      } catch {}
+    }
+    const vibr = (p)=>{ if (navigator.vibrate) navigator.vibrate(p); };
+
+    const LSK = "cps-best-v1";
+    let best = 0;
+    try { best = Number(localStorage.getItem(LSK)) || 0; } catch {}
+
+    let running = false;
+    let clicks = 0;
+    let t0 = 0;
+    let durMs = 5000;
+    let raf = 0;
+
+    function fmt(v){ return (Math.round(v*100)/100).toFixed(2); }
+
+    function readDurMs(){
+      const v = parseFloat(String(durSec.value).replace(",", "."));
+      if (!isFinite(v)) return 5000;
+      const s = Math.min(60, Math.max(0.1, v));
+      durSec.value = String(Math.round(s * 10) / 10);
+      durRng.value = String(s);
+      return Math.round(s * 1000);
+    }
+
+    function setDurFromSlider(){
+      const v = parseFloat(durRng.value);
+      if (!isFinite(v)) return;
+      const s = Math.min(60, Math.max(0.1, v));
+      durSec.value = String(Math.round(s * 10) / 10);
+      durMs = Math.round(s * 1000);
+    }
+
+    function cpsRating(cps){
+      if (cps >= 10.5) return {t:"WTF", col:"var(--gold)"};
+      if (cps >= 8.5) return {t:"sehr stark", col:"var(--good)"};
+      if (cps >= 6.5) return {t:"stark", col:"var(--accent2)"};
+      if (cps >= 5.0) return {t:"ok", col:"rgba(200,220,255,.9)"};
+      return {t:"slow", col:"var(--bad)"};
+    }
+
+    function sync(){
+      const now = performance.now();
+      const left = running ? Math.max(0, durMs - (now - t0)) : durMs;
+      const prog = running ? (1 - left / durMs) : 0;
+      barFill.style.width = `${Math.max(0, Math.min(100, prog * 100))}%`;
+
+      tEl.textContent = running ? `Zeit: ${(left/1000).toFixed(2)}s` : `Zeit: ${(durMs/1000).toFixed(1)}s`;
+      clicksEl.textContent = `Clicks: ${clicks}`;
+      bestEl.textContent = `Best: ${fmt(best)}`;
+
+      const sec = running ? Math.max(0.000001, (now - t0)/1000) : (durMs/1000);
+      const cps = clicks / sec;
+      cpsBig.textContent = `${fmt(isFinite(cps)?cps:0)} CPS`;
+    }
+
+    function startFromDown(){
+      durMs = readDurMs();
+      running = true;
+      clicks = 1;
+      t0 = performance.now();
+      zone.classList.add("running");
+      zone.classList.remove("pulse");
+      durSec.disabled = true;
+      durRng.disabled = true;
+      tone(520,0.08,"triangle",0.05);
+      vibr(12);
+      ratingEl.textContent = "Go!";
+      zoneHint.textContent = "Weiter drücken – jeder Druck zählt.";
+      loop();
+    }
+
+    function finish(){
+      running = false;
+      cancelAnimationFrame(raf);
+      raf = 0;
+      const sec = durMs / 1000;
+      const cps = clicks / sec;
+      if (cps > best){
+        best = cps;
+        try { localStorage.setItem(LSK, String(best)); } catch {}
+      }
+      const r = cpsRating(cps);
+      ratingEl.innerHTML = `Ergebnis: <span style="color:${r.col};font-weight:1000">${fmt(cps)} CPS · ${r.t}</span>`;
+      tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60);
+      vibr([18,18,18,45]);
+      zoneHint.textContent = "Nochmal: einfach wieder ins Feld drücken.";
+      zone.classList.remove("running");
+      zone.classList.add("pulse");
+      durSec.disabled = false;
+      durRng.disabled = false;
+      barFill.style.width = "0%";
+      sync();
+    }
+
+    function loop(){
+      if (!running) return;
+      const now = performance.now();
+      const left = durMs - (now - t0);
+      sync();
+      if (left <= 0){
+        finish();
+        return;
+      }
+      raf = requestAnimationFrame(loop);
+    }
+
+    function onZoneDown(e){
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      e.preventDefault();
+
+      if (!running){
+        startFromDown();
+        return;
+      }
+      clicks++;
+      if (clicks % 10 === 0) vibr(4);
+      if (clicks % 7 === 0) tone(660,0.018,"square",0.018);
+      cpsBig.style.transform = "scale(1.02)";
+      setTimeout(()=>{ cpsBig.style.transform = ""; }, 60);
+    }
+
+    function reset(){
+      cancelAnimationFrame(raf);
+      raf = 0;
+      running = false;
+      clicks = 0;
+      durMs = readDurMs();
+      durSec.disabled = false;
+      durRng.disabled = false;
+      ratingEl.textContent = "Klick ins Feld – der erste Druck startet.";
+      zoneHint.textContent = "Jeder Druck zählt (nicht beim Loslassen).";
+      zone.classList.remove("running");
+      zone.classList.add("pulse");
+      barFill.style.width = "0%";
+      sync();
+    }
+
+    durSec.addEventListener("input", ()=>{ if (!running) durMs = readDurMs(); sync(); });
+    durSec.addEventListener("change", ()=>{ if (!running) durMs = readDurMs(); sync(); });
+    durRng.addEventListener("input", ()=>{ if (!running){ setDurFromSlider(); sync(); } });
+
+    zone.addEventListener("pointerdown", onZoneDown);
+    zone.addEventListener("contextmenu", (e)=> e.preventDefault());
+
+    zone.addEventListener("keydown", (e)=>{
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      e.preventDefault();
+      if (e.repeat) return;
+      onZoneDown({ pointerType: "keyboard", button: 0, preventDefault: ()=>{} });
+    });
+
+    btnReset.addEventListener("click", reset);
+
+    reset();
+  </script>
+</body>
+</html>

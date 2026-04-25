@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="de" class="thomasfun-fit">
+<head>
+  <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+  <title>Time‑Stop Dash · thomas.fun</title>
+  <meta name="description" content="Zeit läuft nur wenn du dich bewegst. Dash durch Neon‑Hindernisse." />
+  <meta name="theme-color" content="#0c0c0f" />
+  <style>
+    :root{--bg:#0c0c0f;--border:#2a2a34;--text:#f4f4f5;--muted:#a1a1aa;--accent:#f97316;--accent2:#22d3ee;--good:#5dffb4;--bad:#ff6b6b;--gold:#ffd76a;}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Outfit,sans-serif}
+    a{color:var(--accent2);text-decoration:none}
+    .wrap{width:min(1100px,92vw);display:grid;gap:14px}
+    header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:1.1rem;letter-spacing:.18em;text-transform:uppercase}
+    .card{background:linear-gradient(155deg,rgba(38,52,92,.96),rgba(12,16,36,.98));border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+    .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button{
+      font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);
+      color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation;
+    }
+    button.primary{border-color:rgba(93,255,180,.55);background:linear-gradient(165deg,rgba(50,120,95,.95),rgba(18,48,42,.98))}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.9rem}
+    .pill{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px;background:rgba(0,0,0,.22)}
+    canvas{width:min(960px,92vw);height:auto;display:block;margin:12px auto 8px;border-radius:18px;border:1px solid rgba(255,255,255,.12);
+      background:radial-gradient(900px 520px at 50% 15%, rgba(249,115,22,.10), rgba(0,0,0,.25));touch-action:none;user-select:none;}
+    .hint{margin:6px 0 0;color:var(--muted);font-size:.9rem;text-align:center}
+    .overlay{position:fixed;inset:0;display:none;place-items:center;z-index:10;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}
+    .overlay.show{display:grid}
+    .panel{width:min(560px,92vw);border-radius:22px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(165deg, rgba(18, 26, 54, 0.98), rgba(6, 8, 18, 0.995));box-shadow:0 26px 80px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.07);padding:18px 16px 16px;text-align:center}
+    .panel h2{margin:0;font-size:clamp(2rem,6vw,2.8rem);font-weight:1000}
+    .panel p{margin:10px 0 14px;color:rgba(180,200,230,.9);font-weight:800}
+    .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  </style>
+  <link rel="stylesheet" href="../_game-shell.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Time‑Stop Dash</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button class="primary" id="btnStart">Start</button>
+          <button id="btnReset">Reset</button>
+        </div>
+        <div class="meta">
+          <span class="pill" id="score">Score: 0</span>
+          <span class="pill" id="best">Best: 0</span>
+        </div>
+      </div>
+      <canvas id="c" width="960" height="540"></canvas>
+      <div class="hint">Zeit läuft nur, wenn du dich bewegst. WASD/Touch‑Stick. Shift = Dash.</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov" aria-hidden="true">
+    <div class="panel">
+      <h2 id="ovTitle">—</h2>
+      <p id="ovText">—</p>
+      <div class="cta">
+        <button class="primary" id="ovAgain">Nochmal</button>
+        <button id="ovClose">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const c = document.getElementById("c");
+    const ctx = c.getContext("2d");
+    const btnStart = document.getElementById("btnStart");
+    const btnReset = document.getElementById("btnReset");
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+    const ov = document.getElementById("ov");
+    const ovTitle = document.getElementById("ovTitle");
+    const ovText = document.getElementById("ovText");
+    const ovAgain = document.getElementById("ovAgain");
+    const ovClose = document.getElementById("ovClose");
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let actx=null;
+    function tone(freq, dur=0.05, type="sine", vol=0.05){
+      try{
+        actx ||= new AC();
+        if (actx.state === "suspended") actx.resume();
+        const t0 = actx.currentTime;
+        const o = actx.createOscillator();
+        const g = actx.createGain();
+        o.type=type; o.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        o.connect(g); g.connect(actx.destination);
+        o.start(t0); o.stop(t0 + dur + 0.02);
+      } catch {}
+    }
+    function vibr(p){ try{ if (navigator.vibrate) navigator.vibrate(p); } catch{} }
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+    const bestKey = "timeStopDash_best";
+    const loadBest = () => +(localStorage.getItem(bestKey)||0);
+    const saveBest = (v) => localStorage.setItem(bestKey, String(v|0));
+    const syncBest = () => bestEl.textContent = `Best: ${loadBest()|0}`;
+
+    let running=false, paused=false, raf=0, last=0;
+    let score=0;
+    let t = 0;
+    let shake=0, flash=0;
+    let particles=[];
+
+    const keys = new Set();
+    addEventListener("keydown", (e)=>{
+      const block = ["KeyW","KeyA","KeyS","KeyD","ArrowUp","ArrowDown","ArrowLeft","ArrowRight","ShiftLeft","ShiftRight","Escape"];
+      if (block.includes(e.code)) e.preventDefault();
+      keys.add(e.code);
+      if (e.code === "Escape" && running){ paused = !paused; keys.clear(); if (!paused) { last=performance.now(); loop(last); } }
+    });
+    addEventListener("keyup", (e)=> keys.delete(e.code));
+
+    // touch stick
+    let stick = {active:false, x0:0,y0:0, dx:0, dy:0};
+    c.addEventListener("pointerdown", (e)=>{
+      c.setPointerCapture(e.pointerId);
+      const r = c.getBoundingClientRect();
+      stick.active = true;
+      stick.x0 = (e.clientX - r.left) * (c.width / r.width);
+      stick.y0 = (e.clientY - r.top) * (c.height / r.height);
+      stick.dx = 0; stick.dy = 0;
+      if (!running) start();
+    });
+    c.addEventListener("pointermove", (e)=>{
+      if (!stick.active) return;
+      const r = c.getBoundingClientRect();
+      const x = (e.clientX - r.left) * (c.width / r.width);
+      const y = (e.clientY - r.top) * (c.height / r.height);
+      stick.dx = clamp((x - stick.x0)/55, -1, 1);
+      stick.dy = clamp((y - stick.y0)/55, -1, 1);
+    });
+    c.addEventListener("pointerup", ()=>{ stick.active=false; stick.dx=0; stick.dy=0; });
+    c.addEventListener("pointercancel", ()=>{ stick.active=false; stick.dx=0; stick.dy=0; });
+
+    let P = {x: c.width/2, y: c.height*0.72, vx:0, vy:0, r: 11, dashCd:0, inv:0};
+    let obs = [];
+    let spawnAcc = 0;
+
+    function showOverlay(title, text){
+      ovTitle.textContent = title; ovText.textContent = text;
+      ov.classList.add("show"); ov.setAttribute("aria-hidden","false");
+    }
+    function hideOverlay(){ ov.classList.remove("show"); ov.setAttribute("aria-hidden","true"); }
+
+    function reset(){
+      running=false; paused=false; cancelAnimationFrame(raf);
+      score=0; t=0; shake=0; flash=0; particles=[];
+      P = {x: c.width/2, y: c.height*0.72, vx:0, vy:0, r: 11, dashCd:0, inv:0};
+      obs = [];
+      spawnAcc = 0;
+      syncUI();
+      draw();
+    }
+    function syncUI(){ scoreEl.textContent = `Score: ${score|0}`; syncBest(); }
+
+    function die(){
+      running=false;
+      if (score > loadBest()) saveBest(score);
+      syncUI();
+      tone(160,0.10,"sawtooth",0.06);
+      vibr(35);
+      showOverlay("Game Over", `Score: ${score} · Best: ${loadBest()}`);
+    }
+
+    function movingIntent(){
+      const mx = (keys.has("KeyD")||keys.has("ArrowRight")?1:0) - (keys.has("KeyA")||keys.has("ArrowLeft")?1:0);
+      const my = (keys.has("KeyS")||keys.has("ArrowDown")?1:0) - (keys.has("KeyW")||keys.has("ArrowUp")?1:0);
+      const tx = mx || stick.dx;
+      const ty = my || stick.dy;
+      return {x: tx, y: ty};
+    }
+
+    function step(dt){
+      const sec = dt/1000;
+      const inp = movingIntent();
+      const mag = Math.hypot(inp.x, inp.y);
+      // time only flows if you "move"
+      const timeFlow = mag > 0.08 ? 1 : 0;
+      const sec2 = sec * (0.10 + 0.90*timeFlow); // never fully 0, just almost
+      t += sec2;
+
+      // dash
+      P.dashCd = Math.max(0, P.dashCd - sec2);
+      P.inv = Math.max(0, P.inv - sec2);
+      const wantDash = (keys.has("ShiftLeft")||keys.has("ShiftRight"));
+      if (wantDash && P.dashCd <= 0 && mag > 0.15){
+        const nx = inp.x/(mag||1), ny = inp.y/(mag||1);
+        P.vx += nx*680;
+        P.vy += ny*680;
+        P.dashCd = 0.9;
+        P.inv = 0.16;
+        flash = Math.min(1, flash + 0.35);
+        shake = Math.max(shake, 10);
+        for (let i=0;i<26;i++){
+          particles.push({x:P.x,y:P.y,vx:(Math.random()*2-1)*420 - nx*240,vy:(Math.random()*2-1)*420 - ny*240,life:0.25+Math.random()*0.2,col:"rgba(34,211,238,0.9)",s:2+Math.random()*3});
+        }
+        tone(980,0.05,"square",0.05);
+        vibr(14);
+      }
+
+      // move player (when time flows, you accelerate)
+      const acc = 980 * (0.35 + 0.65*timeFlow);
+      if (mag > 0.08){
+        const nx = inp.x/(mag||1), ny = inp.y/(mag||1);
+        P.vx += nx*acc*sec2;
+        P.vy += ny*acc*sec2;
+      }
+      // friction
+      P.vx *= Math.pow(0.83, dt/16);
+      P.vy *= Math.pow(0.83, dt/16);
+      P.x += P.vx*sec2;
+      P.y += P.vy*sec2;
+      P.x = clamp(P.x, 18, c.width-18);
+      P.y = clamp(P.y, 18, c.height-18);
+
+      // spawn obstacles (slow time = fewer spawns)
+      spawnAcc += sec2;
+      const spawnEvery = 0.55;
+      if (spawnAcc >= spawnEvery){
+        spawnAcc -= spawnEvery;
+        const count = 1 + (score>30?1:0) + (score>80?1:0);
+        for (let k=0;k<count;k++){
+          const y = 80 + Math.random()*(c.height-160);
+          const w = 14 + Math.random()*22;
+          const h = 80 + Math.random()*160;
+          const sp = 250 + Math.min(260, score*2.2);
+          obs.push({x:c.width+60 + k*70, y, w, h, vx: -sp, t: Math.random()*10});
+        }
+        score++;
+        tone(520,0.02,"triangle",0.025);
+      }
+
+      // move obstacles
+      for (const o of obs){
+        o.x += o.vx*sec2;
+        o.t += sec2;
+      }
+      obs = obs.filter(o => o.x > -140);
+
+      // collision
+      if (P.inv <= 0){
+        for (const o of obs){
+          const rx = o.x - o.w/2, ry = o.y - o.h/2;
+          const nx = clamp(P.x, rx, rx+o.w);
+          const ny = clamp(P.y, ry, ry+o.h);
+          const dx = P.x - nx, dy = P.y - ny;
+          if (dx*dx + dy*dy <= P.r*P.r){
+            die();
+            break;
+          }
+        }
+      }
+
+      // particles
+      for (const p of particles){
+        p.x += p.vx*sec2; p.y += p.vy*sec2;
+        p.vx *= Math.pow(0.86, dt/16);
+        p.vy *= Math.pow(0.86, dt/16);
+        p.life -= sec2;
+      }
+      particles = particles.filter(p => p.life > 0);
+
+      flash *= Math.pow(0.86, dt/16);
+      shake *= Math.pow(0.80, dt/16);
+    }
+
+    function draw(){
+      const sx = (shake>0)? (Math.random()*2-1)*shake : 0;
+      const sy = (shake>0)? (Math.random()*2-1)*shake : 0;
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,c.width,c.height);
+      ctx.save(); ctx.translate(sx,sy);
+
+      // neon grid
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = "rgba(255,255,255,0.05)";
+      for (let x=0;x<=c.width;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,c.height); ctx.stroke(); }
+      for (let y=0;y<=c.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(c.width,y); ctx.stroke(); }
+      ctx.restore();
+
+      // obstacles
+      for (const o of obs){
+        const wob = Math.sin(o.t*3.1)*6;
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.fillStyle = "rgba(249,115,22,0.55)";
+        ctx.shadowColor = "rgba(249,115,22,0.25)";
+        ctx.shadowBlur = 18;
+        roundRect(o.x - o.w/2, (o.y+wob) - o.h/2, o.w, o.h, 10);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // player
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.fillStyle = "rgba(34,211,238,0.85)";
+      ctx.shadowColor = "rgba(34,211,238,0.30)";
+      ctx.shadowBlur = 22;
+      ctx.beginPath();
+      ctx.arc(P.x, P.y, P.r + (P.inv>0?2:0), 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      // particles
+      for (const p of particles){
+        ctx.globalAlpha = Math.min(1, p.life/0.2);
+        ctx.fillStyle = p.col;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.s,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // time indicator
+      const inp = movingIntent();
+      const mag = Math.hypot(inp.x, inp.y);
+      ctx.save();
+      ctx.fillStyle = mag>0.08 ? "rgba(93,255,180,0.92)" : "rgba(255,215,106,0.92)";
+      ctx.font = "1000 14px system-ui,Segoe UI,Roboto";
+      ctx.fillText(mag>0.08 ? "TIME: ON" : "TIME: HOLD", 16, 24);
+      ctx.restore();
+
+      // stick UI
+      if (stick.active){
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.strokeStyle = "rgba(34,211,238,0.6)";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(stick.x0, stick.y0, 36, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(stick.x0 + stick.dx*36, stick.y0 + stick.dy*36, 12, 0, Math.PI*2); ctx.stroke();
+        ctx.restore();
+      }
+
+      // flash
+      if (flash > 0.001){
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = Math.min(0.55, flash);
+        ctx.fillStyle = "rgba(255,215,106,1)";
+        ctx.fillRect(0,0,c.width,c.height);
+        ctx.restore();
+      }
+
+      ctx.restore();
+    }
+
+    function roundRect(x,y,w,h,r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+
+    function loop(ts){
+      if (!running) return;
+      if (paused) { draw(); return; }
+      const dt = Math.min(40, ts - last);
+      last = ts;
+      step(dt);
+      syncUI();
+      draw();
+      raf = requestAnimationFrame(loop);
+    }
+    function start(){
+      if (running) return;
+      hideOverlay();
+      running = true;
+      last = performance.now();
+      raf = requestAnimationFrame(loop);
+    }
+
+    btnStart.addEventListener("click", start);
+    btnReset.addEventListener("click", ()=>{ hideOverlay(); reset(); });
+    ovAgain.addEventListener("click", ()=>{ hideOverlay(); reset(); start(); });
+    ovClose.addEventListener("click", ()=> hideOverlay());
+    ov.addEventListener("click", (e)=>{ if (e.target === ov) hideOverlay(); });
+
+    reset();
+  </script>
+</body>
+</html>
+
