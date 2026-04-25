@@ -45,6 +45,7 @@ h1{margin:0;font-size:1.05rem;letter-spacing:.18em;text-transform:uppercase}
   flex-direction:column;
   gap:12px;
 }
+.top,.tray,.hint{flex:0 0 auto}
 .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.9rem}
@@ -77,6 +78,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   min-height:0;
   display:grid;
   place-items:center;
+  padding-bottom: 6px; /* optischer Abstand zur Tray */
 }
 canvas{
   width:min(640px, 92vw);
@@ -97,6 +99,7 @@ canvas{
   grid-template-columns:repeat(3, 1fr);
   gap:10px;
   align-items:stretch;
+  flex:0 0 auto;
 }
 .slot{
   border-radius:18px;
@@ -111,6 +114,19 @@ canvas{
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
 }
 .hint{color:rgba(180,200,230,.78);font-size:.92rem;text-align:center;font-weight:800}
+
+/* Damit das Board NIE in die Tray "reinwächst": Canvas bekommt eine Max-Höhe aus Viewport */
+@media (max-height: 860px){
+  canvas{
+    max-height: calc(100dvh - 330px); /* header+buttons+tray+hint */
+    width: auto;
+  }
+}
+@media (max-width: 560px){
+  canvas{
+    max-height: calc(100dvh - 340px);
+  }
+}
 
 .overlay{position:fixed;inset:0;display:none;place-items:center;z-index:20;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}
 .overlay.show{display:grid}

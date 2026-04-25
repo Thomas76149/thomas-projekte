@@ -150,3 +150,26 @@ button:disabled{opacity:.45;cursor:not-allowed}
   .table{grid-template-columns:1fr; }
 }
 
+/* Mobile/iPad: Hand darf nicht "unter" dem Viewport verschwinden.
+   _game-shell setzt .card auf overflow:hidden → also geben wir .table Scroll
+   und der .hand eine feste Mindesthöhe. */
+@media (pointer: coarse), (max-width: 900px){
+  html.thomasfun-fit .card{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  html.thomasfun-fit .table{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  html.thomasfun-fit .hand{
+    flex: 0 0 auto;
+    min-height: 148px;
+    margin-top: 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  }
+}
+
