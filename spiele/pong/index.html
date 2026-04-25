@@ -153,6 +153,8 @@
     let leftVy = 0;
     let aiAimY = c.height / 2;
     let aiThinkAcc = 0;
+    let ovFxId = 0;
+    let ovShown = false;
 
     // Online mode
     let ws = null;
@@ -273,6 +275,7 @@
     }
     function resetGame(){
       hideOverlay();
+      ovShown = false;
       sL=0; sR=0;
       resetRound(Math.random()<0.5?-1:1);
       draw();
@@ -312,8 +315,9 @@
         keysNet.up = !!up;
         keysNet.down = !!down;
         netSendInput();
-        // movement is server-side; we keep the physics local only for rendering smoothness via snapshots
+        // movement + physics is server-side in online mode
         leftVy = (p.y - prevLY) / Math.max(0.001, sec);
+        return;
       }
 
       // AI (schlagbar): nur "denken" alle X ms, leichtes Fehlziel + capped speed + tracked nur wenn Ball auf ihn zufliegt.
@@ -465,10 +469,14 @@
     }
 
     function showOverlay(win){
+      if (ovShown) return;
+      ovShown = true;
       ov.classList.add("show");
       ov.setAttribute("aria-hidden","false");
       ovTitle.textContent = win ? "Sieg" : "Niederlage";
-      ovText.textContent = win ? "Nice. Du hast den Bot besiegt." : "Der Bot hat dich outplayed.";
+      ovText.textContent = online
+        ? (win ? "Nice. Du hast online gewonnen." : "Rip. Online verloren.")
+        : (win ? "Nice. Du hast den Bot besiegt." : "Der Bot hat dich outplayed.");
       if (win){
         tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60); setTimeout(()=>tone(1244,0.14,"triangle",0.04),130);
         vibr([30,40,30,70]);
@@ -509,11 +517,15 @@
         if (dots.length) id = requestAnimationFrame(step);
         else { cancelAnimationFrame(id); fctx.clearRect(0,0,innerWidth,innerHeight); }
       };
-      requestAnimationFrame(step);
+      cancelAnimationFrame(ovFxId);
+      ovFxId = requestAnimationFrame(step);
     }
     function hideOverlay(){
       ov.classList.remove("show");
       ov.setAttribute("aria-hidden","true");
+      ovShown = false;
+      cancelAnimationFrame(ovFxId);
+      ovFxId = 0;
       fctx.clearRect(0,0,innerWidth,innerHeight);
     }
     ov.addEventListener("click",(e)=>{ if (e.target===ov) hideOverlay(); });

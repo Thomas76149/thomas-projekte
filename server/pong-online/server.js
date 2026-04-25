@@ -24,6 +24,7 @@ function makeRoomState() {
   return {
     W, H,
     running: false,
+    overSent: false,
     sL: 0,
     sR: 0,
     left,
@@ -202,6 +203,7 @@ wss.on("connection", (ws) => {
 
     if (msg.t === "start") {
       room.state.running = true;
+      room.state.overSent = false;
       room.state.lastTick = nowMs();
       broadcast(room, { t: "run", v: true });
       return;
@@ -246,7 +248,8 @@ setInterval(() => {
     // broadcast at ~30Hz (every other tick)
     if ((t / 33) | 0) {
       broadcast(room, { t: "state", s: serializeState(st) });
-      if (!st.running && (st.sL >= 7 || st.sR >= 7)) {
+      if (!st.overSent && !st.running && (st.sL >= 7 || st.sR >= 7)) {
+        st.overSent = true;
         broadcast(room, { t: "over", w: st.sL > st.sR ? "L" : "R" });
       }
     }
