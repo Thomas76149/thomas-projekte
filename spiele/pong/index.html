@@ -172,17 +172,27 @@
 
     function defaultWsUrl(){
       // If served from same host (when you later host both), auto-detect; otherwise user pastes URL.
-      const isHttps = location.protocol === "https:";
-      const proto = isHttps ? "wss://" : "ws://";
-      return proto + location.hostname + (location.port ? (":" + location.port) : "");
+      // Prefer your public Render WS server for remote play.
+      // If you ever host pong + ws on same domain, just change this.
+      return "wss://thomas-projekte.onrender.com";
     }
     try{
       netUrl.value = localStorage.getItem("pong_ws_url") || "";
     } catch {}
     if (!netUrl.value) netUrl.value = defaultWsUrl();
 
+    function getParams(){
+      try { return new URLSearchParams(location.search); } catch { return new URLSearchParams(); }
+    }
+
+    function normalizeWsUrl(u){
+      const s = (u || "").trim();
+      if (!s) return "";
+      return s.replace(/^http/i, "ws");
+    }
+
     function connect(code){
-      const url = (netUrl.value || "").trim();
+      const url = normalizeWsUrl(netUrl.value);
       if (!url) return;
       try { localStorage.setItem("pong_ws_url", url); } catch {}
 
@@ -192,7 +202,7 @@
       online = true;
       setNetLabel("Verbinden…");
 
-      ws = new WebSocket(url.replace(/^http/i, "ws"));
+      ws = new WebSocket(url);
       ws.addEventListener("open", ()=>{
         setNetLabel("Connected", true);
         ws.send(JSON.stringify({t:"join", code}));
@@ -551,6 +561,29 @@
       if (!code) { setNetLabel("Room fehlt"); return; }
       connect(code);
     });
+
+    // Auto-fill / auto-connect via URL params (shareable links)
+    // Examples:
+    // - ?room=SCHULE1                -> auto-connect to default server + join that room
+    // - ?ws=wss://...&room=SCHULE1   -> auto-connect to custom server + join
+    // - ?ws=wss://...               -> auto-connect to that server, create room
+    (function autoConnect(){
+      const p = getParams();
+      const wsP = p.get("ws");
+      const roomP = p.get("room");
+      const autoP = p.get("auto"); // "1" | "host" | "join"
+
+      if (wsP) netUrl.value = wsP;
+      if (roomP) roomInp.value = roomP.toUpperCase();
+
+      const shouldAuto = !!wsP || !!roomP || autoP === "1" || autoP === "host" || autoP === "join";
+      if (!shouldAuto) return;
+
+      // If a room is provided, join it; otherwise host (create)
+      const code = (roomInp.value || "").trim();
+      connect(code);
+    })();
+
     resetGame();
   </script>
 </body>
