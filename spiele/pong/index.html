@@ -159,6 +159,7 @@
     // Online mode
     let ws = null;
     let online = false;
+    let connecting = false;
     let mySide = "L"; // L or R
     let roomCode = "";
     let remotePeers = 0;
@@ -200,6 +201,9 @@
       try { ws && ws.close(); } catch {}
       ws = null;
       online = true;
+      connecting = true;
+      btnHost.disabled = true;
+      btnJoin.disabled = true;
       setNetLabel("Verbinden…");
 
       ws = new WebSocket(url);
@@ -211,6 +215,12 @@
         setNetLabel("Offline");
         online = false;
         remotePeers = 0;
+        connecting = false;
+        btnHost.disabled = false;
+        btnJoin.disabled = false;
+        btnHost.style.display = "";
+        btnJoin.style.display = "";
+        aiSel.disabled = false;
       });
       ws.addEventListener("error", ()=>{
         setNetLabel("Fehler");
@@ -229,6 +239,9 @@
           roomInp.value = roomCode;
           setNetLabel(`Online · ${roomCode} · Du: ${mySide}`, true);
           aiSel.disabled = true;
+          connecting = false;
+          btnHost.style.display = "none";
+          btnJoin.style.display = "none";
           resetGame();
           draw();
           return;

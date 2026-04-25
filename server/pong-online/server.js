@@ -213,6 +213,14 @@ function randId() {
   return Math.random().toString(36).slice(2, 9) + Math.random().toString(36).slice(2, 6);
 }
 
+/** UNO: ob für diese seatId noch eine WebSocket verbunden ist */
+function unoSeatOnline(room, seatId) {
+  for (const [, meta] of room.clients) {
+    if (meta && meta.side === seatId) return true;
+  }
+  return false;
+}
+
 function broadcast(room, obj) {
   const msg = JSON.stringify(obj);
   for (const ws of room.clients.keys()) {
@@ -260,19 +268,41 @@ wss.on("connection", (ws) => {
       }
       ws._room = room;
       if (room.game === "uno") {
-        // UNO: many players
         const st = room.state;
         const name = String(msg.name || "Player").slice(0, 18);
-        // capacity
-        if (room.clients.size >= 8) {
+        let pk = String(msg.pk || "").trim().slice(0, 40);
+        if (!pk) pk = randId();
+
+        const existing = st.players.find((p) => p.pk === pk);
+        if (st.started && !existing) {
+          send(ws, { t: "err", m: "Spiel läuft – kein neuer Beitritt. Gleiches Gerät/Tab: einfach wieder verbinden." });
+          return;
+        }
+        if (!existing && room.clients.size >= 8) {
           send(ws, { t: "err", m: "Room voll (max 8)." });
           return;
         }
-        room.clients.set(ws, { side: ws._id });
-        if (!st.players.some((p) => p.id === ws._id)) st.players.push({ id: ws._id, name });
-        if (!st.hostId) st.hostId = ws._id;
-        if (!st.hands.has(ws._id)) st.hands.set(ws._id, []);
-        send(ws, { t: "joined", game: room.game, code: room.code, id: ws._id, host: st.hostId === ws._id });
+
+        let seatId;
+        if (existing) {
+          seatId = existing.id;
+          existing.name = name;
+          existing.offline = false;
+        } else {
+          seatId = randId();
+          st.players.push({ id: seatId, name, pk, offline: false });
+          st.hands.set(seatId, []);
+        }
+        if (!st.hostId) st.hostId = seatId;
+        room.clients.set(ws, { side: seatId });
+        send(ws, {
+          t: "joined",
+          game: room.game,
+          code: room.code,
+          id: seatId,
+          pk,
+          host: st.hostId === seatId,
+        });
         broadcastUno(room);
         return;
       } else {
@@ -362,10 +392,11 @@ wss.on("connection", (ws) => {
     // UNO actions
     if (room.game === "uno" && msg.t === "uno_start") {
       const st = room.state;
-      if (ws._id !== st.hostId) return;
+      if (meta.side !== st.hostId) return;
       if (st.started) return;
-      if (st.players.length < 2) {
-        send(ws, { t: "uno_hint", m: "Mindestens 2 Spieler." });
+      const onlineN = st.players.filter((p) => unoSeatOnline(room, p.id)).length;
+      if (onlineN < 2) {
+        send(ws, { t: "uno_hint", m: "Mindestens 2 Spieler online." });
         return;
       }
       unoStart(st);
@@ -375,8 +406,8 @@ wss.on("connection", (ws) => {
     if (room.game === "uno" && msg.t === "uno_draw") {
       const st = room.state;
       if (!st.started) return;
-      if (st.players[st.turnIdx]?.id !== ws._id) return;
-      const drew = unoDraw(st, ws._id);
+      if (st.players[st.turnIdx]?.id !== meta.side) return;
+      const drew = unoDraw(st, meta.side);
       st.msg = drew ? "Gezogen." : "Deck leer.";
       broadcastUno(room);
       return;
@@ -384,7 +415,7 @@ wss.on("connection", (ws) => {
     if (room.game === "uno" && msg.t === "uno_pass") {
       const st = room.state;
       if (!st.started) return;
-      if (st.players[st.turnIdx]?.id !== ws._id) return;
+      if (st.players[st.turnIdx]?.id !== meta.side) return;
       if (!st.canPass) return;
       st.canPass = false;
       unoNextTurn(st);
@@ -395,10 +426,10 @@ wss.on("connection", (ws) => {
     if (room.game === "uno" && msg.t === "uno_play") {
       const st = room.state;
       if (!st.started) return;
-      if (st.players[st.turnIdx]?.id !== ws._id) return;
+      if (st.players[st.turnIdx]?.id !== meta.side) return;
       const id = Number(msg.id);
       const col = msg.col; // optional for wild
-      const ok = unoPlay(st, ws._id, id, col);
+      const ok = unoPlay(st, meta.side, id, col);
       if (!ok) send(ws, { t: "uno_hint", m: "Nicht spielbar." });
       broadcastUno(room);
       return;
@@ -408,14 +439,36 @@ wss.on("connection", (ws) => {
   ws.on("close", () => {
     const room = ws._room;
     if (!room) return;
+    const meta = room.clients.get(ws);
     room.clients.delete(ws);
     if (room.game === "uno") {
       const st = room.state;
-      st.players = st.players.filter((p) => p.id !== ws._id);
-      st.hands.delete(ws._id);
-      if (st.hostId === ws._id) st.hostId = st.players[0]?.id || null;
-      if (st.started && st.players.length) {
-        // if leaver was current, advance
+      const seatId = meta?.side;
+      if (!seatId) {
+        broadcastUno(room);
+        return;
+      }
+      if (st.started) {
+        const p = st.players.find((x) => x.id === seatId);
+        if (p) p.offline = true;
+        const curId = st.players[st.turnIdx]?.id;
+        if (curId === seatId) {
+          st.canPass = false;
+          let guard = 0;
+          while (
+            st.players.length &&
+            st.players[st.turnIdx] &&
+            !unoSeatOnline(room, st.players[st.turnIdx].id) &&
+            guard++ < 16
+          ) {
+            unoNextTurn(st, 1);
+          }
+          st.msg = "Spieler getrennt – Zug weiter.";
+        }
+      } else {
+        st.players = st.players.filter((p) => p.id !== seatId);
+        st.hands.delete(seatId);
+        if (st.hostId === seatId) st.hostId = st.players[0]?.id || null;
         if (st.turnIdx >= st.players.length) st.turnIdx = 0;
       }
       broadcastUno(room);
@@ -426,7 +479,7 @@ wss.on("connection", (ws) => {
   });
 });
 
-function serializeState(game, st) {
+function serializeState(game, st, room) {
   if (game === "rps") {
     return {
       round: st.round,
@@ -446,18 +499,24 @@ function serializeState(game, st) {
     };
   }
   if (game === "uno") {
-    // public state only
+    const onlineCount = st.players.filter((p) => (room ? unoSeatOnline(room, p.id) : true)).length;
     return {
       started: st.started,
+      phase: st.started ? "play" : "lobby",
       hostId: st.hostId,
-      players: st.players.map((p) => ({ id: p.id, name: p.name, n: (st.hands.get(p.id)?.length || 0) })),
+      players: st.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        n: (st.hands.get(p.id)?.length || 0),
+        offline: room ? !unoSeatOnline(room, p.id) : false,
+      })),
       turnId: st.players[st.turnIdx]?.id || null,
       turnName: st.players[st.turnIdx]?.name || null,
       dir: st.dir,
       deckN: st.deck.length,
       top: st.discard[st.discard.length - 1] || null,
       curCol: st.curCol,
-      canStart: !st.started && st.players.length >= 2,
+      canStart: !st.started && onlineCount >= 2,
       canPass: st.canPass,
       msg: st.msg,
       drawStack: st.drawStack,
@@ -638,13 +697,14 @@ function unoPlay(st, pid, cardId, wildCol) {
 
 function broadcastUno(room) {
   const st = room.state;
-  // public snapshot per-client with private hand
-  for (const [ws] of room.clients) {
-    const pid = ws._id;
+  for (const [ws, cmeta] of room.clients) {
+    const pid = cmeta.side;
     const h = st.hands.get(pid) || [];
-    const pub = serializeState("uno", st);
-    // mark playable
-    const handOut = h.map((c) => ({ ...c, playable: (pub.turnId === pid) && st.started && unoIsPlayable(st, c) && (c.col !== "W" || true) }));
+    const pub = serializeState("uno", st, room);
+    const handOut = h.map((c) => ({
+      ...c,
+      playable: (pub.turnId === pid) && st.started && unoIsPlayable(st, c),
+    }));
     send(ws, { t: "uno_state", s: pub, hand: handOut });
   }
 }

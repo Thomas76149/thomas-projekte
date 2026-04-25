@@ -258,7 +258,6 @@
     document.querySelectorAll("[data-m]").forEach(btn=>{
       btn.addEventListener("click", ()=> play(btn.getAttribute("data-m")));
     });
-    resetBtn.addEventListener("click", reset);
     reset();
 
     // --- Online (RPS) ---
@@ -266,6 +265,17 @@
     let online = false;
     let mySide = "A"; // A/B
     let pickLocked = false;
+    let connecting = false;
+    function setLobbyJoined(joined){
+      btnHost.style.display = joined ? "none" : "";
+      btnJoin.style.display = joined ? "none" : "";
+    }
+    function setConnecting(on){
+      connecting = !!on;
+      btnHost.disabled = connecting;
+      btnJoin.disabled = connecting;
+      resetBtn.disabled = connecting;
+    }
 
     function setNetLabel(txt, ok=false){
       netStat.textContent = txt;
@@ -288,6 +298,7 @@
       try { ws && ws.close(); } catch {}
       ws = null;
       online = true;
+      setConnecting(true);
       setNetLabel("Verbinden…");
       enemyLabel.textContent = "Gegner";
 
@@ -299,6 +310,8 @@
       ws.addEventListener("close", ()=>{
         setNetLabel("Offline");
         online = false;
+        setConnecting(false);
+        setLobbyJoined(false);
         enemyLabel.textContent = "Bot";
         pickLocked = false;
       });
@@ -313,6 +326,8 @@
           roomInp.value = (msg.code || "").toUpperCase();
           setNetLabel(`Online · ${roomInp.value} · Du: ${mySide}`, true);
           hint.textContent = "Online: wähle Stein/Papier/Schere.";
+          setConnecting(false);
+          setLobbyJoined(true);
           return;
         }
         if (msg.t === "rps_result" && msg.r){
@@ -346,6 +361,15 @@
       const c = (roomInp.value || "").trim();
       if (!c) { setNetLabel("Room fehlt"); return; }
       connect(c);
+    });
+
+    // Reset muss online über den Server laufen (sonst seid ihr nicht mehr synchron)
+    resetBtn.addEventListener("click", ()=>{
+      if (online && ws && ws.readyState === 1){
+        ws.send(JSON.stringify({t:"reset"}));
+      } else {
+        reset();
+      }
     });
 
     // Auto-connect with share link (?room=SCHULE1)

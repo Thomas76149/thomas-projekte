@@ -186,6 +186,17 @@
     let ws = null;
     let online = false;
     let mySide = "X"; // X/O
+    let connecting = false;
+
+    function setLobbyJoined(joined){
+      btnHost.style.display = joined ? "none" : "";
+      btnJoin.style.display = joined ? "none" : "";
+    }
+    function setConnecting(on){
+      connecting = !!on;
+      btnHost.disabled = connecting;
+      btnJoin.disabled = connecting;
+    }
 
     function fitFx(){
       fx.width = innerWidth * devicePixelRatio;
@@ -295,7 +306,14 @@
       ov.setAttribute("aria-hidden","true");
     }
     ov.addEventListener("click", (e)=>{ if (e.target === ov) hideOverlay(); });
-    ovAgain.addEventListener("click", ()=>{ hideOverlay(); newGame(); });
+    ovAgain.addEventListener("click", ()=>{
+      hideOverlay();
+      if (online && ws && ws.readyState === 1){
+        ws.send(JSON.stringify({t:"reset"}));
+      } else {
+        newGame();
+      }
+    });
     ovClose.addEventListener("click", hideOverlay);
 
 
@@ -466,6 +484,7 @@
       try { ws && ws.close(); } catch {}
       ws = null;
       online = true;
+      setConnecting(true);
       setNetLabel("Verbinden…");
       hint.textContent = "Online: verbinden…";
 
@@ -477,6 +496,8 @@
       ws.addEventListener("close", ()=>{
         setNetLabel("Offline");
         online = false;
+        setConnecting(false);
+        setLobbyJoined(false);
         mySide = "X";
         modeSel.disabled = false;
         botLevelSel.disabled = (modeSel.value !== "bot");
@@ -493,6 +514,8 @@
           mySide = msg.side || "X";
           roomInp.value = (msg.code || "").toUpperCase();
           setNetLabel(`Online · ${roomInp.value} · Du: ${mySide}`, true);
+          setConnecting(false);
+          setLobbyJoined(true);
           // reset local board visuals; server state will arrive
           b = Array(9).fill("");
           turn = "x";

@@ -48,6 +48,26 @@
     } catch {}
   }
 
+  function unoPk() {
+    try {
+      let k = sessionStorage.getItem("uno_pk_v1");
+      if (!k) {
+        k = (typeof crypto !== "undefined" && crypto.randomUUID)
+          ? crypto.randomUUID().replace(/-/g, "")
+          : "u" + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 10);
+        sessionStorage.setItem("uno_pk_v1", k);
+      }
+      return k;
+    } catch {
+      return "u" + Math.random().toString(36).slice(2, 14);
+    }
+  }
+
+  function setLobbyJoined(joined) {
+    btnJoin.style.display = joined ? "none" : "";
+    btnHost.style.display = joined ? "none" : "";
+  }
+
   function connect(code) {
     saveName();
     const c = (code || "").trim().toUpperCase();
@@ -61,11 +81,12 @@
     ws = new WebSocket(WS_URL);
     ws.addEventListener("open", () => {
       setNetLabel("Connected", true);
-      ws.send(JSON.stringify({ t: "join", game: "uno", code: c, name: nameInp.value }));
+      ws.send(JSON.stringify({ t: "join", game: "uno", code: c, name: nameInp.value, pk: unoPk() }));
     });
     ws.addEventListener("close", () => {
       setNetLabel("Offline");
       online = false;
+      setLobbyJoined(false);
       meId = null;
       state = null;
       hand = [];
@@ -81,8 +102,11 @@
         roomCode = msg.code || "";
         roomInp.value = roomCode;
         meId = msg.id || null;
+        if (msg.pk) try { sessionStorage.setItem("uno_pk_v1", String(msg.pk)); } catch {}
         setNetLabel(`Online · ${roomCode}`, true);
+        setLobbyJoined(true);
         hintEl.textContent = "Warte auf Start (Host).";
+        render();
         return;
       }
       if (msg.t === "uno_state") {
@@ -110,8 +134,15 @@
     if (col === "W") return v === "W4" ? "WILD+4" : "WILD";
     return `${col}${v}`;
   }
-  function colorName(col) {
-    return col === "R" ? "Rot" : col === "G" ? "Grün" : col === "B" ? "Blau" : col === "Y" ? "Gelb" : "Wild";
+  /** CSS-Klasse für Kartenfarbe (Wild oben: aktive Farbe aus state.curCol) */
+  function uFaceClass(card, isTopPile) {
+    if (!card) return "u-w";
+    if (card.col === "W") {
+      const cc = isTopPile && state && ["R", "G", "B", "Y"].includes(state.curCol) ? state.curCol : null;
+      if (cc) return "u-" + ({ R: "r", G: "g", B: "b", Y: "y" }[cc] || "w");
+      return "u-w";
+    }
+    return "u-" + ({ R: "r", G: "g", B: "b", Y: "y" }[card.col] || "w");
   }
 
   function myTurn() {
@@ -133,6 +164,7 @@
   function render() {
     if (!state) {
       topCardEl.textContent = "—";
+      topCardEl.className = "cardBig";
       playersEl.innerHTML = "";
       handEl.innerHTML = "";
       turnEl.textContent = "Zug: —";
@@ -143,21 +175,26 @@
       return;
     }
     topCardEl.textContent = cardLabel(state.top);
+    topCardEl.className = "cardBig " + uFaceClass(state.top, true);
     topCardEl.style.opacity = "1";
 
     turnEl.textContent = `Zug: ${state.turnName || "—"}`;
     dirEl.textContent = state.dir === -1 ? "↺" : "↻";
     deckEl.textContent = `Deck: ${state.deckN}`;
 
-    btnDraw.disabled = !myTurn() || state.phase !== "play";
+    const inPlay = state.phase === "play";
+    btnDraw.disabled = !myTurn() || !inPlay;
     btnPass.disabled = !myTurn() || !state.canPass;
 
     // players list
     playersEl.innerHTML = "";
     for (const p of (state.players || [])) {
       const row = document.createElement("div");
-      row.className = "p" + (p.id === meId ? " me" : "") + (p.id === state.turnId ? " turn" : "");
-      row.innerHTML = `<div class=\"name\">${p.name}</div><div class=\"cnt\">${p.n} Karten</div>`;
+      row.className = "p"
+        + (p.id === meId ? " me" : "")
+        + (p.id === state.turnId ? " turn" : "")
+        + (p.offline ? " offline" : "");
+      row.innerHTML = `<div class=\"name\">${p.name}${p.offline ? " · offline" : ""}</div><div class=\"cnt\">${p.n} Karten</div>`;
       playersEl.appendChild(row);
     }
 
@@ -165,8 +202,8 @@
     handEl.innerHTML = "";
     for (const c of hand) {
       const el = document.createElement("div");
-      const playable = myTurn() && state.phase === "play" && !!c.playable;
-      el.className = "hcard" + (playable ? "" : " bad");
+      const playable = myTurn() && inPlay && !!c.playable;
+      el.className = "hcard " + uFaceClass(c, false) + (playable ? "" : " bad");
       el.textContent = cardLabel(c);
       el.title = playable ? "Spielen" : "Nicht spielbar";
       el.addEventListener("click", () => {
