@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thomas.fun · Kleine Web-Sachen</title>
+  <meta name="description" content="Spiele und Mini-Apps — anklicken und loslegen." />
+  <meta name="theme-color" content="#0c0c0f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0c0f;
+      --card: #16161c;
+      --border: #2a2a34;
+      --text: #f4f4f5;
+      --muted: #a1a1aa;
+      --accent: #f97316;
+      --accent2: #22d3ee;
+      --glow: rgba(249, 115, 22, 0.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Outfit", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .noise {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 4vw, 2.5rem);
+      position: relative;
+      z-index: 1;
+    }
+    header {
+      text-align: center;
+      padding: 2rem 0 2.5rem;
+    }
+    .logo {
+      font-family: "Space Grotesk", sans-serif;
+      font-weight: 700;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .logo span { color: var(--accent); }
+    .tagline {
+      margin: 0.75rem 0 0;
+      font-size: 1.05rem;
+      color: var(--muted);
+      font-weight: 400;
+    }
+    .subtag {
+      margin: 0.6rem auto 0;
+      max-width: 64ch;
+      color: rgba(200, 220, 255, 0.72);
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .back {
+      display: inline-block;
+      margin-top: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--accent2);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }
+    .back:hover { border-color: var(--accent2); }
+    .grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 520px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 980px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin: 0 auto 18px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.18);
+    }
+    .search {
+      flex: 1;
+      min-width: min(520px, 92vw);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.25);
+    }
+    .search input {
+      flex: 1;
+      font: inherit;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+    .search input::placeholder { color: rgba(200, 220, 255, 0.55); }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .chip {
+      font: inherit;
+      cursor: pointer;
+      border-radius: 999px;
+      border: 1px solid rgba(100, 170, 255, 0.35);
+      background: rgba(30, 45, 80, 0.42);
+      color: var(--text);
+      padding: 8px 14px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: transform 0.12s ease, background 0.18s, border-color 0.18s, box-shadow 0.18s;
+    }
+    .chip:hover { transform: translateY(-1px); border-color: rgba(154, 208, 255, 0.7); }
+    .chip[aria-pressed="true"] {
+      background: linear-gradient(135deg, rgba(86, 167, 255, 0.35), rgba(93, 255, 180, 0.16));
+      border-color: rgba(180, 255, 220, 0.65);
+      box-shadow: 0 10px 26px rgba(86, 167, 255, 0.12);
+    }
+    .section {
+      margin-top: 16px;
+    }
+    .section h2 {
+      margin: 18px 0 10px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(200, 220, 255, 0.86);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section h2::after {
+      content: "";
+      height: 1px;
+      flex: 1;
+      background: linear-gradient(90deg, rgba(154, 208, 255, 0.35), transparent);
+    }
+    .mutedLine {
+      text-align: center;
+      margin: 0 0 10px;
+      color: rgba(200, 220, 255, 0.62);
+      font-size: 0.92rem;
+    }
+    .tile {
+      display: block;
+      padding: 1.5rem 1.35rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .tile:hover {
+      transform: translateY(-4px) scale(1.01);
+      border-color: #3f3f4f;
+      box-shadow: 0 20px 50px var(--glow);
+    }
+    .tile:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+    .tile__emoji { font-size: 2rem; line-height: 1; margin-bottom: 0.5rem; }
+    .tile__label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 0.35rem;
+    }
+    .tile__title {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 0 0 0.4rem;
+    }
+    .tile__desc {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .tile__go {
+      margin-top: 1rem;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: var(--accent);
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent2); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="noise" aria-hidden="true"></div>
+  <div class="wrap">
+    <header>
+      <p class="logo">thomas<span>.fun</span></p>
+      <p class="tagline">Kleine Dinge zum Anklicken — Vanilla HTML, CSS &amp; JS.</p>
+      <p class="subtag">Spiele, Mini‑Tools und Tests. Such dir was aus, klick drauf, fertig.</p>
+      <a class="back" href="#" data-portfolio-link>Zum Portfolio</a>
+    </header>
+
+    <div class="toolbar" aria-label="Suche & Filter">
+      <div class="search" role="search">
+        <span aria-hidden="true">⌕</span>
+        <input id="q" type="search" placeholder="Suche… (z.B. pong, test, arcade)" autocomplete="off" />
+        <button class="chip" id="btnClear" type="button" aria-pressed="false">Reset</button>
+      </div>
+      <div class="chips" role="group" aria-label="Filter">
+        <button class="chip" type="button" data-filter="all" aria-pressed="true">Alle</button>
+        <button class="chip" type="button" data-filter="game" aria-pressed="false">Spiele</button>
+        <button class="chip" type="button" data-filter="test" aria-pressed="false">Tests</button>
+        <button class="chip" type="button" data-filter="arcade" aria-pressed="false">Arcade</button>
+        <button class="chip" type="button" data-filter="puzzle" aria-pressed="false">Puzzle</button>
+      </div>
+    </div>
+
+    <p class="mutedLine" id="countLine">—</p>
+
+    <div class="section" id="secGames">
+      <h2>Spiele</h2>
+      <div class="grid" id="gridGames">
+      <a class="tile" data-tags="game arcade canvas" href="spiele/jetspiel.html">
+        <div class="tile__emoji" aria-hidden="true">🎮</div>
+        <div class="tile__label">Canvas · Arcade</div>
+        <h2 class="tile__title">Jet‑Kampf</h2>
+        <p class="tile__desc">Arcade mit Wärme, Upgrades, verschiedenen Gegnern — auch Touch.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game board mini" href="spiele/tictactoe.html">
+        <div class="tile__emoji" aria-hidden="true">❎</div>
+        <div class="tile__label">Board · Mini</div>
+        <h2 class="tile__title">Tic‑Tac‑Toe</h2>
+        <p class="tile__desc">Gegen Bot oder 2‑Spieler — mit fettem Win/Lose/Draw‑Screen.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game puzzle memory" href="spiele/memory.html">
+        <div class="tile__emoji" aria-hidden="true">🧠</div>
+        <div class="tile__label">Puzzle</div>
+        <h2 class="tile__title">Memory</h2>
+        <p class="tile__desc">Paare finden, Bestzeit jagen.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game puzzle 2048" href="spiele/2048.html">
+        <div class="tile__emoji" aria-hidden="true">🧩</div>
+        <div class="tile__label">Puzzle</div>
+        <h2 class="tile__title">2048</h2>
+        <p class="tile__desc">Schieben, mergen, Score jagen — Keyboard &amp; Touch.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game puzzle minesweeper board" href="spiele/minesweeper.html">
+        <div class="tile__emoji" aria-hidden="true">💣</div>
+        <div class="tile__label">Puzzle · Board</div>
+        <h2 class="tile__title">Minesweeper</h2>
+        <p class="tile__desc">Aufdecken, markieren, nicht boomen — Touch &amp; Maus, Bestzeiten.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade snake" href="spiele/snake.html">
+        <div class="tile__emoji" aria-hidden="true">🐍</div>
+        <div class="tile__label">Arcade</div>
+        <h2 class="tile__title">Snake</h2>
+        <p class="tile__desc">Klassiker: fressen, wachsen, nicht crashen. Auch Mobile‑Buttons.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade pong" href="spiele/pong.html">
+        <div class="tile__emoji" aria-hidden="true">🏓</div>
+        <div class="tile__label">Arcade</div>
+        <h2 class="tile__title">Pong</h2>
+        <p class="tile__desc">Gegen Bot — mit Sparks, Sound und Finish‑Overlay.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade asteroids space" href="spiele/asteroids.html">
+        <div class="tile__emoji" aria-hidden="true">🪐</div>
+        <div class="tile__label">Arcade · Physics</div>
+        <h2 class="tile__title">Asteroids</h2>
+        <p class="tile__desc">Rotation, Schub, Schießen, Steine splitten — Score & Wellen.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game mini rps" href="spiele/rps.html">
+        <div class="tile__emoji" aria-hidden="true">🪨</div>
+        <div class="tile__label">Mini</div>
+        <h2 class="tile__title">Stein‑Schere‑Papier</h2>
+        <p class="tile__desc">Streak jagen — mit Partikeln, Sound und Vibration.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+      </div>
+    </div>
+
+    <div class="section" id="secTests">
+      <h2>Tests & Tools</h2>
+      <div class="grid" id="gridTests">
+
+      <a class="tile" data-tags="test tool cps" href="spiele/cps.html">
+        <div class="tile__emoji" aria-hidden="true">🖱️</div>
+        <div class="tile__label">Test</div>
+        <h2 class="tile__title">CPS‑Tester</h2>
+        <p class="tile__desc">Wie schnell kannst du klicken? 5s/10s + Bestwert.</p>
+        <div class="tile__go">Testen →</div>
+      </a>
+
+      <a class="tile" data-tags="test tool reflex" href="spiele/reflex.html">
+        <div class="tile__emoji" aria-hidden="true">⚡</div>
+        <div class="tile__label">Test</div>
+        <h2 class="tile__title">Reflex‑Test</h2>
+        <p class="tile__desc">Drück so schnell du kannst, wenn es grün wird — mit Rating &amp; Durchschnitt.</p>
+        <div class="tile__go">Testen →</div>
+      </a>
+
+      <a class="tile" href="spiele/adventskalender/index.html">
+        <div class="tile__emoji" aria-hidden="true">🎁</div>
+        <div class="tile__label">UI · Dezember</div>
+        <h2 class="tile__title">Adventskalender</h2>
+        <p class="tile__desc">24 Türchen, Speicherstand, Demo‑Modus.</p>
+        <div class="tile__go">Öffnen →</div>
+      </a>
+
+      <a class="tile" href="spiele/todo.html">
+        <div class="tile__emoji" aria-hidden="true">✅</div>
+        <div class="tile__label">App</div>
+        <h2 class="tile__title">To‑Do Liste</h2>
+        <p class="tile__desc">Filter, erledigt löschen — localStorage.</p>
+        <div class="tile__go">Öffnen →</div>
+      </a>
+
+      <a class="tile" href="spiele/spielchen.html">
+        <div class="tile__emoji" aria-hidden="true">🛰️</div>
+        <div class="tile__label">Reflex</div>
+        <h2 class="tile__title">Satelliten‑Ping</h2>
+        <p class="tile__desc">Kurz reagieren, wenn das Signal da ist.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+      </div>
+    </div>
+
+    <footer>
+      Team-Projekt: <a href="https://orbitex-demo.pages.dev" target="_blank" rel="noopener noreferrer">Orbitex</a>
+      · <a href="#" data-portfolio-link>Portfolio</a>
+    </footer>
+  </div>
+
+  <script src="js/site-config.js?v=2"></script>
+  <script src="js/portfolio-link.js?v=2"></script>
+  <script>
+    (() => {
+      const q = document.getElementById("q");
+      const btnClear = document.getElementById("btnClear");
+      const chips = [...document.querySelectorAll("[data-filter]")];
+      const tiles = [...document.querySelectorAll(".tile[data-tags]")];
+      const countLine = document.getElementById("countLine");
+      const secGames = document.getElementById("secGames");
+      const secTests = document.getElementById("secTests");
+      let filter = "all";
+
+      function apply() {
+        const term = (q.value || "").trim().toLowerCase();
+        let shown = 0;
+        let shownGames = 0;
+        let shownTests = 0;
+        for (const t of tiles) {
+          const tags = (t.getAttribute("data-tags") || "").toLowerCase();
+          const text = (t.innerText || "").toLowerCase();
+          const matchTerm = !term || tags.includes(term) || text.includes(term);
+          const matchFilter = filter === "all" || tags.includes(filter);
+          const ok = matchTerm && matchFilter;
+          t.classList.toggle("hidden", !ok);
+          if (ok) {
+            shown++;
+            if (tags.includes("test") || tags.includes("tool")) shownTests++;
+            else shownGames++;
+          }
+        }
+        secGames.classList.toggle("hidden", shownGames === 0);
+        secTests.classList.toggle("hidden", shownTests === 0);
+        countLine.textContent = shown ? `${shown} Treffer` : "Keine Treffer.";
+      }
+
+      chips.forEach((c) => {
+        c.addEventListener("click", () => {
+          filter = c.getAttribute("data-filter") || "all";
+          chips.forEach((x) => x.setAttribute("aria-pressed", x === c ? "true" : "false"));
+          apply();
+        });
+      });
+      q.addEventListener("input", apply);
+      btnClear.addEventListener("click", () => {
+        q.value = "";
+        filter = "all";
+        chips.forEach((x) => x.setAttribute("aria-pressed", x.getAttribute("data-filter") === "all" ? "true" : "false"));
+        apply();
+        q.focus();
+      });
+      apply();
+    })();
+  </script>
+</body>
+</html>
