@@ -183,6 +183,20 @@
       color: inherit;
       transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
     }
+    .tile.big{
+      padding: 1.9rem 1.6rem;
+      background: radial-gradient(900px 320px at 20% 15%, rgba(34,211,238,0.10), transparent 60%), var(--card);
+      border-color: rgba(154, 208, 255, 0.24);
+    }
+    .tile.big .tile__emoji{ font-size: 2.35rem; }
+    .tile.big .tile__title{ font-size: 1.6rem; }
+    .tile.big .tile__desc{ font-size: 0.95rem; }
+    @media (min-width: 520px){
+      .tile.big{ grid-column: span 2; }
+    }
+    @media (min-width: 980px){
+      .tile.big{ grid-column: span 2; }
+    }
     .tile:hover {
       transform: translateY(-4px) scale(1.01);
       border-color: #3f3f4f;
@@ -261,7 +275,7 @@
     <div class="section" id="secGames">
       <h2>Spiele</h2>
       <div class="grid" id="gridGames">
-      <a class="tile" data-tags="game arcade canvas mobile" href="spiele/jetspiel.html">
+      <a class="tile big" data-tags="game arcade canvas mobile" href="spiele/jetspiel/index.html">
         <div class="tile__emoji" aria-hidden="true">🎮</div>
         <div class="tile__label">Canvas · Arcade</div>
         <h2 class="tile__title">Jet‑Kampf</h2>
@@ -269,63 +283,23 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game board mini mobile" href="spiele/tictactoe.html">
-        <div class="tile__emoji" aria-hidden="true">❎</div>
-        <div class="tile__label">Board · Mini</div>
-        <h2 class="tile__title">Tic‑Tac‑Toe</h2>
-        <p class="tile__desc">Gegen Bot oder 2‑Spieler — mit fettem Win/Lose/Draw‑Screen.</p>
+      <a class="tile big" data-tags="game strategy towerdefense mobile canvas" href="spiele/towerdefense/index.html">
+        <div class="tile__emoji" aria-hidden="true">🗼</div>
+        <div class="tile__label">Strategy · TD</div>
+        <h2 class="tile__title">Tower Defense</h2>
+        <p class="tile__desc">Pistolenturm mit Upgrade‑Pfaden (MG/Sniper), Kampagne (Kapitel 1) & Tutorial.</p>
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game puzzle memory mobile" href="spiele/memory.html">
-        <div class="tile__emoji" aria-hidden="true">🧠</div>
-        <div class="tile__label">Puzzle</div>
-        <h2 class="tile__title">Memory</h2>
-        <p class="tile__desc">Paare finden, Bestzeit jagen.</p>
+      <a class="tile big" data-tags="game arcade mobile canvas" href="spiele/tunnel-runner/index.html">
+        <div class="tile__emoji" aria-hidden="true">🕳️</div>
+        <div class="tile__label">Pseudo‑3D · Arcade</div>
+        <h2 class="tile__title">Tunnel Runner</h2>
+        <p class="tile__desc">Neon‑Tunnel in Fake‑3D: Gates dodgen, Speed steigt, Highscore.</p>
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game puzzle 2048 mobile" href="spiele/2048.html">
-        <div class="tile__emoji" aria-hidden="true">🧩</div>
-        <div class="tile__label">Puzzle</div>
-        <h2 class="tile__title">2048</h2>
-        <p class="tile__desc">Schieben, mergen, Score jagen — Keyboard &amp; Touch.</p>
-        <div class="tile__go">Spielen →</div>
-      </a>
-
-      <a class="tile" data-tags="game puzzle minesweeper board mobile" href="spiele/minesweeper.html">
-        <div class="tile__emoji" aria-hidden="true">💣</div>
-        <div class="tile__label">Puzzle · Board</div>
-        <h2 class="tile__title">Minesweeper</h2>
-        <p class="tile__desc">Aufdecken, markieren, nicht boomen — Touch &amp; Maus, Bestzeiten.</p>
-        <div class="tile__go">Spielen →</div>
-      </a>
-
-      <a class="tile" data-tags="game arcade snake mobile" href="spiele/snake.html">
-        <div class="tile__emoji" aria-hidden="true">🐍</div>
-        <div class="tile__label">Arcade</div>
-        <h2 class="tile__title">Snake</h2>
-        <p class="tile__desc">Klassiker: fressen, wachsen, nicht crashen. Auch Mobile‑Buttons.</p>
-        <div class="tile__go">Spielen →</div>
-      </a>
-
-      <a class="tile" data-tags="game arcade pong" href="spiele/pong.html">
-        <div class="tile__emoji" aria-hidden="true">🏓</div>
-        <div class="tile__label">Arcade</div>
-        <h2 class="tile__title">Pong</h2>
-        <p class="tile__desc">Gegen Bot — mit Sparks, Sound und Finish‑Overlay.</p>
-        <div class="tile__go">Spielen →</div>
-      </a>
-
-      <a class="tile" data-tags="game arcade breakout canvas mobile" href="spiele/breakout.html">
-        <div class="tile__emoji" aria-hidden="true">🧱</div>
-        <div class="tile__label">Canvas · Arcade</div>
-        <h2 class="tile__title">Breakout</h2>
-        <p class="tile__desc">Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch &amp; Keyboard.</p>
-        <div class="tile__go">Spielen →</div>
-      </a>
-
-      <a class="tile" data-tags="game arcade asteroids space" href="spiele/asteroids.html">
+      <a class="tile big" data-tags="game arcade asteroids space" href="spiele/asteroids/index.html">
         <div class="tile__emoji" aria-hidden="true">🪐</div>
         <div class="tile__label">Arcade · Physics</div>
         <h2 class="tile__title">Asteroids</h2>
@@ -333,7 +307,87 @@
         <div class="tile__go">Spielen →</div>
       </a>
 
-      <a class="tile" data-tags="game mini rps mobile" href="spiele/rps.html">
+      <a class="tile" data-tags="game board mini mobile" href="spiele/tictactoe/index.html">
+        <div class="tile__emoji" aria-hidden="true">❎</div>
+        <div class="tile__label">Board · Mini</div>
+        <h2 class="tile__title">Tic‑Tac‑Toe</h2>
+        <p class="tile__desc">Gegen Bot oder 2‑Spieler — mit fettem Win/Lose/Draw‑Screen.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game puzzle memory mobile" href="spiele/memory/index.html">
+        <div class="tile__emoji" aria-hidden="true">🧠</div>
+        <div class="tile__label">Puzzle</div>
+        <h2 class="tile__title">Memory</h2>
+        <p class="tile__desc">Paare finden, Bestzeit jagen.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game puzzle 2048 mobile" href="spiele/2048/index.html">
+        <div class="tile__emoji" aria-hidden="true">🧩</div>
+        <div class="tile__label">Puzzle</div>
+        <h2 class="tile__title">2048</h2>
+        <p class="tile__desc">Schieben, mergen, Score jagen — Keyboard &amp; Touch.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game puzzle minesweeper board mobile" href="spiele/minesweeper/index.html">
+        <div class="tile__emoji" aria-hidden="true">💣</div>
+        <div class="tile__label">Puzzle · Board</div>
+        <h2 class="tile__title">Minesweeper</h2>
+        <p class="tile__desc">Aufdecken, markieren, nicht boomen — Touch &amp; Maus, Bestzeiten.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade snake mobile" href="spiele/snake/index.html">
+        <div class="tile__emoji" aria-hidden="true">🐍</div>
+        <div class="tile__label">Arcade</div>
+        <h2 class="tile__title">Snake</h2>
+        <p class="tile__desc">Klassiker: fressen, wachsen, nicht crashen. Auch Mobile‑Buttons.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade pong" href="spiele/pong/index.html">
+        <div class="tile__emoji" aria-hidden="true">🏓</div>
+        <div class="tile__label">Arcade</div>
+        <h2 class="tile__title">Pong</h2>
+        <p class="tile__desc">Gegen Bot — mit Sparks, Sound und Finish‑Overlay.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile big" data-tags="game arcade breakout canvas mobile" href="spiele/breakout/index.html">
+        <div class="tile__emoji" aria-hidden="true">🧱</div>
+        <div class="tile__label">Canvas · Arcade</div>
+        <h2 class="tile__title">Breakout</h2>
+        <p class="tile__desc">Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch &amp; Keyboard.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade space mobile canvas" href="spiele/orbit-hook/index.html">
+        <div class="tile__emoji" aria-hidden="true">🪝</div>
+        <div class="tile__label">Arcade · One‑Button</div>
+        <h2 class="tile__title">Spider‑Swing</h2>
+        <p class="tile__desc">Spider‑Ball: an Felsen schwingen, runterfallen möglich, Ziel erreichen.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade reflex mobile canvas" href="spiele/time-stop-dash/index.html">
+        <div class="tile__emoji" aria-hidden="true">⏱️</div>
+        <div class="tile__label">Arcade · Skill</div>
+        <h2 class="tile__title">Time‑Stop Dash</h2>
+        <p class="tile__desc">Zeit läuft nur bei Bewegung — dash durch Neon‑Hindernisse.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game arcade mobile canvas" href="spiele/loop-runner/index.html">
+        <div class="tile__emoji" aria-hidden="true">⭕</div>
+        <div class="tile__label">Arcade · Minimal</div>
+        <h2 class="tile__title">Loop‑Runner</h2>
+        <p class="tile__desc">Auf dem Ring laufen, innen/außen wechseln — dodge die Gates.</p>
+        <div class="tile__go">Spielen →</div>
+      </a>
+
+      <a class="tile" data-tags="game mini rps mobile" href="spiele/rps/index.html">
         <div class="tile__emoji" aria-hidden="true">🪨</div>
         <div class="tile__label">Mini</div>
         <h2 class="tile__title">Stein‑Schere‑Papier</h2>
@@ -347,7 +401,7 @@
       <h2>Tests & Tools</h2>
       <div class="grid" id="gridTests">
 
-      <a class="tile" data-tags="test tool cps mobile" href="spiele/cps.html">
+      <a class="tile" data-tags="test tool cps mobile" href="spiele/cps/index.html">
         <div class="tile__emoji" aria-hidden="true">🖱️</div>
         <div class="tile__label">Test</div>
         <h2 class="tile__title">CPS‑Tester</h2>
@@ -355,7 +409,7 @@
         <div class="tile__go">Testen →</div>
       </a>
 
-      <a class="tile" data-tags="test tool reflex mobile" href="spiele/reflex.html">
+      <a class="tile" data-tags="test tool reflex mobile" href="spiele/reflex/index.html">
         <div class="tile__emoji" aria-hidden="true">⚡</div>
         <div class="tile__label">Test</div>
         <h2 class="tile__title">Reflex‑Test</h2>
@@ -371,7 +425,7 @@
         <div class="tile__go">Öffnen →</div>
       </a>
 
-      <a class="tile" data-tags="tool mobile" href="spiele/todo.html">
+      <a class="tile" data-tags="tool mobile" href="spiele/todo/index.html">
         <div class="tile__emoji" aria-hidden="true">✅</div>
         <div class="tile__label">App</div>
         <h2 class="tile__title">To‑Do Liste</h2>
@@ -379,7 +433,7 @@
         <div class="tile__go">Öffnen →</div>
       </a>
 
-      <a class="tile" data-tags="game reflex mobile" href="spiele/spielchen.html">
+      <a class="tile" data-tags="game reflex mobile" href="spiele/spielchen/index.html">
         <div class="tile__emoji" aria-hidden="true">🛰️</div>
         <div class="tile__label">Reflex</div>
         <h2 class="tile__title">Satelliten‑Ping</h2>

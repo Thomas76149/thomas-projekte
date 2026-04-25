@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+  <title>Jet-Kampf</title>
+  <meta name="description" content="Canvas-Arcade: Bosse alle 5 Wellen, Modi, Shop, Web-Audio, Effekte — 1920×1080." />
+  <meta name="theme-color" content="#040814" />
+  <link rel="manifest" href="jetspiel-manifest.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <div class="soundRow">
+    <label><input type="checkbox" id="soundOn" checked /> Sound</label>
+    <button type="button" class="hdrBtn" id="btnFsTop" style="border-radius:10px">Vollbild</button>
+    <button type="button" class="hdrBtn" id="btnInstallTop" hidden>App installieren</button>
+  </div>
+  <header>
+    <div class="brand">
+      <h1>Jet-Kampf</h1>
+      <span class="wave-pill" id="wavePill">Welle 1</span>
+    </div>
+    <span class="upgrade-hud" id="upgradeHud" hidden>Hangar · kein Zeitlimit</span>
+      <div class="hud" aria-live="polite">
+      <span id="diffHud" hidden>—</span>
+      <span>Punkte <strong id="score">0</strong></span>
+      <span class="gold">₡ <strong id="credits">0</strong></span>
+      <span><strong id="enemiesHud">Rest —</strong></span>
+      <span>Leben <strong id="lives">3</strong></span>
+      <span id="shieldTag" class="tag" hidden>Schild ×<span id="shieldNum">0</span></span>
+      <span id="rocketTag" class="tag">🚀 <strong id="rocketNum">0</strong></span>
+      <span id="novaTag" class="tag" hidden>Nova <strong id="novaCd">—</strong></span>
+      <span id="upTag" class="tag">—</span>
+    </div>
+  </header>
+
+  <div class="gameRow" id="gameRow">
+    <div class="canvasWrap" id="canvasWrap">
+      <div class="topGameBar">
+        <button type="button" class="hdrBtn" id="btnPause">Pause</button>
+        <button type="button" class="hdrBtn" id="btnFs">Vollbild</button>
+      </div>
+      <canvas id="game" width="1920" height="1080" aria-label="Spielfeld"></canvas>
+      <div
+        class="heatDock"
+        id="heatDock"
+        hidden
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div class="heatDock__top">
+          <span class="heatDock__title" id="heatLabel">Wärme</span>
+          <span class="heatDock__pct" id="heatPct">0%</span>
+        </div>
+        <div class="heatDock__track"><div class="heatDock__fill" id="heatFill"></div></div>
+      </div>
+      <div class="comboStage" id="comboStage" hidden aria-live="polite">
+        <div class="comboLabel">KOMBO</div>
+        <div class="comboBigNum" id="comboBigNum">0</div>
+        <div class="comboBar"><span id="comboBarFill"></span></div>
+      </div>
+      <div class="toastHost"><div class="toast" id="toast"></div></div>
+      <div class="voiceBubble" id="voiceBubble" hidden><span class="who">Tower</span><span id="voiceText"></span></div>
+      <div class="overlay" id="startOverlay">
+        <div class="card">
+          <p><strong>PC:</strong> <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> steuern vertikal · <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> seitlich ausweichen · <kbd>Leertaste</kbd> Feuer · <kbd>E</kbd> Rakete · <kbd>Q</kbd> Nova (wenn freigeschaltet)</p>
+          <p><strong>Handy:</strong> Links am Feld wischen = hoch/runter und seitlich · Buttons unten inkl. Links/Rechts</p>
+          <ul>
+            <li>Pro <strong>Welle</strong> feste Anzahl Gegner — wenn leer: <strong>Hangar</strong> ohne Zeitlimit, dann mit <strong>Weiter</strong> in die nächste Welle.</li>
+            <li><strong>Credits</strong> sammeln — Angebote passen zum gewählten <strong>Schiff</strong> (Puls vs. Strahl).</li>
+            <li><strong>Sound</strong>: Schüsse und Effekte per Web Audio (nach Klick auf Start) — ohne Dauer-Hintergrundton.</li>
+            <li>Alle <strong>5 Wellen</strong> ein <strong>Boss</strong> — acht verschiedene Muster im Rotationszyklus.</li>
+            <li><strong>Elite</strong>-Gegner (goldener Ring), <strong>Kombo</strong>-Bonus, <strong>Hitstop</strong> bei schweren Treffern.</li>
+            <li><kbd>ESC</kbd> oder <strong>Pause</strong> im Kampf · <strong>Taktikmodule</strong> je Schiff und Meta-Freischaltungen (Trail, Strahl, Rumpf) über Fortschritt.</li>
+          </ul>
+          <div class="difficultyRow" role="radiogroup" aria-label="Schwierigkeit">
+            <span>Modus</span>
+            <div class="chips">
+              <button type="button" class="diffChip" data-diff="easy" aria-pressed="false">Leicht</button>
+              <button type="button" class="diffChip" data-diff="medium" aria-pressed="false">Mittel</button>
+              <button type="button" class="diffChip" data-diff="hard" aria-pressed="false">Schwer</button>
+            </div>
+          </div>
+          <p class="diffHint" id="diffHint"></p>
+          <div class="difficultyRow" role="radiogroup" aria-label="Schiff">
+            <span>Schiff</span>
+            <div class="chips">
+              <button type="button" class="diffChip shipChip" data-ship="pulse" aria-pressed="false">Pulsjäger</button>
+              <button type="button" class="diffChip shipChip" data-ship="beam" aria-pressed="false">Strahljäger</button>
+            </div>
+          </div>
+          <div class="shipPreviewBox">
+            <canvas id="shipPreviewCanvas" width="400" height="220" aria-hidden="true"></canvas>
+          </div>
+          <p class="diffHint" id="shipHint"></p>
+          <div class="difficultyRow" role="radiogroup" aria-label="Taktik Pulsjäger" id="modRowPulse">
+            <span>Taktik (Pulsjäger)</span>
+            <div class="chips">
+              <button type="button" class="diffChip modChip" data-mod="standard" aria-pressed="false">Standard</button>
+              <button type="button" class="diffChip modChip" data-mod="pbreach" aria-pressed="false">Panzerbrecher</button>
+              <button type="button" class="diffChip modChip" data-mod="psalve" aria-pressed="false">Salve</button>
+              <button type="button" class="diffChip modChip" data-mod="pwolke" aria-pressed="false">Wolke</button>
+            </div>
+          </div>
+          <div class="difficultyRow" role="radiogroup" aria-label="Taktik Strahljäger" id="modRowBeam" hidden>
+            <span>Taktik (Strahljäger)</span>
+            <div class="chips">
+              <button type="button" class="diffChip modChip" data-mod="standard" aria-pressed="false">Standard</button>
+              <button type="button" class="diffChip modChip" data-mod="bbreach" aria-pressed="false">Panzerbrecher</button>
+              <button type="button" class="diffChip modChip" data-mod="bflux" aria-pressed="false">Flux</button>
+              <button type="button" class="diffChip modChip" data-mod="bbulk" aria-pressed="false">Bollwerk</button>
+            </div>
+          </div>
+          <p class="diffHint modHint" id="modHint"></p>
+          <button type="button" class="btn-primary" id="btnStart">Start</button>
+        </div>
+      </div>
+      <div class="overlay" id="gameOverOverlay" hidden>
+        <div class="card">
+          <p id="goText">Game Over</p>
+          <button type="button" class="btn-primary" id="btnRestart">Nochmal</button>
+          <button type="button" class="btn-secondary" id="btnMenu">Zurück</button>
+        </div>
+      </div>
+      <div class="overlay pauseOverlay" id="pauseOverlay" hidden>
+        <div class="card">
+          <h2>Pause</h2>
+          <p><kbd>ESC</kbd> oder Weiter — Sound und Modul wie im Menü.</p>
+          <button type="button" class="btn-primary" id="btnResume">Weiter</button>
+          <button type="button" class="btn-secondary" id="btnPauseMenu">Zum Menü</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="shop" id="shop">
+      <div class="shopHead">
+        <div>
+          <h2>Hangar</h2>
+          <p class="shopSub" id="shopSubline">Nur in der Upgrade-Phase — Credits ausgeben, dann weiter.</p>
+        </div>
+        <div class="shopCreditsPill" aria-live="polite"><span id="shopCreditsVal">0</span><small>₡</small></div>
+      </div>
+      <div class="shopControls" id="shopControls">
+        <button type="button" class="shopChip" data-shop-filter="all" aria-pressed="true">Alle</button>
+        <button type="button" class="shopChip" data-shop-filter="affordable" aria-pressed="false">Kaufbar</button>
+        <button type="button" class="shopChip" data-shop-filter="Waffe" aria-pressed="false">Waffe</button>
+        <button type="button" class="shopChip" data-shop-filter="Abwehr" aria-pressed="false">Abwehr</button>
+        <button type="button" class="shopChip" data-shop-filter="Mobilität" aria-pressed="false">Mobilität</button>
+        <button type="button" class="shopChip" data-shop-filter="Ökonomie" aria-pressed="false">Ökonomie</button>
+        <button type="button" class="shopChip" data-shop-filter="Taktik" aria-pressed="false">Taktik</button>
+        <button type="button" class="shopChip" data-shop-filter="epic" aria-pressed="false">Episch</button>
+      </div>
+      <div class="shopLayout">
+        <div class="shopGrid" id="shopGrid" aria-label="Upgrade-Auswahl"></div>
+      </div>
+      <div class="shopContinueBar" id="shopContinueBar" hidden>
+        <button type="button" class="btn-shop-continue" id="btnShopContinue">Weiter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="touch" id="touchBar" aria-hidden="true">
+    <button type="button" data-act="fire">Feuer</button>
+    <button type="button" data-act="missile">Rakete</button>
+    <button type="button" data-act="nova">Nova</button>
+    <button type="button" data-act="left">Links</button>
+    <button type="button" data-act="right">Rechts</button>
+    <button type="button" data-act="up">Hoch</button>
+    <button type="button" data-act="down">Runter</button>
+  </div>
+  <footer><a href="../../index.html">← thomas.fun</a></footer>
+
+  
+</body>
+</html>

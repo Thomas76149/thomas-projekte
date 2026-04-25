@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asteroids · thomas.fun</title>
+  <meta name="description" content="Asteroids‑Lite: Rotation, Schub, Schießen, Steine splitten. Score jagen." />
+  <meta name="theme-color" content="#0c0c0f" />
+  
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Asteroids</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button class="primary" id="btnStart">Start</button>
+          <button id="btnReset">Reset</button>
+        </div>
+        <div class="meta">
+          <span class="pill" id="score">Score: 0</span>
+          <span class="pill" id="lives">Leben: 3</span>
+          <span class="pill" id="wave">Welle: 1</span>
+        </div>
+      </div>
+      <canvas id="c" width="1280" height="720" aria-label="Asteroids Spielfeld"></canvas>
+      <div class="buffBar" id="buffBar" aria-live="polite">
+        <span class="buffBadge buffBadge--shield" id="hudShield" hidden>🛡️ <b>Shield</b> <span id="hudShieldVal">0s</span></span>
+        <span class="buffBadge buffBadge--rapid" id="hudRapid" hidden>⚡ <b>Rapid</b> <span id="hudRapidVal">0s</span></span>
+        <span class="buffBadge buffBadge--spread" id="hudSpread" hidden>✶ <b>Spread</b> <span id="hudSpreadVal">0s</span></span>
+        <span class="buffBadge buffBadge--missile" id="hudMissile" hidden>🚀 <b>Missiles</b> <span id="hudMissileVal">0</span></span>
+      </div>
+      <div class="toast" id="toast" aria-live="polite"></div>
+      <div class="hint">←/→ drehen · ↑ Schub · Space schießen · Shift Hypersprung (risk) · Wrap an den Rändern</div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov" aria-hidden="true">
+    <div class="panel">
+      <h2 id="ovTitle">Game Over</h2>
+      <p id="ovText">—</p>
+      <div class="cta">
+        <button class="primary" id="ovAgain">Nochmal</button>
+        <button id="ovClose">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay pause" id="pauseOv" aria-hidden="true">
+    <div class="panel">
+      <h2>Pause</h2>
+      <p>ESC zum Fortsetzen · Steuerung bleibt gleich.</p>
+      <div class="cta">
+        <button class="primary" id="btnResume">Weiter</button>
+        <button id="btnMenu">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  
+</body>
+</html>

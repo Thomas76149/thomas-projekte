@@ -1,0 +1,356 @@
+:root {
+  --bg: #120810;
+  --bg2: #1a0f18;
+  --gold: #e8c547;
+  --gold-dim: rgba(232, 197, 71, 0.35);
+  --red: #c43b4a;
+  --green: #2d6a4f;
+  --text: rgba(255, 250, 245, 0.92);
+  --muted: rgba(255, 245, 235, 0.62);
+  --door: linear-gradient(145deg, #5c1f28, #3a1018);
+  --door-open: linear-gradient(145deg, #1f4a3c, #0f2a22);
+  --radius: 14px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background:
+    radial-gradient(900px 500px at 80% -10%, rgba(232, 197, 71, 0.08), transparent 55%),
+    radial-gradient(700px 400px at 10% 0%, rgba(196, 59, 74, 0.12), transparent 50%),
+    linear-gradient(180deg, var(--bg), var(--bg2));
+  color: var(--text);
+  padding: 20px 16px 32px;
+}
+
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 12px;
+  padding: 8px 12px;
+  background: #000;
+  color: #fff;
+  border-radius: 8px;
+  z-index: 100;
+}
+.skip:focus {
+  left: 12px;
+}
+
+.top {
+  max-width: 920px;
+  margin: 0 auto 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  letter-spacing: 0.06em;
+}
+
+.sub {
+  margin: 8px 0 0;
+  max-width: 52ch;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+code {
+  font-size: 0.85em;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.demoToggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.hint {
+  max-width: 920px;
+  margin: 0 auto 14px;
+  font-size: 0.88rem;
+  color: var(--gold);
+  min-height: 1.4em;
+}
+
+.grid {
+  max-width: 920px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 12px;
+}
+
+.door {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.35rem;
+  color: #fff8e8;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  background: var(--door);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 12px 28px rgba(0, 0, 0, 0.35);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
+}
+.door:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
+}
+
+.door:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 0 1px rgba(232, 197, 71, 0.35) inset,
+    0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+.door:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.3);
+}
+
+.door.is-open {
+  background: var(--door-open);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  padding: 8px;
+  cursor: default;
+}
+
+.door.is-open:hover {
+  transform: none;
+}
+
+.door.is-peek {
+  outline: 2px dashed var(--gold-dim);
+}
+
+.doorRipple {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 220, 0.75), rgba(232, 197, 71, 0.4) 42%, transparent 70%);
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 1;
+}
+.doorRipple.go {
+  animation: doorRipple 0.58s ease-out forwards;
+}
+@keyframes doorRipple {
+  to {
+    transform: scale(18);
+    opacity: 0;
+  }
+}
+.doorRipple--muted {
+  background: radial-gradient(circle, rgba(255, 200, 200, 0.55), rgba(196, 59, 74, 0.25) 50%, transparent 72%);
+}
+.door--openflash {
+  animation: doorOpenFlash 0.55s ease-out;
+}
+@keyframes doorOpenFlash {
+  0% {
+    filter: brightness(1.65) saturate(1.15);
+    box-shadow:
+      0 0 0 2px rgba(232, 197, 71, 0.75) inset,
+      0 0 40px rgba(232, 197, 71, 0.45);
+  }
+  100% {
+    filter: none;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 12px 28px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.foot {
+  max-width: 920px;
+  margin: 28px auto 0;
+  font-size: 0.85rem;
+}
+.foot a {
+  color: rgba(255, 210, 160, 0.95);
+}
+
+/* Schnee — nur wenn keine reduced motion */
+.snow {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.snow span {
+  position: absolute;
+  top: -12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 10px;
+  animation: fall linear infinite;
+}
+@keyframes fall {
+  to {
+    transform: translateY(110vh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snow {
+    display: none;
+  }
+  .door {
+    transition: none;
+  }
+  .door:active:not(:disabled) {
+    transform: none;
+  }
+  .btn:active {
+    transform: none;
+  }
+  .doorRipple.go,
+  .door--openflash {
+    animation: none !important;
+  }
+  .modal__panel--in {
+    animation: none !important;
+  }
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.modal[hidden] {
+  display: none;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.modal__panel {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 24px 22px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 220, 180, 0.2);
+  background: linear-gradient(165deg, rgba(40, 24, 32, 0.98), rgba(18, 10, 14, 0.98));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+  transform-origin: 50% 40%;
+}
+.modal__panel--in {
+  animation: modalIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes modalIn {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: none;
+  }
+}
+
+.modal__x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.modal__kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.modal__panel h2 {
+  margin: 10px 0 0;
+  font-size: 1.2rem;
+}
+
+.modal__body {
+  margin: 14px 0 18px;
+  color: var(--muted);
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.btn {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 12px;
+  border: 1px solid rgba(232, 197, 71, 0.45);
+  background: linear-gradient(135deg, #e8c547, #b8922a);
+  color: #1a1208;
+  padding: 10px 20px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+.btn:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 0 24px rgba(232, 197, 71, 0.35);
+}
+.btn:active {
+  transform: scale(0.97);
+}

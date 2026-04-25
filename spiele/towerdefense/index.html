@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower Defense · thomas.fun</title>
+  <meta name="description" content="Mini Tower Defense: 1 Map, 1 MG‑Turm, 1 Gegner. Juice‑Projektile + Effekte." />
+  <meta name="theme-color" content="#0c0c0f" />
+  
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="game.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Tower Defense</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button class="primary" id="btnStart">Start</button>
+          <button id="btnReset">Aufgeben</button>
+          <button id="btnCenter">Center</button>
+          <button id="btnSpeed">Speed: 1.0×</button>
+          <button id="btnBuild" class="primary" style="display:none">Build</button>
+        </div>
+        <div class="meta">
+          <span class="pill" id="wave">Wave: 1</span>
+          <span class="pill" id="kills">Kills: 0</span>
+          <span class="pill" id="money">€0</span>
+          <span class="pill" id="limit">Türme: 0/20</span>
+          <span class="pill" id="hp">Base: 5</span>
+        </div>
+      </div>
+      <canvas id="c" width="1560" height="900" aria-label="Tower Defense"></canvas>
+      <div class="loadout" id="loadout" aria-label="Loadout">
+        <div class="slot" data-slot="0">
+          <div style="display:grid;place-items:center;gap:6px">
+            <svg class="sico" viewBox="0 0 64 64" aria-hidden="true">
+              <path fill="rgba(220,235,255,.92)" d="M10 28h30c2 0 4 2 4 4v6h-6v-4H24v10c0 2-2 4-4 4H10v-6h8V28z"/>
+              <path fill="rgba(255,215,106,.75)" d="M40 28h10v6H40z"/>
+              <path fill="rgba(34,211,238,.35)" d="M18 44h8v4h-8z"/>
+            </svg>
+            <div><b>Pistole</b><small id="mgCost">€50</small></div>
+          </div>
+        </div>
+        <div class="slot empty" data-slot="1"><div><b>—</b><small>soon</small></div></div>
+        <div class="slot empty" data-slot="2"><div><b>—</b><small>soon</small></div></div>
+        <div class="slot empty" data-slot="3"><div><b>—</b><small>soon</small></div></div>
+        <div class="slot empty" data-slot="4"><div><b>—</b><small>soon</small></div></div>
+      </div>
+      <div class="hint">Zieh den Turm unten aufs Feld. Turm‑Limit: 20. Kein Stapeln (Tabu‑Radius). Tippe Turm an für Move/Delete/Target‑Mode.</div>
+    </div>
+  </div>
+  <div class="ghost" id="ghost" aria-hidden="true">MG</div>
+  <div class="overlay" id="towerMenu" aria-hidden="true">
+    <div class="panel">
+      <h2 style="margin:0;font-size:1.6rem">Turm</h2>
+      <p style="margin:10px 0 14px;color:rgba(180,200,230,.9);font-weight:800">Aktion & Targeting</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+        <span class="subpill" id="towerInfo">—</span>
+        <span class="subpill" id="towerUpRule">—</span>
+      </div>
+      <div class="stats" id="towerStats" aria-label="Tower Stats">
+        <div class="stat"><div class="k">DMG</div><div class="v" id="stDmg">—</div></div>
+        <div class="stat"><div class="k">Range</div><div class="v" id="stRange">—</div></div>
+        <div class="stat"><div class="k">ROF</div><div class="v" id="stRof">—</div></div>
+        <div class="stat"><div class="k">Spread</div><div class="v" id="stSpread">—</div></div>
+        <div class="stat"><div class="k">Turn</div><div class="v" id="stTurn">—</div></div>
+        <div class="stat"><div class="k">Bullet</div><div class="v" id="stBullet">—</div></div>
+      </div>
+      <div class="upgrades" aria-label="Upgrades">
+        <button class="upbtn" id="btnUpA" type="button">
+          <div class="row">
+            <div class="ico" id="upAIco" aria-hidden="true"></div>
+            <div style="min-width:0">
+              <div class="t" id="upATitle">—</div>
+              <div class="d" id="upADesc">—</div>
+            </div>
+          </div>
+          <div class="f"><span class="lvl" id="upALvl">0/5</span><span class="cost" id="upACost">€—</span></div>
+        </button>
+        <button class="upbtn" id="btnUpB" type="button">
+          <div class="row">
+            <div class="ico" id="upBIco" aria-hidden="true"></div>
+            <div style="min-width:0">
+              <div class="t" id="upBTitle">—</div>
+              <div class="d" id="upBDesc">—</div>
+            </div>
+          </div>
+          <div class="f"><span class="lvl" id="upBLvl">0/5</span><span class="cost" id="upBCost">€—</span></div>
+        </button>
+      </div>
+      <div class="upgrades" aria-label="Upgrade Details">
+        <div class="updetail">
+          <h3 id="upADetailTitle">Pfad A – Details</h3>
+          <div class="txt" id="upADetail">—</div>
+        </div>
+        <div class="updetail">
+          <h3 id="upBDetailTitle">Pfad B – Details</h3>
+          <div class="txt" id="upBDetail">—</div>
+        </div>
+      </div>
+      <div class="cta" style="margin-bottom:10px">
+        <button class="primary" id="btnMove">Move</button>
+        <button id="btnSell">Delete</button>
+      </div>
+      <div class="cta">
+        <select id="selTarget" aria-label="Targeting" style="min-width: min(320px, 86vw); font:inherit; border-radius:14px; border:1px solid rgba(255,255,255,.12); background:rgba(0,0,0,.25); color:var(--text); padding:10px 14px; min-height:44px">
+          <option value="first">First</option>
+          <option value="last">Last</option>
+          <option value="strongest">Strongest</option>
+          <option value="weakest">Weakest</option>
+          <option value="closest">Closest</option>
+          <option value="farthest">Farthest</option>
+          <option value="random">Random</option>
+        </select>
+        <button id="btnCloseMenu">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="ov" aria-hidden="true">
+    <div class="panel">
+      <h2 id="ovTitle">—</h2>
+      <p id="ovText">—</p>
+      <div class="cta">
+        <button class="primary" id="ovAgain">Nochmal</button>
+        <button id="ovSettings">Einstellungen</button>
+        <button id="ovClose">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay show" id="mainMenu" aria-hidden="false">
+    <div class="panel menuPanel">
+      <div class="menuTop">
+        <div>
+          <h2 class="title">Tower Defense</h2>
+          <p class="sub">Tutorial · Kampagne · Shop · Settings</p>
+        </div>
+        <div class="kbd">M = Menü</div>
+      </div>
+
+      <div class="menuGrid" aria-label="Menü">
+        <button class="menuCard primary" id="btnMenuTutorial" type="button">
+          <div class="mIco" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path fill="rgba(93,255,180,.92)" d="M12 14h40v36H12z"/><path fill="rgba(0,0,0,.35)" d="M18 22h28v4H18zm0 10h18v4H18zm0 10h24v4H18z"/></svg>
+          </div>
+          <div>
+            <div class="mT">Tutorial</div>
+            <div class="mD">Basic Einstieg. Nur Pistole. Schritt für Schritt.</div>
+          </div>
+        </button>
+        <button class="menuCard primary" id="btnMenuCampaign" type="button">
+          <div class="mIco" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path fill="rgba(255,215,106,.92)" d="M12 48l12-34h16l12 34H12z"/><path fill="rgba(0,0,0,.35)" d="M28 26h8v22h-8z"/></svg>
+          </div>
+          <div>
+            <div class="mT">Kampagne</div>
+            <div class="mD">Kapitel 1: 10 Levels. Natur‑Theme.</div>
+          </div>
+        </button>
+        <button class="menuCard" id="btnMenuShop" type="button">
+          <div class="mIco" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path fill="rgba(34,211,238,.92)" d="M14 22h36l-4 28H18l-4-28z"/><path fill="rgba(0,0,0,.35)" d="M22 22l4-8h12l4 8H22z"/></svg>
+          </div>
+          <div>
+            <div class="mT">Shop</div>
+            <div class="mD">Neue Türme kaufen (kommt gleich).</div>
+          </div>
+        </button>
+        <button class="menuCard" id="btnMenuSettings" type="button">
+          <div class="mIco" aria-hidden="true">
+            <svg viewBox="0 0 64 64"><path fill="rgba(220,235,255,.92)" d="M28 10h8l2 6 6 2 6-2 4 6-4 6 0 8 4 6-4 6-6-2-6 2-2 6h-8l-2-6-6-2-6 2-4-6 4-6v-8l-4-6 4-6 6 2 6-2 2-6z"/><circle cx="32" cy="32" r="8" fill="rgba(0,0,0,.35)"/></svg>
+          </div>
+          <div>
+            <div class="mT">Einstellungen</div>
+            <div class="mD">Autostart, später Sound & mehr.</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="menuPane" id="menuPane">
+        <div class="subpill" style="display:inline-block">Tipp: ESC pausiert. Tab‑Wechsel pausiert auch.</div>
+      </div>
+
+      <div class="menuFoot">
+        <div class="kbd">ESC = Pause</div>
+        <button id="btnMenuClose">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="settingsWin" aria-hidden="true">
+    <div class="panel winPanel">
+      <div class="winTop">
+        <div>
+          <div class="winTitle">Einstellungen</div>
+          <div class="winSub">UI / Gameplay</div>
+        </div>
+        <button id="btnSettingsClose">Close</button>
+      </div>
+      <div class="winBody">
+        <label class="setRow">
+          <span>Auto‑Start beim Platzieren</span>
+          <input id="chkAutostart" type="checkbox" />
+        </label>
+        <div class="setHint">Wenn an: Sobald du einen Turm ziehst/platzierst, startet die Runde automatisch.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="shopWin" aria-hidden="true">
+    <div class="panel winPanel">
+      <div class="winTop">
+        <div>
+          <div class="winTitle">Shop</div>
+          <div class="winSub">Neue Türme (kommt gleich)</div>
+        </div>
+        <button id="btnShopClose">Close</button>
+      </div>
+      <div class="winBody">
+        <div class="subpill" style="display:inline-block">Hier kaufst du später neue Türme + Loadouts.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tutorialBox" id="tutorialBox" aria-hidden="true">
+    <div class="tTitle">Tutorial</div>
+    <div class="tText" id="tutorialText">—</div>
+    <div class="tRow">
+      <span class="tStep" id="tutorialStep">—</span>
+      <button id="btnTutorialExit">Beenden</button>
+    </div>
+  </div>
+
+  
+</body>
+</html>
+
