@@ -19,10 +19,8 @@
     * { -webkit-tap-highlight-color: transparent; }
     html, body {
       margin: 0;
-      min-height: 100%;
-      overflow-x: hidden;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      height: 100%;
+      overflow: hidden; /* kein Page-Scroll (Shop/Overlays scrollen intern) */
       background:
         radial-gradient(1200px 700px at 50% -20%, rgba(86, 140, 255, 0.18), transparent 55%),
         var(--bg);
@@ -30,11 +28,13 @@
       font-family: "Segoe UI", system-ui, sans-serif;
     }
     body {
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0));
       gap: 6px;
+      overscroll-behavior: none;
     }
     /* Auf Handys: keine Seiten-Scrollbars (Map bewegt sich im Spiel) */
     @media (pointer: coarse) {
@@ -50,6 +50,9 @@
       .gameRow { flex: 1 1 auto; min-height: 0; }
       .canvasWrap { height: 100%; }
     }
+
+    /* Desktop ebenfalls: Spielfeld soll den Rest der Höhe nehmen, ohne Scroll */
+    .gameRow { flex: 1 1 auto; min-height: 0; }
     /* Wenn der Hangar offen ist, soll die Seite nicht "wegscrollen". */
     body.phase-shop {
       overflow: hidden;
