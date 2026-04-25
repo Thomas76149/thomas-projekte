@@ -60,12 +60,18 @@
     </header>
     <div class="card">
       <div class="top">
-        <div class="meta">
+        <div class="meta" style="align-items:center">
+          <span class="pill" id="netStat">Offline</span>
           <span class="pill" id="streak">Streak: 0</span>
           <span class="pill" id="best">Best: 0</span>
           <span class="pill" id="wld">W/L/D: 0/0/0</span>
         </div>
-        <button id="reset" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Reset</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+          <input id="room" placeholder="Room (z.B. SCHULE1)" style="width:170px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:900;letter-spacing:.12em;text-transform:uppercase" />
+          <button id="btnHost" type="button" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Host</button>
+          <button id="btnJoin" type="button" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Join</button>
+          <button id="reset" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Reset</button>
+        </div>
       </div>
 
       <div class="arena">
@@ -83,7 +89,7 @@
           <div class="pick">
             <div>
               <div class="big" id="botBig">❔</div>
-              <div class="small">Bot</div>
+              <div class="small" id="enemyLabel">Bot</div>
             </div>
           </div>
         </div>
@@ -107,6 +113,11 @@
     const bestEl = document.getElementById("best");
     const wldEl = document.getElementById("wld");
     const resetBtn = document.getElementById("reset");
+    const netStat = document.getElementById("netStat");
+    const roomInp = document.getElementById("room");
+    const btnHost = document.getElementById("btnHost");
+    const btnJoin = document.getElementById("btnJoin");
+    const enemyLabel = document.getElementById("enemyLabel");
 
     const fx = document.getElementById("fx");
     const fctx = fx.getContext("2d");
@@ -194,6 +205,18 @@
       return "lose";
     }
     function play(me){
+      if (online){
+        if (!ws || ws.readyState !== 1){ hint.textContent = "Nicht verbunden."; return; }
+        if (pickLocked){ hint.textContent = "Warte auf Gegner…"; return; }
+        pickLocked = true;
+        meBig.textContent = emo[me] || "❔";
+        botBig.textContent = "❔";
+        resEl.className = "badge draw";
+        resEl.textContent = "…";
+        hint.textContent = "Gesendet… warte auf Gegner.";
+        ws.send(JSON.stringify({t:"pick", m: me}));
+        return;
+      }
       const bot = ["r","p","s"][Math.floor(Math.random()*3)];
       const out = outcome(me, bot);
       meBig.textContent = emo[me];
@@ -237,6 +260,103 @@
     });
     resetBtn.addEventListener("click", reset);
     reset();
+
+    // --- Online (RPS) ---
+    let ws = null;
+    let online = false;
+    let mySide = "A"; // A/B
+    let pickLocked = false;
+
+    function setNetLabel(txt, ok=false){
+      netStat.textContent = txt;
+      netStat.style.borderColor = ok ? "rgba(93,255,180,.35)" : "rgba(255,255,255,.14)";
+      netStat.style.color = ok ? "rgba(93,255,180,.95)" : "rgba(255,255,255,.85)";
+    }
+    function normalizeWsUrl(u){
+      const s = (u || "").trim();
+      if (!s) return "";
+      return s.replace(/^http/i, "ws");
+    }
+    function defaultWsUrl(){
+      return "wss://thomas-projekte.onrender.com";
+    }
+
+    function connect(code){
+      const url = normalizeWsUrl(defaultWsUrl());
+      const c = (code || "").trim().toUpperCase();
+      pickLocked = false;
+      try { ws && ws.close(); } catch {}
+      ws = null;
+      online = true;
+      setNetLabel("Verbinden…");
+      enemyLabel.textContent = "Gegner";
+
+      ws = new WebSocket(url);
+      ws.addEventListener("open", ()=>{
+        setNetLabel("Connected", true);
+        ws.send(JSON.stringify({t:"join", game:"rps", code: c}));
+      });
+      ws.addEventListener("close", ()=>{
+        setNetLabel("Offline");
+        online = false;
+        enemyLabel.textContent = "Bot";
+        pickLocked = false;
+      });
+      ws.addEventListener("error", ()=> setNetLabel("Fehler"));
+      ws.addEventListener("message", (ev)=>{
+        let msg=null;
+        try{ msg = JSON.parse(ev.data); }catch{}
+        if (!msg) return;
+        if (msg.t === "err"){ setNetLabel(msg.m || "Fehler"); return; }
+        if (msg.t === "joined"){
+          mySide = msg.side || "A";
+          roomInp.value = (msg.code || "").toUpperCase();
+          setNetLabel(`Online · ${roomInp.value} · Du: ${mySide}`, true);
+          hint.textContent = "Online: wähle Stein/Papier/Schere.";
+          return;
+        }
+        if (msg.t === "rps_result" && msg.r){
+          const r = msg.r;
+          const my = (mySide === "A") ? r.A : r.B;
+          const en = (mySide === "A") ? r.B : r.A;
+          const win = (r.w === "D") ? "draw" : (r.w === mySide ? "win" : "lose");
+          meBig.textContent = emo[my] || "❔";
+          botBig.textContent = emo[en] || "❔";
+          resEl.className = "badge " + win;
+          resEl.textContent = win === "win" ? "SIEG" : win === "lose" ? "LOSE" : "DRAW";
+          if (win === "win"){ streak++; w++; tone(740,0.08,"sine",0.06); vibr([18,20,18]); }
+          else if (win === "lose"){ streak = 0; l++; tone(180,0.14,"sawtooth",0.07); vibr([50,40,80]); }
+          else { d++; tone(520,0.1,"triangle",0.05); vibr([20,20,20]); }
+          if (streak > best){ best = streak; try { localStorage.setItem(LSK, String(best)); } catch {} }
+          burst(win);
+          hint.textContent = win==="win" ? "Nice. Weiter!" : win==="lose" ? "Aua. Streak reset." : "Unentschieden.";
+          pickLocked = false;
+          sync();
+          return;
+        }
+        if (msg.t === "reset"){
+          reset();
+          pickLocked = false;
+        }
+      });
+    }
+
+    btnHost.addEventListener("click", ()=> connect(roomInp.value || ""));
+    btnJoin.addEventListener("click", ()=>{
+      const c = (roomInp.value || "").trim();
+      if (!c) { setNetLabel("Room fehlt"); return; }
+      connect(c);
+    });
+
+    // Auto-connect with share link (?room=SCHULE1)
+    (function autoConnect(){
+      let p=null;
+      try{ p = new URLSearchParams(location.search); }catch{ p = new URLSearchParams(); }
+      const roomP = p.get("room");
+      if (!roomP) return;
+      roomInp.value = roomP.toUpperCase();
+      connect(roomInp.value);
+    })();
   </script>
 </body>
 </html>

@@ -13,7 +13,7 @@ function randRoomCode() {
   return out;
 }
 
-function makeRoomState() {
+function makePongState() {
   const W = 720;
   const H = 420;
   const P = { w: 14, h: 92, sp: 540 };
@@ -32,6 +32,35 @@ function makeRoomState() {
     ball,
     lastTick: nowMs(),
   };
+}
+
+function makeRpsState() {
+  return {
+    overSent: false,
+    round: 1,
+    picks: { A: null, B: null },
+    sA: 0,
+    sB: 0,
+    lastResult: null, // {A,B,w}
+  };
+}
+
+function makeTttState() {
+  return {
+    overSent: false,
+    b: Array(9).fill(""),
+    turn: "X", // X or O
+    over: false,
+    winLine: [],
+    sX: 0,
+    sO: 0,
+  };
+}
+
+function makeState(game) {
+  if (game === "rps") return makeRpsState();
+  if (game === "ttt") return makeTttState();
+  return makePongState();
 }
 
 function resetRound(st, dir = 1) {
@@ -108,16 +137,29 @@ function tickRoom(st, dtMs) {
   }
 }
 
-/** rooms: code -> { code, createdAt, clients: Map(ws,{side}), state } */
+/** rooms: key -> { game, code, createdAt, clients: Map(ws,{side}), state } */
 const rooms = new Map();
 
-function getOrCreateRoom(code) {
+function normalizeGame(g) {
+  const gg = String(g || "").toLowerCase();
+  if (gg === "rps") return "rps";
+  if (gg === "ttt") return "ttt";
+  return "pong";
+}
+
+function roomKey(game, code) {
+  return `${game}:${code}`;
+}
+
+function getOrCreateRoom(game, code) {
+  const g = normalizeGame(game);
   const c = (code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
   const key = c || randRoomCode();
-  let r = rooms.get(key);
+  const k = roomKey(g, key);
+  let r = rooms.get(k);
   if (!r) {
-    r = { code: key, createdAt: nowMs(), clients: new Map(), state: makeRoomState() };
-    rooms.set(key, r);
+    r = { game: g, code: key, createdAt: nowMs(), clients: new Map(), state: makeState(g) };
+    rooms.set(k, r);
   }
   return r;
 }
@@ -130,8 +172,19 @@ function roomSides(room) {
 
 function pickSide(room) {
   const used = roomSides(room);
-  if (!used.has("L")) return "L";
-  if (!used.has("R")) return "R";
+  if (room.game === "pong") {
+    if (!used.has("L")) return "L";
+    if (!used.has("R")) return "R";
+    return null;
+  }
+  if (room.game === "rps") {
+    if (!used.has("A")) return "A";
+    if (!used.has("B")) return "B";
+    return null;
+  }
+  // ttt
+  if (!used.has("X")) return "X";
+  if (!used.has("O")) return "O";
   return null;
 }
 
@@ -169,7 +222,7 @@ wss.on("connection", (ws) => {
     if (!msg || typeof msg !== "object") return;
 
     if (msg.t === "join") {
-      const room = getOrCreateRoom(msg.code || "");
+      const room = getOrCreateRoom(msg.game || "pong", msg.code || "");
       const side = pickSide(room);
       if (!side) {
         send(ws, { t: "err", m: "Room voll (max 2)." });
@@ -181,10 +234,11 @@ wss.on("connection", (ws) => {
       }
       ws._room = room;
       room.clients.set(ws, { side });
-      send(ws, { t: "joined", code: room.code, side, W: room.state.W, H: room.state.H });
+      const extra = room.game === "pong" ? { W: room.state.W, H: room.state.H } : {};
+      send(ws, { t: "joined", game: room.game, code: room.code, side, ...extra });
       broadcast(room, { t: "peers", n: room.clients.size });
       // send snapshot immediately
-      send(ws, { t: "state", s: serializeState(room.state) });
+      send(ws, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       return;
     }
 
@@ -193,7 +247,7 @@ wss.on("connection", (ws) => {
     const meta = room.clients.get(ws);
     if (!meta) return;
 
-    if (msg.t === "in") {
+    if (room.game === "pong" && msg.t === "in") {
       const up = !!msg.up;
       const down = !!msg.down;
       if (meta.side === "L") { room.state.left.up = up; room.state.left.down = down; }
@@ -201,7 +255,7 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    if (msg.t === "start") {
+    if (room.game === "pong" && msg.t === "start") {
       room.state.running = true;
       room.state.overSent = false;
       room.state.lastTick = nowMs();
@@ -210,9 +264,54 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.t === "reset") {
-      room.state = makeRoomState();
+      room.state = makeState(room.game);
       broadcast(room, { t: "reset" });
-      broadcast(room, { t: "state", s: serializeState(room.state) });
+      broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      return;
+    }
+
+    if (room.game === "rps" && msg.t === "pick") {
+      const m = String(msg.m || "").toLowerCase();
+      if (!["r", "p", "s"].includes(m)) return;
+      const st = room.state;
+      if (meta.side !== "A" && meta.side !== "B") return;
+      st.picks[meta.side] = m;
+      broadcast(room, { t: "state", game: "rps", s: serializeState("rps", st) });
+      if (st.picks.A && st.picks.B) {
+        const w = rpsWinner(st.picks.A, st.picks.B);
+        st.lastResult = { A: st.picks.A, B: st.picks.B, w };
+        if (w === "A") st.sA++;
+        else if (w === "B") st.sB++;
+        st.round++;
+        st.picks.A = null;
+        st.picks.B = null;
+        broadcast(room, { t: "rps_result", r: st.lastResult, sA: st.sA, sB: st.sB, round: st.round });
+        broadcast(room, { t: "state", game: "rps", s: serializeState("rps", st) });
+      }
+      return;
+    }
+
+    if (room.game === "ttt" && msg.t === "move") {
+      const st = room.state;
+      if (st.over) return;
+      const idx = Number(msg.i);
+      if (!Number.isFinite(idx) || idx < 0 || idx > 8) return;
+      if (st.b[idx]) return;
+      const side = meta.side; // "X" or "O"
+      if (side !== st.turn) return;
+
+      st.b[idx] = side;
+      const res = tttWinner(st.b);
+      if (res.w) {
+        st.over = true;
+        st.winLine = res.line || [];
+        if (res.w === "X") st.sX++;
+        else if (res.w === "O") st.sO++;
+        broadcast(room, { t: "over", game: "ttt", w: res.w, line: st.winLine, sX: st.sX, sO: st.sO });
+      } else {
+        st.turn = (st.turn === "X") ? "O" : "X";
+      }
+      broadcast(room, { t: "state", game: "ttt", s: serializeState("ttt", st) });
       return;
     }
   });
@@ -226,7 +325,25 @@ wss.on("connection", (ws) => {
   });
 });
 
-function serializeState(st) {
+function serializeState(game, st) {
+  if (game === "rps") {
+    return {
+      round: st.round,
+      picks: { A: !!st.picks.A, B: !!st.picks.B }, // don't leak actual pick
+      sA: st.sA,
+      sB: st.sB,
+    };
+  }
+  if (game === "ttt") {
+    return {
+      b: st.b,
+      turn: st.turn,
+      over: st.over,
+      line: st.winLine || [],
+      sX: st.sX,
+      sO: st.sO,
+    };
+  }
   return {
     running: st.running,
     sL: st.sL,
@@ -237,20 +354,44 @@ function serializeState(st) {
   };
 }
 
+function rpsWinner(a, b) {
+  if (a === b) return "D";
+  if (a === "r" && b === "s") return "A";
+  if (a === "p" && b === "r") return "A";
+  if (a === "s" && b === "p") return "A";
+  return "B";
+}
+
+const TTT_WINS = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6],
+];
+function tttWinner(b) {
+  for (const line of TTT_WINS) {
+    const [i,j,k] = line;
+    if (b[i] && b[i] === b[j] && b[i] === b[k]) return { w: b[i], line };
+  }
+  if (b.every(Boolean)) return { w: "D", line: [] };
+  return { w: null, line: [] };
+}
+
 // main tick loop (server authoritative)
 setInterval(() => {
   const t = nowMs();
   for (const room of rooms.values()) {
     const st = room.state;
-    const dt = t - st.lastTick;
-    st.lastTick = t;
-    tickRoom(st, dt);
-    // broadcast at ~30Hz (every other tick)
-    if ((t / 33) | 0) {
-      broadcast(room, { t: "state", s: serializeState(st) });
-      if (!st.overSent && !st.running && (st.sL >= 7 || st.sR >= 7)) {
-        st.overSent = true;
-        broadcast(room, { t: "over", w: st.sL > st.sR ? "L" : "R" });
+    if (room.game === "pong") {
+      const dt = t - st.lastTick;
+      st.lastTick = t;
+      tickRoom(st, dt);
+      // broadcast at ~30Hz
+      if ((t / 33) | 0) {
+        broadcast(room, { t: "state", game: "pong", s: serializeState("pong", st) });
+        if (!st.overSent && !st.running && (st.sL >= 7 || st.sR >= 7)) {
+          st.overSent = true;
+          broadcast(room, { t: "over", game: "pong", w: st.sL > st.sR ? "L" : "R" });
+        }
       }
     }
   }

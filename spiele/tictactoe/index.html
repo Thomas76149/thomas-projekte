@@ -120,6 +120,10 @@
             <option value="normal" selected>Bot: normal</option>
             <option value="hard">Bot: hard</option>
           </select>
+          <span class="pill" id="netStat">Offline</span>
+          <input id="room" placeholder="Room (z.B. SCHULE1)" style="width:170px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:900;letter-spacing:.12em;text-transform:uppercase" />
+          <button id="btnHost" type="button">Host</button>
+          <button id="btnJoin" type="button">Join</button>
         </div>
         <div class="meta">
           <span class="pill" id="turnPill">Zug: X</span>
@@ -151,6 +155,10 @@
     const btnRestart = document.getElementById("btnRestart");
     const modeSel = document.getElementById("mode");
     const botLevelSel = document.getElementById("botLevel");
+    const netStat = document.getElementById("netStat");
+    const roomInp = document.getElementById("room");
+    const btnHost = document.getElementById("btnHost");
+    const btnJoin = document.getElementById("btnJoin");
 
     const LSK = "tictactoe-score-v1";
     const score = (() => { try { return JSON.parse(localStorage.getItem(LSK)) || {x:0,o:0}; } catch { return {x:0,o:0}; }})();
@@ -175,6 +183,9 @@
     const fctx = fx.getContext("2d");
     let conf = [];
     let confRaf = 0;
+    let ws = null;
+    let online = false;
+    let mySide = "X"; // X/O
 
     function fitFx(){
       fx.width = innerWidth * devicePixelRatio;
@@ -296,7 +307,7 @@
         el.type = "button";
         el.setAttribute("aria-label", `Feld ${i+1}`);
         const v = b[i];
-        el.disabled = over || !!v;
+        el.disabled = over || !!v || (online && turn.toUpperCase() !== mySide);
         if (v) {
           el.textContent = v.toUpperCase();
           el.classList.add(v === "x" ? "x" : "o");
@@ -304,9 +315,14 @@
         el.addEventListener("click", () => playerMove(i));
         grid.appendChild(el);
       }
-      scorePill.textContent = `X ${score.x} · ${score.o} O`;
-      turnPill.textContent = `Zug: ${turn.toUpperCase()}`;
-      botLevelSel.disabled = modeSel.value !== "bot";
+      if (!online){
+        scorePill.textContent = `X ${score.x} · ${score.o} O`;
+      } else {
+        scorePill.textContent = `X ${netScoreX} · ${netScoreO} O`;
+      }
+      turnPill.textContent = online ? `Zug: ${turn.toUpperCase()} (Du: ${mySide})` : `Zug: ${turn.toUpperCase()}`;
+      botLevelSel.disabled = modeSel.value !== "bot" || online;
+      modeSel.disabled = online;
     }
 
     function winner(board){
@@ -338,6 +354,11 @@
 
     function playerMove(i){
       if (over || b[i]) return;
+      if (online){
+        if (!ws || ws.readyState !== 1) return;
+        ws.send(JSON.stringify({t:"move", i}));
+        return;
+      }
       b[i] = turn;
       const res = winner(b);
       if (res) return end(res);
@@ -415,10 +436,125 @@
       render();
     }
 
-    btnRestart.addEventListener("click", newGame);
+    // --- Online (TicTacToe) ---
+    let netScoreX = 0;
+    let netScoreO = 0;
+    function setNetLabel(txt, ok=false){
+      netStat.textContent = txt;
+      netStat.style.borderColor = ok ? "rgba(93,255,180,.35)" : "rgba(255,255,255,.14)";
+      netStat.style.color = ok ? "rgba(93,255,180,.95)" : "rgba(255,255,255,.85)";
+    }
+    function defaultWsUrl(){ return "wss://thomas-projekte.onrender.com"; }
+    function normalizeWsUrl(u){ return String(u||"").trim().replace(/^http/i,"ws"); }
+
+    function applyNetState(s){
+      if (!s) return;
+      if (Array.isArray(s.b) && s.b.length === 9){
+        b = s.b.map(v => (v === "X" || v === "O") ? v.toLowerCase() : "");
+      }
+      if (s.turn === "X" || s.turn === "O") turn = s.turn.toLowerCase();
+      over = !!s.over;
+      netScoreX = Number(s.sX||0);
+      netScoreO = Number(s.sO||0);
+      render();
+      if (!over) hint.textContent = online ? "Online: mach deinen Zug." : hint.textContent;
+    }
+
+    function connect(code){
+      const url = normalizeWsUrl(defaultWsUrl());
+      const c = (code || "").trim().toUpperCase();
+      try { ws && ws.close(); } catch {}
+      ws = null;
+      online = true;
+      setNetLabel("Verbinden…");
+      hint.textContent = "Online: verbinden…";
+
+      ws = new WebSocket(url);
+      ws.addEventListener("open", ()=>{
+        setNetLabel("Connected", true);
+        ws.send(JSON.stringify({t:"join", game:"ttt", code: c}));
+      });
+      ws.addEventListener("close", ()=>{
+        setNetLabel("Offline");
+        online = false;
+        mySide = "X";
+        modeSel.disabled = false;
+        botLevelSel.disabled = (modeSel.value !== "bot");
+        hint.textContent = "Klicke ein Feld. X startet.";
+        render();
+      });
+      ws.addEventListener("error", ()=> setNetLabel("Fehler"));
+      ws.addEventListener("message", (ev)=>{
+        let msg=null;
+        try{ msg = JSON.parse(ev.data); }catch{}
+        if (!msg) return;
+        if (msg.t === "err"){ setNetLabel(msg.m || "Fehler"); return; }
+        if (msg.t === "joined"){
+          mySide = msg.side || "X";
+          roomInp.value = (msg.code || "").toUpperCase();
+          setNetLabel(`Online · ${roomInp.value} · Du: ${mySide}`, true);
+          // reset local board visuals; server state will arrive
+          b = Array(9).fill("");
+          turn = "x";
+          over = false;
+          hideOverlay();
+          render();
+          return;
+        }
+        if (msg.t === "state" && msg.game === "ttt"){
+          applyNetState(msg.s);
+          return;
+        }
+        if (msg.t === "over" && msg.game === "ttt"){
+          netScoreX = Number(msg.sX||netScoreX||0);
+          netScoreO = Number(msg.sO||netScoreO||0);
+          const w = msg.w;
+          const line = Array.isArray(msg.line) ? msg.line : [];
+          // mark win line on current DOM
+          setTimeout(()=>{
+            const cells = [...grid.children];
+            for (const idx of line) cells[idx]?.classList.add("win");
+          }, 0);
+          if (w === "D") showOverlay("draw", "Unentschieden", "GG. Nochmal?");
+          else if (w === mySide) showOverlay("win", "Sieg", "Online gewonnen.");
+          else showOverlay("lose", "Niederlage", "Online verloren.");
+          over = true;
+          render();
+          return;
+        }
+        if (msg.t === "reset"){
+          hideOverlay();
+          over = false;
+          render();
+        }
+      });
+    }
+
+    btnHost.addEventListener("click", ()=> connect(roomInp.value || ""));
+    btnJoin.addEventListener("click", ()=>{
+      const c = (roomInp.value || "").trim();
+      if (!c) { setNetLabel("Room fehlt"); return; }
+      connect(c);
+    });
+
+    btnRestart.addEventListener("click", ()=>{
+      if (online && ws && ws.readyState === 1){
+        ws.send(JSON.stringify({t:"reset"}));
+      } else newGame();
+    });
     modeSel.addEventListener("change", newGame);
     botLevelSel.addEventListener("change", newGame);
     newGame();
+
+    // Auto-connect with share link (?room=SCHULE1)
+    (function autoConnect(){
+      let p=null;
+      try{ p = new URLSearchParams(location.search); }catch{ p = new URLSearchParams(); }
+      const roomP = p.get("room");
+      if (!roomP) return;
+      roomInp.value = roomP.toUpperCase();
+      connect(roomInp.value);
+    })();
   </script>
 </body>
 </html>

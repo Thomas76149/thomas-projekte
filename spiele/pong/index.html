@@ -539,7 +539,17 @@
       fctx.clearRect(0,0,innerWidth,innerHeight);
     }
     ov.addEventListener("click",(e)=>{ if (e.target===ov) hideOverlay(); });
-    ovAgain.addEventListener("click", ()=>{ hideOverlay(); resetGame(); start(); });
+    ovAgain.addEventListener("click", ()=>{
+      hideOverlay();
+      if (online && ws && ws.readyState === 1){
+        // server-authoritative: reset + start remotely
+        ws.send(JSON.stringify({t:"reset"}));
+        ws.send(JSON.stringify({t:"start"}));
+        return;
+      }
+      resetGame();
+      start();
+    });
     ovClose.addEventListener("click", hideOverlay);
 
     window.addEventListener("keydown", (e)=>{

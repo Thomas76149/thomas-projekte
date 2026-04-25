@@ -2953,7 +2953,7 @@
     const down = keys.has("ArrowDown") || keys.has("KeyS");
     const left = keys.has("ArrowLeft") || keys.has("KeyA");
     const right = keys.has("ArrowRight") || keys.has("KeyD");
-    const fire = keys.has("Space");
+    const fire = keys.has("Space") || (autoFire && isMobile() && running && phase === "combat" && !paused);
     const miss = keys.has("KeyE");
     const jMove = jetSpeedPps * (1 + thrusterShopLevel * 0.088);
     if (up) jet.y -= jMove * sec;
@@ -3689,6 +3689,30 @@
   window.addEventListener("keyup", (e) => keys.delete(e.code));
 
   const touchBar = document.getElementById("touchBar");
+  const isMobile = () =>
+    (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+    (window.matchMedia && window.matchMedia("(max-width: 900px)").matches);
+
+  let autoFire = false;
+  try {
+    autoFire = localStorage.getItem("jet_autofire_v1") === "1";
+  } catch (_) {}
+
+  function setAutoFire(v) {
+    autoFire = !!v;
+    try {
+      localStorage.setItem("jet_autofire_v1", autoFire ? "1" : "0");
+    } catch (_) {}
+    const btn = touchBar.querySelector('button[data-act="autofire"]');
+    if (btn) {
+      btn.setAttribute("aria-pressed", autoFire ? "true" : "false");
+      btn.textContent = autoFire ? "Auto✓" : "Auto";
+    }
+  }
+
+  // init label state once
+  setAutoFire(autoFire);
+
   const press = (code, down) => {
     if (down) keys.add(code);
     else keys.delete(code);
@@ -3705,6 +3729,15 @@
       nova: "KeyQ",
     };
     const code = map[act];
+    if (act === "autofire") {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        setAutoFire(!autoFire);
+        // when enabling, also "hold" fire key logically
+        if (!autoFire) keys.delete("Space");
+      });
+      return;
+    }
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       press(code, true);
