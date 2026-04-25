@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reflex‑Test · thomas.fun</title>
+  <meta name="description" content="Reflex-Test: Drück so schnell du kannst, wenn es grün wird. Mit Bewertung & Durchschnitt." />
+  <meta name="theme-color" content="#0c0c0f" />
+  <style>
+    :root{
+      --bg:#0c0c0f;--border:#2a2a34;--text:#f4f4f5;--muted:#a1a1aa;--accent:#f97316;--accent2:#22d3ee;
+      --good:#5dffb4;--bad:#ff6b6b;--gold:#ffd76a;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Outfit,sans-serif}
+    a{color:var(--accent2);text-decoration:none}
+    .wrap{width:min(980px,92vw);display:grid;gap:14px}
+    header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:1.1rem;letter-spacing:.18em;text-transform:uppercase}
+    .card{background:linear-gradient(155deg,rgba(38,52,92,.96),rgba(12,16,36,.98));
+      border:1px solid var(--border);border-radius:20px;padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+    .top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button,select{
+      font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);
+      color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900
+    }
+    button.primary{border-color:rgba(93,255,180,.55);background:linear-gradient(165deg,rgba(50,120,95,.95),rgba(18,48,42,.98))}
+    .meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:.9rem}
+    .pill{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:6px 10px;background:rgba(0,0,0,.22)}
+    .big{
+      margin:14px 0 0;
+      font-size: clamp(2.2rem, 7vw, 3.2rem);
+      font-weight: 1000;
+      letter-spacing: .02em;
+      text-align:center;
+      text-shadow: 0 0 32px rgba(255,255,255,.12);
+    }
+    .sub{margin:8px 0 10px;text-align:center;color:rgba(180,200,230,.9);font-weight:800}
+    .pad{
+      margin-top:12px;
+      border-radius:22px;
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      padding: 26px 14px;
+      text-align:center;
+      user-select:none;
+      cursor:pointer;
+      transition: transform .12s ease, border-color .18s ease, box-shadow .18s ease;
+      background: radial-gradient(700px 280px at 50% 10%, rgba(34,211,238,.12), rgba(0,0,0,.22));
+    }
+    .pad:hover{transform: translateY(-2px);border-color:rgba(154,208,255,.45);box-shadow:0 18px 46px rgba(86,167,255,.12), inset 0 1px 0 rgba(255,255,255,.08)}
+    .pad:active{transform: translateY(1px) scale(.99)}
+    .state{font-weight:1000;letter-spacing:.18em;text-transform:uppercase}
+    .hint{margin:10px 0 0;color:var(--muted);font-size:.9rem;text-align:center}
+    .bar{margin-top:10px;height:10px;border-radius:999px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.25);overflow:hidden}
+    .fill{height:100%;width:0;background:linear-gradient(90deg, rgba(93,255,180,.9), rgba(34,211,238,.8), rgba(249,115,22,.75))}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Reflex‑Test</h1>
+      <a href="../index.html">← zurück</a>
+    </header>
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button class="primary" id="btnStart">Start</button>
+          <button id="btnReset">Reset</button>
+          <select id="rounds">
+            <option value="5" selected>5 Runden</option>
+            <option value="10">10 Runden</option>
+          </select>
+        </div>
+        <div class="meta">
+          <span class="pill" id="r">Runde: —</span>
+          <span class="pill" id="avg">Ø: —</span>
+          <span class="pill" id="best">Best: —</span>
+        </div>
+      </div>
+
+      <div class="big" id="msBig">— ms</div>
+      <div class="sub" id="rating">Drück Start.</div>
+
+      <div class="pad" id="pad" role="button" tabindex="0" aria-label="Reflex-Fläche">
+        <div class="state" id="state">WARTEN</div>
+        <!-- Balken entfernt: sonst kann man das Grün "ablesen" -->
+        <div class="hint" id="padHint">Wenn es GRÜN wird: klicken/Space drücken.</div>
+      </div>
+      <div class="hint">Zu früh drücken zählt als Fehlstart.</div>
+    </div>
+  </div>
+
+  <script>
+    const btnStart = document.getElementById("btnStart");
+    const btnReset = document.getElementById("btnReset");
+    const roundsSel = document.getElementById("rounds");
+    const rEl = document.getElementById("r");
+    const avgEl = document.getElementById("avg");
+    const bestEl = document.getElementById("best");
+    const msBig = document.getElementById("msBig");
+    const ratingEl = document.getElementById("rating");
+    const pad = document.getElementById("pad");
+    const stateEl = document.getElementById("state");
+    const padHint = document.getElementById("padHint");
+    const fill = null;
+
+    const AC = window.AudioContext || window.webkitAudioContext;
+    let actx = null;
+    function tone(freq, dur=0.08, type="sine", vol=0.05){
+      try{
+        actx ||= new AC();
+        if (actx.state === "suspended") actx.resume();
+        const t0 = actx.currentTime;
+        const o = actx.createOscillator();
+        const g = actx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(vol, t0);
+        g.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+        o.connect(g); g.connect(actx.destination);
+        o.start(t0); o.stop(t0 + dur + 0.02);
+      } catch {}
+    }
+    const vibr = (p)=>{ if (navigator.vibrate) navigator.vibrate(p); };
+
+    const LSK = "reflex-best-v1";
+    let best = 0;
+    try { best = Number(localStorage.getItem(LSK)) || 0; } catch {}
+
+    let rounds = Number(roundsSel.value);
+    let i = 0;
+    let times = [];
+    let waiting = false;
+    let go = false;
+    let goAt = 0;
+    let tmo = 0;
+    let prog = 0;
+
+    function fmtMs(v){ return `${Math.round(v)} ms`; }
+    function avg(arr){ return arr.reduce((a,b)=>a+b,0)/Math.max(1,arr.length); }
+    function rank(ms){
+      if (ms < 80) return {t:"WOW", col:"var(--gold)"};
+      if (ms < 120) return {t:"sehr schnell", col:"var(--good)"};
+      if (ms < 160) return {t:"schnell", col:"var(--accent2)"};
+      if (ms < 220) return {t:"ok", col:"rgba(200,220,255,.9)"};
+      return {t:"langsam", col:"var(--bad)"};
+    }
+
+    function sync(){
+      rEl.textContent = i ? `Runde: ${i}/${rounds}` : "Runde: —";
+      if (times.length){
+        const a = avg(times);
+        avgEl.textContent = `Ø: ${fmtMs(a)}`;
+        bestEl.textContent = `Best: ${best ? fmtMs(best) : "—"}`;
+      } else {
+        avgEl.textContent = "Ø: —";
+        bestEl.textContent = `Best: ${best ? fmtMs(best) : "—"}`;
+      }
+    }
+
+    function setPad(kind){
+      if (kind==="wait"){
+        pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(34,211,238,.12), rgba(0,0,0,.22))";
+        stateEl.textContent = "WARTEN";
+        padHint.textContent = "Wenn es GRÜN wird: klicken/Space.";
+      } else if (kind==="go"){
+        pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(93,255,180,.22), rgba(0,0,0,.22))";
+        stateEl.textContent = "JETZT!";
+        padHint.textContent = "DRÜCK!";
+      } else if (kind==="false"){
+        pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(255,107,107,.18), rgba(0,0,0,.22))";
+        stateEl.textContent = "ZU FRÜH";
+        padHint.textContent = "Fehlstart. Nächste Runde.";
+      } else {
+        pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(255,215,106,.16), rgba(0,0,0,.22))";
+        stateEl.textContent = "FERTIG";
+        padHint.textContent = "Start für neue Session.";
+      }
+    }
+
+    function clearTimers(){
+      clearTimeout(tmo);
+      tmo = 0;
+      cancelAnimationFrame(prog);
+      prog = 0;
+      // no progress bar
+    }
+
+    function start(){
+      clearTimers();
+      rounds = Number(roundsSel.value);
+      i = 0;
+      times = [];
+      waiting = false;
+      go = false;
+      msBig.textContent = "— ms";
+      ratingEl.textContent = "Warte auf Grün…";
+      nextRound();
+    }
+
+    function nextRound(){
+      clearTimers();
+      i++;
+      if (i > rounds) return finish();
+      sync();
+      waiting = true;
+      go = false;
+      setPad("wait");
+      const delay = 650 + Math.random()*1650;
+      // Kein visueller Countdown.
+      tmo = setTimeout(()=>{
+        waiting = false;
+        setPad("go");
+        // Wichtig: Messung erst NACH dem Paint starten, sonst wirkt es "zu langsam".
+        requestAnimationFrame(() => {
+          goAt = performance.now();
+          go = true;
+          tone(880,0.06,"triangle",0.06);
+          vibr(15);
+        });
+      }, delay);
+    }
+
+    function press(){
+      if (!i) return;
+      if (waiting){
+        // false start
+        clearTimers();
+        waiting = false;
+        go = false;
+        setPad("false");
+        tone(180,0.14,"sawtooth",0.07);
+        vibr([50,40,80]);
+        setTimeout(nextRound, 650);
+        return;
+      }
+      if (!go) return;
+      go = false;
+      clearTimers();
+      const ms = performance.now() - goAt;
+      times.push(ms);
+      msBig.textContent = fmtMs(ms);
+      const r = rank(ms);
+      ratingEl.innerHTML = `Du: <span style="color:${r.col};font-weight:1000">${fmtMs(ms)} · ${r.t}</span>`;
+      if (!best || ms < best){
+        best = ms;
+        try { localStorage.setItem(LSK, String(best)); } catch {}
+      }
+      tone(740,0.06,"sine",0.05);
+      vibr([18,20,18]);
+      sync();
+      setTimeout(nextRound, 520);
+    }
+
+    function finish(){
+      clearTimers();
+      setPad("done");
+      const a = avg(times);
+      const rr = rank(a);
+      msBig.textContent = times.length ? fmtMs(a) : "— ms";
+      ratingEl.innerHTML = times.length
+        ? `Durchschnitt: <span style="color:${rr.col};font-weight:1000">${fmtMs(a)} · ${rr.t}</span> · Best: ${fmtMs(best)}`
+        : "Keine validen Runden (nur Fehlstarts).";
+      tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60);
+      vibr([20,20,20,50]);
+      sync();
+    }
+
+    function reset(){
+      clearTimers();
+      i = 0; times = []; waiting=false; go=false;
+      msBig.textContent = "— ms";
+      ratingEl.textContent = "Drück Start.";
+      setPad("wait");
+      sync();
+    }
+
+    btnStart.addEventListener("click", start);
+    btnReset.addEventListener("click", reset);
+    roundsSel.addEventListener("change", reset);
+    // Click misst oft erst bei "mouseup" -> langsamer. Pointerdown ist fairer.
+    pad.addEventListener("pointerdown", (e)=>{ e.preventDefault(); press(); });
+    pad.addEventListener("keydown", (e)=>{ if (e.code==="Space"||e.code==="Enter"){ e.preventDefault(); press(); }});
+    window.addEventListener("keydown", (e)=>{ if (e.code==="Space" && document.activeElement !== pad){ e.preventDefault(); press(); }});
+    reset();
+  </script>
+</body>
+</html>
