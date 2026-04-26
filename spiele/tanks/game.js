@@ -32,6 +32,53 @@ let imReady = false;
 
 const keys = new Set();
 
+let screenShake = 0;
+let prevMyHp = null;
+let muzzleUntil = 0;
+const bootTime = performance.now();
+
+/** @type {{ x: number; y: number; vx: number; vy: number; life: number; col: string }[]} */
+let particles = [];
+
+function roundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function spawnBurst(x, y, col, n = 10) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 80 + Math.random() * 220;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(a) * sp,
+      vy: Math.sin(a) * sp,
+      life: 0.25 + Math.random() * 0.35,
+      col,
+    });
+  }
+  if (particles.length > 400) particles.splice(0, particles.length - 400);
+}
+
+function stepParticles(dt) {
+  const sec = dt / 1000;
+  for (const p of particles) {
+    p.x += p.vx * sec;
+    p.y += p.vy * sec;
+    p.vx *= Math.pow(0.92, dt / 16);
+    p.vy *= Math.pow(0.92, dt / 16);
+    p.life -= sec;
+  }
+  particles = particles.filter((p) => p.life > 0);
+}
+
 try {
   const saved = localStorage.getItem("tanks_ws_url") || localStorage.getItem("pong_ws_url");
   netUrl.value = (saved && String(saved).trim()) || DEFAULT_WSS_URL;
@@ -57,121 +104,291 @@ function wallAt(tx, ty) {
   return wallStr.charAt(ty * cols + tx) === "1";
 }
 
+let lastFrameTs = performance.now();
+
 function draw() {
-  ctx.fillStyle = "#060a10";
+  const now = performance.now();
+  const dt = Math.min(48, now - lastFrameTs);
+  lastFrameTs = now;
+  const t = (now - bootTime) / 1000;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 2.4);
+
+  if (lastState?.p?.[mySlot]) {
+    const hp = lastState.p[mySlot].hp;
+    if (prevMyHp != null && hp < prevMyHp) {
+      screenShake = Math.min(1.15, screenShake + 0.55);
+      spawnBurst(lastState.p[mySlot].x, lastState.p[mySlot].y, "#ff6b6b", 14);
+    }
+    prevMyHp = hp;
+  } else {
+    prevMyHp = null;
+  }
+  if (screenShake > 0.02) screenShake *= 0.86;
+  else screenShake = 0;
+
+  const sx = screenShake > 0 ? (Math.random() - 0.5) * 7 * screenShake : 0;
+  const sy = screenShake > 0 ? (Math.random() - 0.5) * 7 * screenShake : 0;
+
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  const bg = ctx.createRadialGradient(W * 0.35, H * 0.2, 0, W * 0.5, H * 0.5, Math.max(W, H) * 0.85);
+  bg.addColorStop(0, "#0f172a");
+  bg.addColorStop(0.45, "#070b14");
+  bg.addColorStop(1, "#020308");
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
+
+  const gridOff = (t * 18) % TW;
+  const gridA = 0.05 + 0.035 * pulse;
+  ctx.strokeStyle = `rgba(34,211,238,${gridA})`;
+  ctx.lineWidth = 1;
+  for (let x = -TW; x <= W + TW; x += TW) {
+    const gx = x + gridOff * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(gx, 0);
+    ctx.lineTo(gx, H);
+    ctx.stroke();
+  }
+  for (let y = -TW; y <= H + TW; y += TW) {
+    const gy = y + gridOff * 0.1;
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(W, gy);
+    ctx.stroke();
+  }
 
   const cols = W / TW;
   const rows = H / TW;
-  ctx.fillStyle = "#1e293b";
   for (let ty = 0; ty < rows; ty++) {
     for (let tx = 0; tx < cols; tx++) {
-      if (wallAt(tx, ty)) {
-        ctx.fillRect(tx * TW, ty * TW, TW + 0.5, TW + 0.5);
-      }
+      if (!wallAt(tx, ty)) continue;
+      const x = tx * TW;
+      const y = ty * TW;
+      const g = ctx.createLinearGradient(x, y, x + TW, y + TW);
+      g.addColorStop(0, "#334155");
+      g.addColorStop(0.5, "#1e293b");
+      g.addColorStop(1, "#0f172a");
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, TW + 0.5, TW + 0.5);
+      ctx.fillStyle = "rgba(255,255,255,0.1)";
+      ctx.fillRect(x, y, TW + 0.5, 2.5);
+      ctx.fillStyle = "rgba(255,255,255,0.04)";
+      ctx.fillRect(x, y, 2.5, TW + 0.5);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(x + TW - 2.5, y, 2.5, TW + 0.5);
+      ctx.fillRect(x, y + TW - 2.5, TW + 0.5, 2.5);
     }
   }
-  ctx.strokeStyle = "rgba(34,211,238,.08)";
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= W; x += TW) {
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, H);
-    ctx.stroke();
-  }
-  for (let y = 0; y <= H; y += TW) {
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(W, y);
-    ctx.stroke();
+
+  if (!lastState) {
+    ctx.restore();
+    return;
   }
 
-  if (!lastState) return;
+  stepParticles(dt);
 
   for (const u of lastState.u || []) {
+    const bob = Math.sin(t * 3.2 + u.x * 0.05) * 2;
+    const sc = 1 + 0.12 * Math.sin(t * 4 + u.y * 0.04);
+    const col =
+      u.t === "H"
+        ? "rgba(74,222,128,1)"
+        : u.t === "R"
+          ? "rgba(251,146,60,1)"
+          : u.t === "S"
+            ? "rgba(56,189,248,1)"
+            : "rgba(192,132,252,1)";
     ctx.save();
-    ctx.translate(u.x, u.y);
-    ctx.rotate(Math.PI / 4);
-    ctx.fillStyle =
-      u.t === "H" ? "rgba(74,222,128,.85)" : u.t === "R" ? "rgba(251,146,60,.9)" : u.t === "S" ? "rgba(56,189,248,.9)" : "rgba(192,132,252,.9)";
-    const s = 10;
-    ctx.fillRect(-s, -s, s * 2, s * 2);
+    ctx.translate(u.x, u.y + bob);
+    ctx.rotate((Math.PI / 4) + t * 0.8);
+    ctx.scale(sc, sc);
+    ctx.shadowColor = col;
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = col;
+    const s = 9;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s, 0);
+    ctx.lineTo(0, s);
+    ctx.lineTo(-s, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
     ctx.restore();
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "700 9px system-ui,sans-serif";
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.font = "900 10px system-ui,sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(u.t, u.x, u.y);
+    ctx.fillText(u.t, u.x + 0.7, u.y + bob + 0.7);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillText(u.t, u.x, u.y + bob);
+    ctx.restore();
   }
 
   for (const b of lastState.b || []) {
+    const col = COLORS[b.o % COLORS.length] || "#fff";
+    const rg = ctx.createRadialGradient(b.x - 1, b.y - 1, 0, b.x, b.y, 10);
+    rg.addColorStop(0, "#ffffff");
+    rg.addColorStop(0.35, col);
+    rg.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = rg;
     ctx.beginPath();
-    ctx.arc(b.x, b.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS[b.o % COLORS.length] || "#fff";
+    ctx.arc(b.x, b.y, 9, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,.35)";
-    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 4.2, 0, Math.PI * 2);
+    ctx.fillStyle = col;
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 1.2;
     ctx.stroke();
   }
 
   if (online && lastState.live === false) {
-    ctx.fillStyle = "rgba(0,0,0,.55)";
+    ctx.fillStyle = "rgba(2,4,10,0.72)";
+    ctx.fillRect(0, 0, W, H);
+    const vx = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, Math.max(W, H) * 0.5);
+    vx.addColorStop(0, "rgba(34,211,238,0.08)");
+    vx.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = vx;
     ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = "#f8fafc";
-    ctx.font = "800 clamp(14px,2.2vw,20px) system-ui,sans-serif";
+    ctx.font = "900 18px system-ui,sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("Warte — mindestens 2 Panzer, alle Ready", W / 2, H / 2 - 14);
+    ctx.shadowColor = "rgba(34,211,238,0.4)";
+    ctx.shadowBlur = 20;
+    ctx.fillText("Lobby — 2+ Panzer, alle Ready", W / 2, H / 2 - 16);
+    ctx.shadowBlur = 0;
     ctx.font = "600 13px system-ui,sans-serif";
     ctx.fillStyle = "rgba(200,210,230,.92)";
-    ctx.fillText("Steuerung erst aktiv, wenn der Kampf live ist.", W / 2, H / 2 + 14);
+    ctx.fillText("Steuerung erst im laufenden Kampf aktiv.", W / 2, H / 2 + 14);
+    ctx.restore();
     return;
   }
 
   (lastState.p || []).forEach((pl, i) => {
     if (!pl) return;
     const col = COLORS[i % COLORS.length];
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(pl.x + 3, pl.y + 5, 16, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     if (i === mySlot && online) {
-      ctx.strokeStyle = "rgba(255,255,255,.45)";
+      ctx.strokeStyle = `rgba(93,255,180,${0.35 + 0.25 * pulse})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(pl.x, pl.y, 18, 0, Math.PI * 2);
+      ctx.arc(pl.x, pl.y, 21 + pulse * 2, 0, Math.PI * 2);
       ctx.stroke();
     }
-    ctx.beginPath();
-    ctx.arc(pl.x, pl.y, 13, 0, Math.PI * 2);
-    ctx.fillStyle = col;
+
+    ctx.save();
+    ctx.translate(pl.x, pl.y);
+    ctx.rotate(pl.a);
+
+    const bodyG = ctx.createLinearGradient(-12, -10, 12, 10);
+    bodyG.addColorStop(0, col);
+    bodyG.addColorStop(1, "rgba(0,0,0,0.45)");
+    ctx.fillStyle = "rgba(15,23,42,0.95)";
+    roundRectPath(ctx, -11, -9, 22, 18, 5);
     ctx.fill();
-    ctx.strokeStyle = pl.iv ? "rgba(255,255,255,.7)" : "rgba(0,0,0,.45)";
-    ctx.lineWidth = pl.iv ? 3 : 2;
+    ctx.fillStyle = bodyG;
+    roundRectPath(ctx, -10, -8, 20, 16, 4);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 1.5;
+    roundRectPath(ctx, -10, -8, 20, 16, 4);
     ctx.stroke();
 
-    const br = 22;
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 4;
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(-11, -9, 4, 18);
+    ctx.fillRect(7, -9, 4, 18);
+
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.beginPath();
-    ctx.moveTo(pl.x, pl.y);
-    ctx.lineTo(pl.x + Math.cos(pl.a) * br, pl.y + Math.sin(pl.a) * br);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,.5)";
-    ctx.lineWidth = 2;
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+    const turG = ctx.createRadialGradient(-2, -2, 0, 0, 0, 8);
+    turG.addColorStop(0, col);
+    turG.addColorStop(1, "rgba(0,0,0,0.5)");
+    ctx.fillStyle = turG;
     ctx.beginPath();
-    ctx.moveTo(pl.x + Math.cos(pl.a) * 6, pl.y + Math.sin(pl.a) * 6);
-    ctx.lineTo(pl.x + Math.cos(pl.a) * br, pl.y + Math.sin(pl.a) * br);
+    ctx.arc(0, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = 1.2;
     ctx.stroke();
 
-    for (let h = 0; h < pl.hp; h++) {
-      ctx.fillStyle = "rgba(248,113,113,.9)";
-      ctx.fillRect(pl.x - 16 + h * 8, pl.y - 22, 6, 3);
+    const bx0 = 7;
+    const bw = 17;
+    const bh = 5;
+    ctx.fillStyle = "rgba(15,23,42,1)";
+    roundRectPath(ctx, bx0, -bh / 2 - 0.5, bw + 1, bh + 1, 2);
+    ctx.fill();
+    const barG = ctx.createLinearGradient(bx0, 0, bx0 + bw, 0);
+    barG.addColorStop(0, "#475569");
+    barG.addColorStop(0.5, "#94a3b8");
+    barG.addColorStop(1, "#1e293b");
+    ctx.fillStyle = barG;
+    roundRectPath(ctx, bx0, -bh / 2, bw, bh, 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    roundRectPath(ctx, bx0, -bh / 2, bw, bh, 2);
+    ctx.stroke();
+
+    if (now < muzzleUntil && i === mySlot && online) {
+      ctx.save();
+      ctx.translate(bx0 + bw, 0);
+      const mz = ctx.createRadialGradient(0, 0, 0, 0, 0, 14);
+      mz.addColorStop(0, "rgba(255,255,255,0.95)");
+      mz.addColorStop(0.4, "rgba(255,200,100,0.5)");
+      mz.addColorStop(1, "rgba(255,100,50,0)");
+      ctx.fillStyle = mz;
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
+
+    ctx.restore();
+
+    const barY = pl.y - 24;
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    roundRectPath(ctx, pl.x - 18, barY - 1, 36, 7, 2);
+    ctx.fill();
+    for (let h = 0; h < pl.hp; h++) {
+      ctx.fillStyle = "rgba(248,113,113,0.95)";
+      ctx.fillRect(pl.x - 16 + h * 8, barY + 1, 6, 4);
+    }
+
     if (pl.sh > 0) {
-      ctx.strokeStyle = "rgba(192,132,252,.95)";
+      ctx.strokeStyle = `rgba(192,132,252,${0.65 + 0.25 * pulse})`;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(pl.x, pl.y, 16, 0, Math.PI * 2);
+      ctx.arc(pl.x, pl.y, 18 + pulse, 0, Math.PI * 2);
       ctx.stroke();
     }
   });
+
+  for (const p of particles) {
+    const a = Math.max(0, p.life / 0.35);
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.col;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2 + 2 * a, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
 }
 
 function syncHud() {
@@ -193,6 +410,7 @@ function loop() {
   draw();
   requestAnimationFrame(loop);
 }
+lastFrameTs = performance.now();
 requestAnimationFrame(loop);
 
 function sendInput() {
@@ -220,7 +438,10 @@ window.addEventListener("keydown", (e) => {
   if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
     e.preventDefault();
   }
-  if (e.code === "Space") sendFire();
+  if (e.code === "Space") {
+    sendFire();
+    if (online && lastState?.live !== false) muzzleUntil = performance.now() + 90;
+  }
   sendInput();
 });
 

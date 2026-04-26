@@ -1,11 +1,12 @@
 :root {
-  --bg: #0a0e14;
-  --card: rgba(18, 26, 42, 0.96);
-  --border: rgba(255, 255, 255, 0.12);
+  --bg: #060910;
+  --card: rgba(14, 20, 36, 0.88);
+  --border: rgba(100, 170, 255, 0.22);
   --text: #f4f4f5;
   --muted: #94a3b8;
   --accent: #f97316;
   --good: #5dffb4;
+  --glow: rgba(34, 211, 238, 0.35);
 }
 
 * {
@@ -15,7 +16,10 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 700px at 50% -15%, rgba(34, 211, 238, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 100% 40%, rgba(249, 115, 22, 0.06), transparent 45%),
+    var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Outfit, sans-serif;
 }
@@ -37,21 +41,41 @@ header {
 
 h1 {
   margin: 0;
-  font-size: 1rem;
-  letter-spacing: 0.14em;
+  font-size: 1.05rem;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  font-weight: 900;
+  background: linear-gradient(115deg, #9ad0ff, #56a7ff, #5dffb4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 24px rgba(86, 167, 255, 0.25));
 }
 
 a {
   color: #22d3ee;
   text-decoration: none;
+  font-weight: 700;
+  transition: color 0.15s ease, filter 0.15s ease;
+}
+
+a:hover {
+  color: #5dffb4;
+  filter: brightness(1.1);
 }
 
 .card {
-  background: linear-gradient(155deg, rgba(30, 42, 72, 0.95), rgba(8, 12, 24, 0.98));
+  position: relative;
+  background:
+    radial-gradient(800px 400px at 20% 0%, rgba(34, 211, 238, 0.08), transparent 50%),
+    linear-gradient(165deg, rgba(22, 32, 58, 0.94), rgba(6, 10, 22, 0.97));
   border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 14px;
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 60px rgba(34, 211, 238, 0.06);
 }
 
 .top {
@@ -75,44 +99,68 @@ input {
   font: inherit;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(0, 0, 0, 0.32);
   color: var(--text);
   padding: 9px 12px;
   min-height: 42px;
   touch-action: manipulation;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: rgba(154, 208, 255, 0.45);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.12);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 button.primary {
-  border-color: rgba(93, 255, 180, 0.45);
-  background: linear-gradient(165deg, rgba(45, 110, 85, 0.95), rgba(16, 42, 36, 0.98));
+  border-color: rgba(93, 255, 180, 0.55);
+  background: linear-gradient(165deg, rgba(50, 120, 95, 0.95), rgba(18, 48, 42, 0.98));
   font-weight: 800;
+  box-shadow: 0 0 28px rgba(93, 255, 180, 0.15);
+}
+
+button.primary:hover:not(:disabled) {
+  box-shadow: 0 0 32px rgba(93, 255, 180, 0.28);
 }
 
 #netStat {
   font-size: 0.82rem;
   font-weight: 800;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
 }
 
 #cv {
   display: block;
   width: min(768px, 94vw);
   height: auto;
-  margin: 8px auto;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #05080f;
-  image-rendering: pixelated;
+  margin: 10px auto;
+  border-radius: 16px;
+  border: 1px solid rgba(100, 170, 255, 0.25);
+  background: #030508;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 0 48px var(--glow);
 }
 
 .hint {
   color: var(--muted);
   font-size: 0.86rem;
   text-align: center;
-  margin-top: 8px;
-  line-height: 1.45;
+  margin-top: 10px;
+  line-height: 1.5;
+  font-weight: 600;
 }
 
 .hud {
@@ -120,14 +168,24 @@ button.primary {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 0.78rem;
   font-weight: 700;
 }
 
 .pill {
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, rgba(0, 0, 0, 0.45), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+#lobbyLine {
+  color: rgba(180, 200, 230, 0.9);
+  font-weight: 700;
+  font-size: 0.84rem;
+  text-align: center;
+  min-height: 1.2em;
+  transition: opacity 0.2s ease;
 }
