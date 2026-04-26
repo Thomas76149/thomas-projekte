@@ -5,6 +5,7 @@
  */
 
 import { TRIVIA_MORE } from "./trivia-more.js";
+import { TRIVIA_MILITARY } from "./trivia-military.js";
 
 export const TRIVIA_QUESTIONS = [
   // --- tech (easy) ---
@@ -236,6 +237,7 @@ export const TRIVIA_QUESTIONS = [
   { id: 154, cat: "economics", diff: "medium", q: "BIP steht für…", choices: ["Bundes-Inlands-Produkt", "Bruttoinlandsprodukt", "Betriebs-Internes Programm", "Budget-Index-Prozent"], a: 1 },
 
   ...TRIVIA_MORE,
+  ...TRIVIA_MILITARY,
 ];
 
 export const TRIVIA_CATS = [
@@ -261,4 +263,5 @@ export const TRIVIA_CATS = [
   { id: "psychology", label: "🧠 Psychologie (leicht)" },
   { id: "economics", label: "💶 Wirtschaft (leicht)" },
   { id: "automotive", label: "🚗 Autos & Verkehr" },
+  { id: "military", label: "🎖️ Militär — WW2 & heute 🧸" },
 ];
