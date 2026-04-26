@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de" class="thomasfun-fit">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Trivia · thomas.fun</title>
+  <meta name="description" content="Multiplayer-Quiz: Kategorien, Schwierigkeit, viele Fragen — Room wie Panzer/Pong." />
+  <meta name="theme-color" content="#060910" />
+  <link rel="stylesheet" href="../_game-shell.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Trivia</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+
+    <div class="card">
+      <div class="top">
+        <div class="controls">
+          <button type="button" class="primary" id="btnHost">Host</button>
+          <button type="button" id="btnJoin">Join</button>
+          <button type="button" id="btnReset">Reset</button>
+        </div>
+        <div class="controls">
+          <span id="netStat">Offline</span>
+          <input id="netUrl" type="text" value="wss://thomas-projekte.onrender.com" placeholder="wss://…" autocomplete="off" />
+          <input id="roomInp" type="text" placeholder="Room" maxlength="8" autocomplete="off" />
+          <input id="playerName" type="text" placeholder="Name" maxlength="18" autocomplete="off" style="max-width:120px" />
+          <button type="button" id="btnReady">Ready</button>
+        </div>
+      </div>
+
+      <p class="lobbyLine" id="lobbyLine"></p>
+
+      <div class="opts" id="optsPanel">
+        <h3>Einstellungen (Raum)</h3>
+        <p class="hint">Leer = alle Kategorien. Fragen im Pool werden pro Runde ohne Wiederholung gezogen, bis der Pool leer ist — dann wird neu gemischt.</p>
+        <div class="catGrid" id="catGrid"></div>
+        <div class="row2">
+          <label>Schwierigkeit
+            <select id="selDiff">
+              <option value="all">Gemischt</option>
+              <option value="easy">Leicht</option>
+              <option value="medium">Mittel</option>
+              <option value="hard">Schwer</option>
+            </select>
+          </label>
+          <label>Runden
+            <input id="inpRounds" type="number" min="3" max="40" value="10" style="width:72px" />
+          </label>
+        </div>
+      </div>
+
+      <div class="controls" style="margin:12px 0">
+        <button type="button" class="primary" id="btnStartQuiz" disabled>Quiz starten</button>
+      </div>
+
+      <div class="quiz" id="quizPanel" hidden>
+        <div class="qmeta" id="qmeta"></div>
+        <p class="qtext" id="qtext"></p>
+        <div class="answers" id="answers"></div>
+        <div class="reveal" id="revealPanel" hidden></div>
+      </div>
+
+      <div class="final" id="finalPanel" hidden>
+        <h2>Runde zu Ende</h2>
+        <div class="leader" id="leaderBoard"></div>
+      </div>
+
+      <p class="hint">
+        <strong>Ablauf:</strong> gleicher WebSocket wie Panzer/Pong · Host erstellt Raum, alle joinen mit Code ·
+        Kategorien &amp; Schwierigkeit wählen · alle <strong>Ready</strong> · <strong>Quiz starten</strong> ·
+        schneller richtig = mehr Punkte (bis +400 Zeitbonus).
+      </p>
+    </div>
+  </div>
+  <script type="module" src="game.js"></script>
+</body>
+</html>

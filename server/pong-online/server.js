@@ -1,6 +1,7 @@
 import http from "http";
 import { WebSocketServer } from "ws";
 import * as tanks from "./tanks.js";
+import * as trivia from "./trivia.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -93,6 +94,7 @@ function makeState(game) {
   if (game === "ttt") return makeTttState();
   if (game === "uno") return makeUnoState();
   if (game === "tanks") return tanks.makeTanksState();
+  if (game === "trivia") return trivia.makeTriviaState();
   return makePongState();
 }
 
@@ -251,6 +253,7 @@ function normalizeGame(g) {
   if (gg === "ttt") return "ttt";
   if (gg === "uno") return "uno";
   if (gg === "tanks") return "tanks";
+  if (gg === "trivia") return "trivia";
   return "pong";
 }
 
@@ -297,6 +300,12 @@ function pickSide(room) {
   }
   if (room.game === "tanks") {
     for (let i = 0; i < 4; i++) {
+      if (!used.has(String(i))) return String(i);
+    }
+    return null;
+  }
+  if (room.game === "trivia") {
+    for (let i = 0; i < trivia.MAX_PLAYERS; i++) {
       if (!used.has(String(i))) return String(i);
     }
     return null;
@@ -348,6 +357,7 @@ function buildLobbyPayload(room) {
   if (room.game === "pong") allReady = allReady && (roster.length === 2 || roster.length === 4);
   if (room.game === "ttt" || room.game === "rps") allReady = allReady && roster.length === 2;
   if (room.game === "tanks") allReady = allReady && roster.length >= 2;
+  if (room.game === "trivia") allReady = allReady && roster.length >= 2;
   return { t: "lobby", game: room.game, code: room.code, peers: roster.length, roster, allReady };
 }
 
@@ -388,6 +398,17 @@ function tanksTryStartMatch(room) {
   else st.matchLive = true;
 }
 
+function broadcastTrivia(room) {
+  if (room.game !== "trivia") return;
+  for (const [ws, meta] of room.clients) {
+    send(ws, {
+      t: "state",
+      game: "trivia",
+      s: trivia.serializeTriviaStateForClient(room.state, room, String(meta.side)),
+    });
+  }
+}
+
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
@@ -413,12 +434,15 @@ wss.on("connection", (ws) => {
 
     if (msg.t === "join") {
       const room = getOrCreateRoom(msg.game || "pong", msg.code || "");
+      if (room.game === "trivia" && room.state.phase !== "lobby") {
+        send(ws, { t: "err", m: "Quiz läuft — bitte warten bis die Runde vorbei ist." });
+        return;
+      }
       let side = pickSide(room);
       if (room.game !== "uno" && !side) {
-        const fullMsg =
-          room.game === "tanks" || room.game === "pong"
-            ? "Room voll (max 4)."
-            : "Room voll (max 2).";
+        let fullMsg = "Room voll (max 2).";
+        if (room.game === "tanks" || room.game === "pong") fullMsg = "Room voll (max 4).";
+        if (room.game === "trivia") fullMsg = `Room voll (max ${trivia.MAX_PLAYERS}).`;
         send(ws, { t: "err", m: fullMsg });
         return;
       }
@@ -477,6 +501,9 @@ wss.on("connection", (ws) => {
           st.matchLive = false;
           tanksTryStartMatch(room);
         }
+        if (room.game === "trivia") {
+          trivia.triviaTryStartMatch(room);
+        }
       }
       const extra = {};
       if (room.game === "pong") {
@@ -496,7 +523,12 @@ wss.on("connection", (ws) => {
       if (room.game === "rps") syncRpsAcceptPicks(room);
       if (room.game === "ttt") syncTttAllowMoves(room);
       if (room.game === "tanks") tanksTryStartMatch(room);
-      broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      if (room.game === "trivia") {
+        trivia.triviaTryStartMatch(room);
+        broadcastTrivia(room);
+      } else {
+        broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      }
       return;
     }
 
@@ -511,6 +543,10 @@ wss.on("connection", (ws) => {
       if (room.game === "rps") syncRpsAcceptPicks(room);
       if (room.game === "ttt") syncTttAllowMoves(room);
       tanksTryStartMatch(room);
+      if (room.game === "trivia") {
+        trivia.triviaTryStartMatch(room);
+        broadcastTrivia(room);
+      }
       if (room.game === "rps" || room.game === "ttt") {
         broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       }
@@ -585,6 +621,8 @@ wss.on("connection", (ws) => {
           const slot = Number(cmeta.side);
           if (slot >= 0 && slot <= 3) room.state.players[slot] = tanks.spawnTank(room.state, slot);
         }
+      } else if (room.game === "trivia") {
+        room.state = trivia.makeTriviaState();
       } else {
         room.state = makeState(room.game);
       }
@@ -592,9 +630,43 @@ wss.on("connection", (ws) => {
       if (room.game === "rps") syncRpsAcceptPicks(room);
       if (room.game === "ttt") syncTttAllowMoves(room);
       if (room.game === "tanks") tanksTryStartMatch(room);
+      if (room.game === "trivia") trivia.triviaTryStartMatch(room);
       broadcast(room, { t: "reset" });
-      broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      if (room.game === "trivia") broadcastTrivia(room);
+      else broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       broadcastLobby(room);
+      return;
+    }
+
+    if (room.game === "trivia" && msg.t === "trivia_opts") {
+      trivia.triviaMergeOpts(room.state, msg);
+      broadcastTrivia(room);
+      return;
+    }
+
+    if (room.game === "trivia" && msg.t === "trivia_start") {
+      if (!room.state.matchLive) {
+        send(ws, { t: "err", m: "Alle müssen Ready sein (mind. 2 Spieler)." });
+        return;
+      }
+      if (room.state.phase !== "lobby") {
+        send(ws, { t: "err", m: "Schon aktiv." });
+        return;
+      }
+      if (!trivia.triviaBeginMatch(room)) {
+        send(ws, { t: "err", m: "Start nicht möglich (zu wenig Fragen im Filter?)." });
+        return;
+      }
+      broadcastTrivia(room);
+      broadcastLobby(room);
+      return;
+    }
+
+    if (room.game === "trivia" && msg.t === "trivia_answer") {
+      const st = room.state;
+      if (st.phase !== "question") return;
+      const slotStr = String(meta.side);
+      if (trivia.triviaApplyAnswer(st, slotStr, msg.i)) broadcastTrivia(room);
       return;
     }
 
@@ -734,6 +806,15 @@ wss.on("connection", (ws) => {
         if (st.turnIdx >= st.players.length) st.turnIdx = 0;
       }
       broadcastUno(room);
+      return;
+    }
+    if (room.game === "trivia") {
+      if (room.state.phase !== "lobby") trivia.triviaResetRoom(room);
+      clearAllReady(room);
+      trivia.triviaTryStartMatch(room);
+      broadcast(room, { t: "peers", n: room.clients.size });
+      broadcastTrivia(room);
+      broadcastLobby(room);
       return;
     }
     if (room.game === "tanks") {
@@ -1060,6 +1141,30 @@ setInterval(() => {
       if (t - room._tanksBw >= 42) {
         room._tanksBw = t;
         broadcast(room, { t: "state", game: "tanks", s: serializeState("tanks", st) });
+      }
+    }
+    if (room.game === "trivia") {
+      const st = room.state;
+      if (st.phase === "question" && st.current) {
+        let cutoff = t >= st.current.endsAt;
+        if (!cutoff) {
+          let online = 0;
+          let allAnswered = true;
+          for (const [ws, m] of room.clients) {
+            if (ws.readyState !== ws.OPEN) continue;
+            online++;
+            if (st.answers[String(m.side)] === undefined) allAnswered = false;
+          }
+          cutoff = online >= 2 && allAnswered;
+        }
+        if (cutoff) {
+          trivia.triviaFinalizeQuestion(room);
+          broadcastTrivia(room);
+        }
+      } else if (st.phase === "reveal" && t >= st.revealUntil) {
+        trivia.triviaTickReveal(room);
+        broadcastTrivia(room);
+        broadcastLobby(room);
       }
     }
   }
