@@ -7,7 +7,7 @@
   <meta name="description" content="Multiplayer-Quiz: A/B/C/D oder Freitext, Kategorien, Sounds & Scoreboard." />
   <meta name="theme-color" content="#060910" />
   <link rel="stylesheet" href="../_game-shell.css" />
-  <link rel="stylesheet" href="style.css?v=4" />
+  <link rel="stylesheet" href="style.css?v=5" />
 </head>
 <body>
   <div class="wrap">
@@ -23,13 +23,23 @@
           <button type="button" id="btnJoin">Join</button>
           <button type="button" id="btnReset">Reset</button>
         </div>
-        <div class="controls">
+        <div class="controls controls--net">
           <span id="netStat">Offline</span>
           <input id="netUrl" type="text" value="wss://thomas-projekte.onrender.com" placeholder="wss://…" autocomplete="off" />
           <input id="roomInp" type="text" placeholder="Room" maxlength="8" autocomplete="off" />
-          <input id="playerName" type="text" placeholder="Name" maxlength="18" autocomplete="off" style="max-width:120px" />
-          <button type="button" id="btnReady">Ready</button>
+          <input id="playerName" type="text" placeholder="Name" maxlength="18" autocomplete="off" class="inpName" />
         </div>
+      </div>
+
+      <div class="readyStrip" aria-label="Bereitschaft">
+        <p class="readyStrip__hint" id="readyStripHint">Mit Host/Join verbinden — dann <strong>bereit</strong> drücken, wenn du starten willst.</p>
+        <button type="button" class="btn-ready btn-ready--idle" id="btnReady" aria-pressed="false" disabled>
+          <span class="btn-ready__pulse" aria-hidden="true"></span>
+          <span class="btn-ready__inner">
+            <span class="btn-ready__ico" aria-hidden="true">◎</span>
+            <span class="btn-ready__label">Ich bin bereit</span>
+          </span>
+        </button>
       </div>
 
       <p class="lobbyLine" id="lobbyLine"></p>
@@ -94,6 +104,6 @@
       </div>
     </div>
   </div>
-  <script type="module" src="game.js?v=4"></script>
+  <script type="module" src="game.js?v=5"></script>
 </body>
 </html>

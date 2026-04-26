@@ -24,6 +24,7 @@ const revealPanel = document.getElementById("revealPanel");
 const finalPanel = document.getElementById("finalPanel");
 const leaderBoard = document.getElementById("leaderBoard");
 const scoreBoardBody = document.getElementById("scoreBoardBody");
+const readyStripHint = document.getElementById("readyStripHint");
 
 let ws = null;
 let online = false;
@@ -111,6 +112,42 @@ function setNetLabel(txt, ok = false) {
   netStat.textContent = txt;
   netStat.style.borderColor = ok ? "rgba(93,255,180,.4)" : "rgba(255,255,255,.14)";
   netStat.style.color = ok ? "rgba(93,255,180,.95)" : "rgba(255,255,255,.85)";
+}
+
+function refreshReadyButton() {
+  const connected = ws && ws.readyState === 1;
+  btnReady.disabled = !connected;
+  btnReady.setAttribute("aria-pressed", imReady ? "true" : "false");
+  btnReady.classList.remove("btn-ready--idle", "btn-ready--off", "btn-ready--on");
+  const label = btnReady.querySelector(".btn-ready__label");
+  const ico = btnReady.querySelector(".btn-ready__ico");
+  if (!connected) {
+    btnReady.classList.add("btn-ready--idle");
+    if (label) label.textContent = "Ich bin bereit";
+    if (ico) ico.textContent = "◎";
+    if (readyStripHint) {
+      readyStripHint.innerHTML =
+        "Mit <strong>Host</strong> oder <strong>Join</strong> verbinden — dann hier <strong>bereit</strong> schalten.";
+    }
+    return;
+  }
+  if (imReady) {
+    btnReady.classList.add("btn-ready--on");
+    if (label) label.textContent = "Bereit ✓ — antippen zum Zurücknehmen";
+    if (ico) ico.textContent = "✓";
+    if (readyStripHint) {
+      readyStripHint.innerHTML =
+        "Du bist <strong>bereit</strong>. Sind alle ✓ in der Raumzeile, kann der Host <strong>Quiz starten</strong> wählen.";
+    }
+  } else {
+    btnReady.classList.add("btn-ready--off");
+    if (label) label.textContent = "Tippen: Ich bin bereit";
+    if (ico) ico.textContent = "○";
+    if (readyStripHint) {
+      readyStripHint.innerHTML =
+        "Alle Spieler müssen <strong>bereit</strong> sein (Status siehst du in der Zeile darunter: ✓ oder …).";
+    }
+  }
 }
 
 function escapeHtml(s) {
@@ -473,12 +510,12 @@ function connect(code) {
     setNetLabel("Verbunden…", true);
     const nm = (document.getElementById("playerName")?.value || "").trim().slice(0, 18);
     ws.send(JSON.stringify({ t: "join", game: "trivia", code: code || "", name: nm }));
+    refreshReadyButton();
   });
   ws.addEventListener("close", () => {
     setNetLabel("Offline");
     online = false;
     imReady = false;
-    btnReady.textContent = "Ready";
     btnHost.disabled = false;
     btnJoin.disabled = false;
     lobbyLine.textContent = "";
@@ -489,6 +526,7 @@ function connect(code) {
     lastBuiltAnswersQKey = "";
     if (timerId) clearInterval(timerId);
     renderScoreboard(null);
+    refreshReadyButton();
   });
   ws.addEventListener("error", () => setNetLabel("Fehler"));
   ws.addEventListener("message", (ev) => {
@@ -511,13 +549,14 @@ function connect(code) {
         : `Verbunden: ${msg.peers || 0}`;
       const me = roster.find((r) => String(r.side) === String(mySlot));
       if (me) imReady = !!me.ready;
-      btnReady.textContent = imReady ? "Nicht ready" : "Ready";
+      refreshReadyButton();
       return;
     }
     if (msg.t === "joined") {
       roomInp.value = msg.code || "";
       mySlot = String(msg.side ?? "0");
       setNetLabel(`Online · ${msg.code} · Du: P${Number(mySlot) + 1}`, true);
+      refreshReadyButton();
       return;
     }
     if (msg.t === "state" && msg.game === "trivia" && msg.s) {
@@ -544,7 +583,8 @@ btnReady.addEventListener("click", () => {
   if (!ws || ws.readyState !== 1) return;
   imReady = !imReady;
   ws.send(JSON.stringify({ t: "ready", v: imReady }));
-  btnReady.textContent = imReady ? "Nicht ready" : "Ready";
+  playSfx(imReady ? "whoosh" : "tick");
+  refreshReadyButton();
 });
 
 btnStartQuiz.addEventListener("click", () => {
@@ -565,6 +605,7 @@ document.querySelectorAll('input[name="answerMode"]').forEach((r) => {
 
 buildCatGrid([]);
 renderScoreboard(null);
+refreshReadyButton();
 
 (function bootParams() {
   try {
