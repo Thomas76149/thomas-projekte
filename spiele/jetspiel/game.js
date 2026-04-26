@@ -732,6 +732,8 @@
     showToast(`Welle ${wave} clear · +${bonus} ₡`);
     // Wenn die Welle früh endet, liegen oft noch Pickups rum. In der Shop-Phase würden sie nicht mehr
     // eingesammelt werden -> also automatisch einsammeln (ohne Sound-Spam).
+    // Wichtig: stilles Einsammeln darf keine stapelbaren Upgrades (Spread/DMG/Rapid/…) mehrfach auslösen,
+    // sonst wäre z.B. Taktik „Wolke“ nach einer Welle sofort Spread max — siehe applyPickup(..., true).
     if (pickups.length) {
       for (const p of pickups) applyPickup(p, true);
       pickups.length = 0;
@@ -2129,6 +2131,22 @@
   }
 
   function applyPickup(p, silent = false) {
+    // Wellen-Ende / Hangar: verbleibende Pickups → Belohnung, aber keine Upgrade-Kaskade
+    // (mehrere „spread“-Felder würden sonst Spread 1→3 in einem Frame erzwingen).
+    if (silent) {
+      if (p.kind === "credits") {
+        credits += 6 + Math.floor(wave * 1.2) + pickupCreditsBonus * 3;
+      } else {
+        const conv = {
+          rapid: 12 + wave * 2,
+          dmg: 16 + wave * 2,
+          spread: 18 + wave * 2,
+          shield: 14 + wave * 2,
+        };
+        credits += conv[p.kind] ?? 12 + wave;
+      }
+      return;
+    }
     if (p.kind === "rapid") {
       if (shipClass === "pulse") fireMul = Math.max(0.38, fireMul * 0.903);
       else credits += 14 + wave;
@@ -2140,11 +2158,9 @@
     }
     else if (p.kind === "shield") shieldCharges = Math.min(7, shieldCharges + 1);
     else if (p.kind === "credits") credits += 6 + Math.floor(wave * 1.2) + pickupCreditsBonus * 3;
-    if (!silent) {
-      sfxPickup();
-      syncHud();
-      renderShop();
-    }
+    sfxPickup();
+    syncHud();
+    renderShop();
   }
 
   function onUfoDestroyed(u, cx, cy) {

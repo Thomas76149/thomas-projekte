@@ -1,5 +1,6 @@
 import http from "http";
 import { WebSocketServer } from "ws";
+import * as tanks from "./tanks.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -80,6 +81,7 @@ function makeState(game) {
   if (game === "rps") return makeRpsState();
   if (game === "ttt") return makeTttState();
   if (game === "uno") return makeUnoState();
+  if (game === "tanks") return tanks.makeTanksState();
   return makePongState();
 }
 
@@ -165,6 +167,7 @@ function normalizeGame(g) {
   if (gg === "rps") return "rps";
   if (gg === "ttt") return "ttt";
   if (gg === "uno") return "uno";
+  if (gg === "tanks") return "tanks";
   return "pong";
 }
 
@@ -203,9 +206,17 @@ function pickSide(room) {
     if (!used.has("B")) return "B";
     return null;
   }
-  // ttt
-  if (!used.has("X")) return "X";
-  if (!used.has("O")) return "O";
+  if (room.game === "ttt") {
+    if (!used.has("X")) return "X";
+    if (!used.has("O")) return "O";
+    return null;
+  }
+  if (room.game === "tanks") {
+    for (let i = 0; i < 4; i++) {
+      if (!used.has(String(i))) return String(i);
+    }
+    return null;
+  }
   return null;
 }
 
@@ -259,7 +270,7 @@ wss.on("connection", (ws) => {
       const room = getOrCreateRoom(msg.game || "pong", msg.code || "");
       let side = pickSide(room);
       if (room.game !== "uno" && !side) {
-        send(ws, { t: "err", m: "Room voll (max 2)." });
+        send(ws, { t: "err", m: room.game === "tanks" ? "Room voll (max 4)." : "Room voll (max 2)." });
         return;
       }
       // leave previous
@@ -307,8 +318,26 @@ wss.on("connection", (ws) => {
         return;
       } else {
         room.clients.set(ws, { side });
+        if (room.game === "tanks") {
+          const st = room.state;
+          const slot = Number(side);
+          if (slot >= 0 && slot <= 3 && !st.players[slot]) {
+            st.players[slot] = tanks.spawnTank(st, slot);
+          }
+        }
       }
-      const extra = room.game === "pong" ? { W: room.state.W, H: room.state.H } : {};
+      const extra = {};
+      if (room.game === "pong") {
+        extra.W = room.state.W;
+        extra.H = room.state.H;
+      }
+      if (room.game === "tanks") {
+        const st = room.state;
+        extra.W = st.W;
+        extra.H = st.H;
+        extra.tw = st.TW;
+        extra.walls = st.wallStr;
+      }
       send(ws, { t: "joined", game: room.game, code: room.code, side, ...extra });
       broadcast(room, { t: "peers", n: room.clients.size });
       // send snapshot immediately
@@ -329,6 +358,17 @@ wss.on("connection", (ws) => {
       return;
     }
 
+    if (room.game === "tanks" && msg.t === "in") {
+      const slot = Number(meta.side);
+      if (slot >= 0 && slot <= 3) tanks.tanksApplyInput(room.state, slot, msg);
+      return;
+    }
+    if (room.game === "tanks" && msg.t === "fire") {
+      const slot = Number(meta.side);
+      if (slot >= 0 && slot <= 3) tanks.tanksSetFire(room.state, slot);
+      return;
+    }
+
     if (room.game === "pong" && msg.t === "start") {
       room.state.running = true;
       room.state.overSent = false;
@@ -338,7 +378,15 @@ wss.on("connection", (ws) => {
     }
 
     if (msg.t === "reset") {
-      room.state = makeState(room.game);
+      if (room.game === "tanks") {
+        room.state = tanks.makeTanksState();
+        for (const [, cmeta] of room.clients) {
+          const slot = Number(cmeta.side);
+          if (slot >= 0 && slot <= 3) room.state.players[slot] = tanks.spawnTank(room.state, slot);
+        }
+      } else {
+        room.state = makeState(room.game);
+      }
       broadcast(room, { t: "reset" });
       broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       return;
@@ -474,12 +522,23 @@ wss.on("connection", (ws) => {
       broadcastUno(room);
       return;
     }
+    if (room.game === "tanks") {
+      const slot = Number(meta?.side);
+      if (Number.isFinite(slot) && slot >= 0 && slot <= 3) {
+        room.state.players[slot] = null;
+        room.state.bullets = room.state.bullets.filter((b) => b.own !== slot);
+      }
+      broadcast(room, { t: "peers", n: room.clients.size });
+      broadcast(room, { t: "state", game: "tanks", s: serializeState("tanks", room.state) });
+      return;
+    }
     broadcast(room, { t: "peers", n: room.clients.size });
     // cleanup empty rooms after some time
   });
 });
 
 function serializeState(game, st, room) {
+  if (game === "tanks") return tanks.serializeTanksState(st);
   if (game === "rps") {
     return {
       round: st.round,
@@ -739,6 +798,17 @@ setInterval(() => {
           st.overSent = true;
           broadcast(room, { t: "over", game: "pong", w: st.sL > st.sR ? "L" : "R" });
         }
+      }
+    }
+    if (room.game === "tanks") {
+      const st = room.state;
+      const dt = t - st.lastTick;
+      st.lastTick = t;
+      tanks.tickTanks(st, dt);
+      room._tanksBw = room._tanksBw ?? 0;
+      if (t - room._tanksBw >= 42) {
+        room._tanksBw = t;
+        broadcast(room, { t: "state", game: "tanks", s: serializeState("tanks", st) });
       }
     }
   }

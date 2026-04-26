@@ -3,7 +3,8 @@ import re
 from pathlib import Path
 
 
-ROOT = Path(r"C:\Users\frank\OneDrive\Documents\Thomas\Programmieren\Websites\thomas-fun")
+# Repo-Root = zwei Ebenen über diesem Skript (tools/ → Projektroot)
+ROOT = Path(__file__).resolve().parent.parent
 SPIELE = ROOT / "spiele"
 
 BIG = {
