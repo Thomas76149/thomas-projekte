@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Fabrik‑Clicker · thomas.fun</title>
+  <meta name="description" content="Clicker mit Combo, Upgrades, passivem Einkommen — Speicherstand lokal." />
+  <meta name="theme-color" content="#0b0f18" />
+  <link rel="stylesheet" href="../_game-shell.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Fabrik‑Clicker</h1>
+      <a href="../../index.html">← zurück</a>
+    </header>
+
+    <div class="card stage" id="stage">
+      <div class="money" id="money">0 ₡</div>
+      <p class="sub" id="sub">Klicks gesamt: 0 · Beste Combo: ×0</p>
+      <p class="rate" id="rate">Passiv +0 ₡/s</p>
+
+      <div class="combo-block">
+        <div class="combo-row">
+          <span id="combo" class="combo-label">Combo —</span>
+        </div>
+        <div class="combo-track" aria-hidden="true">
+          <div class="combo-fill" id="comboBar"></div>
+        </div>
+      </div>
+
+      <div class="tap-wrap">
+        <button type="button" class="tap" id="tapZone" aria-label="Tippen für ₡">
+          <span class="tap__glow" aria-hidden="true"></span>
+          <span class="tap__ring" id="tapRing" aria-hidden="true"></span>
+          <span class="tap__label">Hier tippen</span>
+          <span class="tap__hint">Schnelle Klicks = Combo = mehr ₡ · Upgrades unten</span>
+        </button>
+      </div>
+
+      <label class="sound-toggle">
+        <input type="checkbox" id="chkSound" checked /> Sound
+      </label>
+
+      <div class="row">
+        <button type="button" class="small" id="btnSave">Speichern</button>
+        <button type="button" class="danger" id="btnReset">Zurücksetzen</button>
+      </div>
+      <p class="hint">Upgrades mit ₡ kaufen; Poster verstärkt nur Mini‑Band + Bot. Speicher: <code>localStorage</code> <code>thomasfun_clicker_v1</code>.</p>
+    </div>
+
+    <div class="card card--shop">
+      <h2 class="shop-title">Upgrades</h2>
+      <div class="upgrades" id="upgrades"></div>
+    </div>
+  </div>
+
+  <div class="fx-root" id="fxRoot" aria-hidden="true"></div>
+  <script defer src="game.js"></script>
+</body>
+</html>

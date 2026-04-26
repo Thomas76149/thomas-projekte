@@ -46,7 +46,7 @@ window.THOMASFUN_ITEMS = [
 
   // Games
   { title:"Breakout", href:"spiele/breakout/index.html", emoji:"🧱", label:"Canvas · Arcade", desc:"Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch & Keyboard.", tags:["game","arcade","canvas","mobile"], big:true, section:"games" },
-  { title:"Math Gates", href:"spiele/math-gates/index.html", emoji:"🧮", label:"Runner · Zahlen", desc:"Gates mit + − × ÷, Hindernisse & Boss am Ende. Ohne Werbung.", tags:["game","arcade","mobile","canvas"], big:true, section:"games" },
+  { title:"Fabrik‑Clicker", href:"spiele/tycoon/index.html", emoji:"🏭", label:"Clicker", desc:"Klicks, Combo, Upgrades und passives ₡ — Partikel & Sound, Speicherstand lokal.", tags:["game","clicker","idle","mobile"], big:true, section:"games" },
   { title:"Tic‑Tac‑Toe", href:"spiele/tictactoe/index.html", emoji:"❎", label:"Online · Board", desc:"Online (Room‑Code) oder lokal gegen Bot/2‑Spieler.", tags:["game","board","mini","mobile","online"], section:"online" },
   { title:"Memory", href:"spiele/memory/index.html", emoji:"🧠", label:"Puzzle", desc:"Paare finden, Bestzeit jagen.", tags:["game","puzzle","memory","mobile"], section:"games" },
   { title:"2048", href:"spiele/2048/index.html", emoji:"🧩", label:"Puzzle", desc:"Schieben, mergen, Score jagen — Keyboard & Touch.", tags:["game","puzzle","mobile"], section:"games" },

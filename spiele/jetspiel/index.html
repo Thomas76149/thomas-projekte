@@ -30,7 +30,7 @@
       <span>Punkte <strong id="score">0</strong></span>
       <span class="gold">₡ <strong id="credits">0</strong></span>
       <span><strong id="enemiesHud">Rest —</strong></span>
-      <span>Leben <strong id="lives">3</strong></span>
+      <span class="hudStat">Leben <strong id="lives">3</strong></span>
       <span id="shieldTag" class="tag" hidden>Schild ×<span id="shieldNum">0</span></span>
       <span id="rocketTag" class="tag">🚀 <strong id="rocketNum">0</strong></span>
       <span id="novaTag" class="tag" hidden>Nova <strong id="novaCd">—</strong></span>
@@ -45,6 +45,22 @@
         <button type="button" class="hdrBtn" id="btnFs">Vollbild</button>
       </div>
       <canvas id="game" width="1920" height="1080" aria-label="Spielfeld"></canvas>
+      <div class="combatFieldHud" id="combatFieldHud" hidden>
+        <div class="combatFieldHud__inner">
+          <div class="combatFieldHud__row">
+            <span class="combatFieldHud__label">Leben</span>
+            <span class="combatFieldHud__val" id="fieldLives">3</span>
+          </div>
+          <div class="combatFieldHud__row">
+            <span class="combatFieldHud__label">Raketen</span>
+            <span class="combatFieldHud__val" id="fieldRockets">0</span>
+          </div>
+          <div class="combatFieldHud__row combatFieldHud__row--shield" id="fieldShieldRow" hidden>
+            <span class="combatFieldHud__label">Schild</span>
+            <span class="combatFieldHud__val combatFieldHud__val--mint" id="fieldShield">0</span>
+          </div>
+        </div>
+      </div>
       <div
         class="heatDock"
         id="heatDock"

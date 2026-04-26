@@ -150,6 +150,8 @@
     let sL=0, sR=0;
     const keys = new Set();
     let sparks = [];
+    /** Letzter Ball-Snapshot (Online), um Treffer/Tore für FX abzuleiten */
+    let netPrevBall = null;
     let leftVy = 0;
     let aiAimY = c.height / 2;
     let aiThinkAcc = 0;
@@ -268,7 +270,9 @@
         }
         if (msg.t === "state" && msg.s){
           const s = msg.s;
-          // authoritative snapshot
+          const pb = netPrevBall ? { ...netPrevBall } : null;
+          const prevSL = sL;
+          const prevSR = sR;
           if (typeof s.sL === "number") sL = s.sL;
           if (typeof s.sR === "number") sR = s.sR;
           if (s.L && typeof s.L.y === "number") left.y = s.L.y;
@@ -278,6 +282,8 @@
             ball.vx = s.B.vx; ball.vy = s.B.vy;
             ball.spin = s.B.spin; ball.r = s.B.r;
           }
+          if (pb && s.B && running) netFxFromState(pb, prevSL, prevSR);
+          if (s.B) netPrevBall = { x: ball.x, y: ball.y, vx: ball.vx, vy: ball.vy };
           syncScore();
         }
       });
@@ -299,6 +305,7 @@
     function resetGame(){
       hideOverlay();
       ovShown = false;
+      netPrevBall = null;
       sL=0; sR=0;
       resetRound(Math.random()<0.5?-1:1);
       draw();
@@ -322,6 +329,48 @@
       }
     }
 
+    function tickSparks(sec){
+      for (let i=sparks.length-1;i>=0;i--){
+        const p = sparks[i];
+        p.life -= sec;
+        p.x += p.vx*sec;
+        p.y += p.vy*sec;
+        p.vy += 520*sec;
+        p.vx *= 0.99;
+        if (p.life<=0) sparks.splice(i,1);
+      }
+    }
+
+    /** Online: Server sendet nur State — FX aus Ball- und Score-Änderungen ableiten */
+    function netFxFromState(pb, prevSL, prevSR){
+      if (!online || !running || !pb) return;
+      if (sL > prevSL){
+        spark(c.width*0.75, c.height*0.5, "rgba(34,211,238,0.9)");
+        tone(220,0.12,"sawtooth",0.06);
+        vibr([20,20,20]);
+      }
+      if (sR > prevSR){
+        spark(c.width*0.25, c.height*0.5, "rgba(249,115,22,0.9)");
+        tone(180,0.12,"sawtooth",0.06);
+        vibr([20,20,20]);
+      }
+      const bigJump = Math.hypot(ball.x - pb.x, ball.y - pb.y) > 140;
+      if (bigJump) return;
+      if (pb.vx < 0 && ball.vx > 0 && pb.x < c.width * 0.42){
+        spark(ball.x, ball.y, "rgba(34,211,238,0.9)");
+        tone(620,0.05,"square",0.03);
+        vibr(10);
+      }
+      if (pb.vx > 0 && ball.vx < 0 && pb.x > c.width * 0.58){
+        spark(ball.x, ball.y, "rgba(249,115,22,0.9)");
+        tone(520,0.05,"square",0.03);
+        vibr(10);
+      }
+      if (pb.vy * ball.vy < 0 && (ball.y < 28 || ball.y > c.height - 28)){
+        tone(340,0.04,"triangle",0.03);
+      }
+    }
+
     function tick(dt){
       const sec = dt/1000;
       const up = keys.has("ArrowUp") || keys.has("KeyW");
@@ -333,13 +382,13 @@
         left.y = clamp(left.y, 10, c.height-left.h-10);
         leftVy = (left.y - prevLY) / Math.max(0.001, sec);
       } else {
-        // local input belongs to my side only
         const p = (mySide === "L") ? left : right;
+        const prevPY = p.y;
         keysNet.up = !!up;
         keysNet.down = !!down;
         netSendInput();
-        // movement + physics is server-side in online mode
-        leftVy = (p.y - prevLY) / Math.max(0.001, sec);
+        leftVy = (p.y - prevPY) / Math.max(0.001, sec);
+        tickSparks(sec);
         return;
       }
 
@@ -409,16 +458,7 @@
         showOverlay(sL>sR);
       }
 
-      // sparks
-      for (let i=sparks.length-1;i>=0;i--){
-        const p = sparks[i];
-        p.life -= sec;
-        p.x += p.vx*sec;
-        p.y += p.vy*sec;
-        p.vy += 520*sec;
-        p.vx *= 0.99;
-        if (p.life<=0) sparks.splice(i,1);
-      }
+      tickSparks(sec);
     }
 
     function predictInterceptY(){

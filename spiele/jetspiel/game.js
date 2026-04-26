@@ -49,6 +49,11 @@
   const btnFs = document.getElementById("btnFs");
   const btnFsTop = document.getElementById("btnFsTop");
   const canvasWrap = document.getElementById("canvasWrap");
+  const combatFieldHud = document.getElementById("combatFieldHud");
+  const fieldLivesEl = document.getElementById("fieldLives");
+  const fieldRocketsEl = document.getElementById("fieldRockets");
+  const fieldShieldRow = document.getElementById("fieldShieldRow");
+  const fieldShieldEl = document.getElementById("fieldShield");
   const modHint = document.getElementById("modHint");
   const modRowPulse = document.getElementById("modRowPulse");
   const modRowBeam = document.getElementById("modRowBeam");
@@ -1340,6 +1345,16 @@
     shieldTag.hidden = shieldCharges <= 0;
     shieldNum.textContent = String(shieldCharges);
     rocketNum.textContent = String(missileStock);
+    if (combatFieldHud && fieldLivesEl && fieldRocketsEl && fieldShieldRow && fieldShieldEl) {
+      const showField = phase === "combat" && running;
+      combatFieldHud.hidden = !showField;
+      if (showField) {
+        fieldLivesEl.textContent = String(lives);
+        fieldRocketsEl.textContent = String(missileStock);
+        fieldShieldRow.hidden = shieldCharges <= 0;
+        fieldShieldEl.textContent = String(shieldCharges);
+      }
+    }
     const bits = [];
     if (shipClass === "pulse" && fireMul < 0.99) bits.push(`Feuer ×${(1 / fireMul).toFixed(1)}`);
     if (spreadLevel > 0 && shipClass === "pulse") bits.push(`Spread ${spreadLevel}`);
@@ -2786,14 +2801,6 @@
     }
   }
 
-  function drawHeatOverlay() {
-    if (shipClass !== "beam") return;
-    if (heat < 58 && overheatLock <= 0) return;
-    const a = Math.min(0.22, (heat - 50) / 105) + (overheatLock > 0 ? 0.15 : 0);
-    ctx.fillStyle = `rgba(255, 80, 40, ${a})`;
-    ctx.fillRect(0, 0, W, H);
-  }
-
   function drawPhaseBanner() {
     if (phase !== "shop") return;
     ctx.save();
@@ -3540,7 +3547,6 @@
       ctx.fill();
     }
     ctx.restore();
-    drawHeatOverlay();
     if (screenFlash > 0.02) {
       let rgba = `rgba(130, 210, 255, ${screenFlash * 0.42})`;
       if (screenFlashKind === "hurt") rgba = `rgba(255, 65, 95, ${screenFlash * 0.5})`;
@@ -3549,10 +3555,21 @@
       ctx.fillRect(0, 0, W, H);
     }
     if (shipClass === "beam" && overheatLock > 0) {
-      ctx.fillStyle = "rgba(255,60,40,0.4)";
-      ctx.font = "bold 32px system-ui,sans-serif";
+      ctx.font = "bold 36px system-ui,sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("ÜBERHITZUNG", W / 2, 64);
+      ctx.textBaseline = "alphabetic";
+      const msg = "ÜBERHITZUNG";
+      const x = W / 2;
+      const y = 64;
+      ctx.lineJoin = "round";
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.78)";
+      ctx.strokeText(msg, x, y);
+      ctx.fillStyle = "#ffd76a";
+      ctx.shadowColor = "rgba(255, 200, 100, 0.55)";
+      ctx.shadowBlur = 18;
+      ctx.fillText(msg, x, y);
+      ctx.shadowBlur = 0;
     }
     drawPhaseBanner();
     ctx.restore();
@@ -3684,6 +3701,31 @@
     });
   });
 
+  const STUCK_CLEAR_CODES = [
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+    "KeyW",
+    "KeyS",
+    "KeyA",
+    "KeyD",
+    "Space",
+    "KeyE",
+    "KeyQ",
+  ];
+  function releaseStuckKeys() {
+    for (const c of STUCK_CLEAR_CODES) keys.delete(c);
+    aimTouchId = null;
+    aimTouchY = null;
+    aimTouchX = null;
+  }
+
+  window.addEventListener("blur", releaseStuckKeys);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) releaseStuckKeys();
+  });
+
   window.addEventListener("keydown", (e) => {
     if (e.code === "Escape") {
       if (running && startOverlay.hidden && gameOverOverlay.hidden) {
@@ -3700,6 +3742,10 @@
       e.code === "Space" ||
       e.code === "KeyE" ||
       e.code === "KeyQ" ||
+      e.code === "KeyW" ||
+      e.code === "KeyA" ||
+      e.code === "KeyS" ||
+      e.code === "KeyD" ||
       e.code === "ArrowLeft" ||
       e.code === "ArrowRight" ||
       e.code === "ArrowUp" ||
@@ -3774,8 +3820,13 @@
     });
   });
 
+  canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+  });
+
   canvas.addEventListener("pointerdown", (e) => {
     if (!running || phase !== "combat") return;
+    if (e.button !== 0) return;
     const r = canvas.getBoundingClientRect();
     const nx = ((e.clientX - r.left) / r.width) * W;
     if (nx < W * 0.4) {
@@ -3800,6 +3851,11 @@
     }
   });
   canvas.addEventListener("pointercancel", () => {
+    aimTouchId = null;
+    aimTouchY = null;
+    aimTouchX = null;
+  });
+  canvas.addEventListener("lostpointercapture", () => {
     aimTouchId = null;
     aimTouchY = null;
     aimTouchX = null;
