@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Trivia · thomas.fun</title>
-  <meta name="description" content="Multiplayer-Quiz: Kategorien, Schwierigkeit, viele Fragen — Room wie Panzer/Pong." />
+  <meta name="description" content="Multiplayer-Quiz: A/B/C/D oder Freitext, Kategorien, Sounds & Scoreboard." />
   <meta name="theme-color" content="#060910" />
   <link rel="stylesheet" href="../_game-shell.css" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <div class="wrap">
@@ -34,48 +34,64 @@
 
       <p class="lobbyLine" id="lobbyLine"></p>
 
-      <div class="opts" id="optsPanel">
-        <h3>Einstellungen (Raum)</h3>
-        <p class="hint">Leer = alle Kategorien. Fragen im Pool werden pro Runde ohne Wiederholung gezogen, bis der Pool leer ist — dann wird neu gemischt.</p>
-        <div class="catGrid" id="catGrid"></div>
-        <div class="row2">
-          <label>Schwierigkeit
-            <select id="selDiff">
-              <option value="all">Gemischt</option>
-              <option value="easy">Leicht</option>
-              <option value="medium">Mittel</option>
-              <option value="hard">Schwer</option>
-            </select>
-          </label>
-          <label>Runden
-            <input id="inpRounds" type="number" min="3" max="40" value="10" style="width:72px" />
-          </label>
+      <div class="playLayout">
+        <div class="playMain">
+          <div class="opts" id="optsPanel">
+            <h3>Einstellungen (Raum)</h3>
+            <p class="hint">Nichts angehakt = <strong>alle</strong> Themen. <strong>Freitext:</strong> Antwort = exakter Lösungstext (aus der MC-Variante); Tippfehler geben <strong>Teilpunkte</strong> je nach Ähnlichkeit.</p>
+
+            <div class="answerModeRow" role="radiogroup" aria-label="Antwortmodus">
+              <span class="answerModeRow__label">Modus</span>
+              <label class="chip"><input type="radio" name="answerMode" value="mcq" checked /> A · B · C · D</label>
+              <label class="chip"><input type="radio" name="answerMode" value="text" /> Freitext</label>
+            </div>
+
+            <div class="catGrid" id="catGrid"></div>
+            <div class="row2">
+              <label>Schwierigkeit
+                <select id="selDiff">
+                  <option value="all">Gemischt</option>
+                  <option value="easy">Leicht</option>
+                  <option value="medium">Mittel</option>
+                  <option value="hard">Schwer</option>
+                </select>
+              </label>
+              <label>Runden
+                <input id="inpRounds" type="number" min="3" max="40" value="10" style="width:72px" />
+              </label>
+            </div>
+          </div>
+
+          <div class="controls startRow">
+            <button type="button" class="primary" id="btnStartQuiz" disabled>Quiz starten</button>
+          </div>
+
+          <div class="quiz" id="quizPanel" hidden>
+            <div class="qmeta" id="qmeta"></div>
+            <p class="qtext" id="qtext"></p>
+            <div class="answers" id="answers"></div>
+            <div class="reveal" id="revealPanel" hidden></div>
+          </div>
+
+          <div class="final" id="finalPanel" hidden>
+            <h2>Runde zu Ende</h2>
+            <div class="leader" id="leaderBoard"></div>
+          </div>
+
+          <p class="hint hint--foot">
+            <strong>Tipp:</strong> Nach dem Verbinden einmal irgendwo klicken — dann sind Sounds auf dem Handy zuverlässiger.
+          </p>
         </div>
-      </div>
 
-      <div class="controls" style="margin:12px 0">
-        <button type="button" class="primary" id="btnStartQuiz" disabled>Quiz starten</button>
+        <aside class="scoreAside" id="scoreAside" aria-label="Punktestand">
+          <h3 class="scoreAside__title">Punkte</h3>
+          <div class="scoreAside__body" id="scoreBoardBody">
+            <div class="scorePlaceholder">Offline</div>
+          </div>
+        </aside>
       </div>
-
-      <div class="quiz" id="quizPanel" hidden>
-        <div class="qmeta" id="qmeta"></div>
-        <p class="qtext" id="qtext"></p>
-        <div class="answers" id="answers"></div>
-        <div class="reveal" id="revealPanel" hidden></div>
-      </div>
-
-      <div class="final" id="finalPanel" hidden>
-        <h2>Runde zu Ende</h2>
-        <div class="leader" id="leaderBoard"></div>
-      </div>
-
-      <p class="hint">
-        <strong>Ablauf:</strong> gleicher WebSocket wie Panzer/Pong · Host erstellt Raum, alle joinen mit Code ·
-        Kategorien &amp; Schwierigkeit wählen · alle <strong>Ready</strong> · <strong>Quiz starten</strong> ·
-        schneller richtig = mehr Punkte (bis +400 Zeitbonus).
-      </p>
     </div>
   </div>
-  <script type="module" src="game.js"></script>
+  <script type="module" src="game.js?v=3"></script>
 </body>
 </html>

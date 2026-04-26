@@ -2,22 +2,73 @@ import { TRIVIA_QUESTIONS, TRIVIA_CATS } from "./trivia-questions.js";
 
 export const MAX_PLAYERS = 8;
 const QUESTION_MS = 14000;
-const REVEAL_MS = 3500;
+const REVEAL_MS = 3800;
+const MAX_TEXT_ANSWER_LEN = 140;
+
+function levenshtein(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const c = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + c);
+    }
+  }
+  return dp[m][n];
+}
+
+export function normAnswerText(s) {
+  return String(s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** 0..1 — 1 = identisch nach Normalisierung */
+export function textSimilarity(userRaw, correctRaw) {
+  const A = normAnswerText(userRaw);
+  const B = normAnswerText(correctRaw);
+  if (!A || !B) return 0;
+  if (A === B) return 1;
+  const d = levenshtein(A, B);
+  const mx = Math.max(A.length, B.length);
+  return Math.max(0, 1 - d / mx);
+}
+
+/** Multiplikator für Basis-Punkte (Zeitbonus wird separat draufgerechnet) */
+function textScoreMultiplier(sim) {
+  if (sim >= 0.97) return 1;
+  if (sim >= 0.88) return 0.72;
+  if (sim >= 0.76) return 0.48;
+  if (sim >= 0.62) return 0.28;
+  if (sim >= 0.5) return 0.12;
+  return 0;
+}
 
 export function makeTriviaState() {
   return {
-    phase: "lobby", // lobby | question | reveal
+    phase: "lobby",
     matchLive: false,
     sessionOver: false,
     opts: {
       cats: [],
       diff: "all",
       rounds: 10,
+      answerMode: "mcq", // mcq | text
     },
     round: 0,
     totalRounds: 10,
     usedIds: [],
     current: null,
+    /** slot -> number (mcq) oder string (text) */
     answers: {},
     scores: {},
     lastReveal: null,
@@ -83,6 +134,8 @@ export function triviaStartRound(room) {
   const raw = pickQuestion(st);
   if (!raw) return false;
 
+  const mode = st.opts.answerMode === "text" ? "text" : "mcq";
+
   st.round++;
   st.phase = "question";
   st.answers = {};
@@ -95,6 +148,8 @@ export function triviaStartRound(room) {
     q: raw.q,
     choices: raw.choices.slice(),
     a: raw.a,
+    answerMode: mode,
+    correctText: raw.choices[raw.a] || "",
     endsAt,
   };
   for (const [, meta] of room.clients) {
@@ -106,6 +161,7 @@ export function triviaStartRound(room) {
 
 export function triviaApplyAnswer(st, slotStr, idx) {
   if (st.phase !== "question" || !st.current) return false;
+  if (st.current.answerMode !== "mcq") return false;
   if (Date.now() > st.current.endsAt) return false;
   const i = Number(idx);
   if (!Number.isFinite(i) || i < 0 || i > 3) return false;
@@ -113,26 +169,86 @@ export function triviaApplyAnswer(st, slotStr, idx) {
   return true;
 }
 
+export function triviaApplyTextAnswer(st, slotStr, text) {
+  if (st.phase !== "question" || !st.current) return false;
+  if (st.current.answerMode !== "text") return false;
+  if (Date.now() > st.current.endsAt) return false;
+  let t = String(text || "").trim().slice(0, MAX_TEXT_ANSWER_LEN);
+  if (!t) return false;
+  st.answers[slotStr] = t;
+  return true;
+}
+
 export function triviaFinalizeQuestion(room) {
   const st = room.state;
   if (st.phase !== "question" || !st.current) return;
-  const correct = st.current.a;
+  const cur = st.current;
+  const mode = cur.answerMode;
+  const correctIdx = cur.a;
+  const correctText = cur.correctText || cur.choices[correctIdx] || "";
   const breakdown = [];
   const now = Date.now();
+  const left = Math.max(0, cur.endsAt - now);
+  const timeBonus = Math.round((left / QUESTION_MS) * 400);
+  const base = 100 + timeBonus;
+
   for (const [ws, meta] of room.clients) {
     if (ws.readyState !== ws.OPEN) continue;
     const slot = String(meta.side);
-    let pick = st.answers[slot];
-    if (pick === undefined) pick = null;
+    const rawPick = st.answers[slot];
     let pts = 0;
-    if (pick === correct) {
-      const left = Math.max(0, st.current.endsAt - now);
-      pts = 100 + Math.round((left / QUESTION_MS) * 400);
+    let pick = null;
+    let pickText = null;
+    let similarity = 0;
+    let ok = false;
+    let near = false;
+
+    if (mode === "mcq") {
+      pick = rawPick === undefined ? null : rawPick;
+      if (pick === correctIdx) {
+        pts = base;
+        ok = true;
+      }
+      breakdown.push({
+        slot,
+        name: meta.name || `P${Number(slot) + 1}`,
+        pts,
+        pick,
+        pickText: pick !== null && pick !== undefined ? cur.choices[pick] : null,
+        similarity: pick === correctIdx ? 1 : 0,
+        ok,
+        near: false,
+      });
+    } else {
+      pickText = rawPick === undefined ? null : String(rawPick);
+      if (pickText) {
+        similarity = textSimilarity(pickText, correctText);
+        const mult = textScoreMultiplier(similarity);
+        pts = Math.round(base * mult);
+        ok = mult >= 1;
+        near = mult > 0 && mult < 1;
+      }
+      breakdown.push({
+        slot,
+        name: meta.name || `P${Number(slot) + 1}`,
+        pts,
+        pick: null,
+        pickText,
+        similarity: pickText ? Math.round(similarity * 1000) / 1000 : 0,
+        ok,
+        near,
+      });
     }
+
     if (pts > 0) st.scores[slot] = (st.scores[slot] || 0) + pts;
-    breakdown.push({ slot, name: meta.name || `P${Number(slot) + 1}`, pts, pick, correct: pick === correct });
   }
-  st.lastReveal = { correct, breakdown };
+
+  st.lastReveal = {
+    mode,
+    correct: mode === "mcq" ? correctIdx : null,
+    correctText,
+    breakdown,
+  };
   st.phase = "reveal";
   st.revealUntil = Date.now() + REVEAL_MS;
   st.current = null;
@@ -188,6 +304,10 @@ export function triviaMergeOpts(st, msg) {
     const n = Number(msg.rounds);
     if (Number.isFinite(n)) st.opts.rounds = Math.max(3, Math.min(40, Math.round(n)));
   }
+  if (msg.answerMode != null) {
+    const m = String(msg.answerMode).toLowerCase();
+    if (m === "text" || m === "mcq") st.opts.answerMode = m;
+  }
 }
 
 export function serializeTriviaStateForClient(st, room, sideStr) {
@@ -204,28 +324,35 @@ export function serializeTriviaStateForClient(st, room, sideStr) {
 
   let qPublic = null;
   if (st.current) {
+    const mode = st.current.answerMode;
     qPublic = {
+      mode,
       id: st.current.id,
       cat: st.current.cat,
       diff: st.current.diff,
       q: st.current.q,
-      choices: st.current.choices,
       endsAt: st.current.endsAt,
       round: st.round,
       totalRounds: st.totalRounds,
     };
+    if (mode === "mcq") qPublic.choices = st.current.choices;
   }
 
   let reveal = null;
   if (st.lastReveal) {
     reveal = {
+      mode: st.lastReveal.mode,
       correct: st.lastReveal.correct,
+      correctText: st.lastReveal.correctText,
       breakdown: st.lastReveal.breakdown.map((b) => ({
         side: b.slot,
         name: b.name,
         pts: b.pts,
         pick: b.pick,
-        ok: b.correct,
+        pickText: b.pickText,
+        similarity: b.similarity,
+        ok: b.ok,
+        near: b.near,
       })),
     };
   }
@@ -233,10 +360,11 @@ export function serializeTriviaStateForClient(st, room, sideStr) {
   let myAnswer = null;
   if (st.phase === "question" && st.current) {
     const mine = st.answers[sideStr];
-    myAnswer = mine !== undefined ? mine : null;
+    if (mine !== undefined) myAnswer = mine;
   } else if (st.phase === "reveal" && st.lastReveal) {
     const row = st.lastReveal.breakdown.find((b) => b.slot === sideStr);
-    if (row && row.pick !== null && row.pick !== undefined) myAnswer = row.pick;
+    if (row && st.lastReveal.mode === "mcq" && row.pick !== null && row.pick !== undefined) myAnswer = row.pick;
+    if (row && st.lastReveal.mode === "text" && row.pickText) myAnswer = row.pickText;
   }
 
   return {

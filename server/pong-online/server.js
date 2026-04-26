@@ -622,7 +622,7 @@ wss.on("connection", (ws) => {
           if (slot >= 0 && slot <= 3) room.state.players[slot] = tanks.spawnTank(room.state, slot);
         }
       } else if (room.game === "trivia") {
-        room.state = trivia.makeTriviaState();
+        trivia.triviaResetRoom(room);
       } else {
         room.state = makeState(room.game);
       }
@@ -667,6 +667,14 @@ wss.on("connection", (ws) => {
       if (st.phase !== "question") return;
       const slotStr = String(meta.side);
       if (trivia.triviaApplyAnswer(st, slotStr, msg.i)) broadcastTrivia(room);
+      return;
+    }
+
+    if (room.game === "trivia" && msg.t === "trivia_answer_text") {
+      const st = room.state;
+      if (st.phase !== "question") return;
+      const slotStr = String(meta.side);
+      if (trivia.triviaApplyTextAnswer(st, slotStr, msg.text)) broadcastTrivia(room);
       return;
     }
 
