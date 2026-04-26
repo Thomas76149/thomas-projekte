@@ -40,8 +40,36 @@ let screenShake = 0;
 let prevMyHp = null;
 const bootTime = performance.now();
 
-/** @type {{ x: number; y: number; vx: number; vy: number; life: number; col: string }[]} */
+/** @type {{ x: number; y: number; vx: number; vy: number; life: number; col: string; sz?: number }[]} */
 let particles = [];
+
+/** Schockwellen wenn Kugeln verglühen (Wand/Timeout/Treffer) */
+/** @type {{ x: number; y: number; r: number; life: number; maxLife: number; col: string }[]} */
+let shockRings = [];
+
+/** Muzzle-Flash am eigenen Jet */
+/** @type {{ x: number; y: number; a: number; life: number; maxLife: number }[]} */
+let muzzleFlashes = [];
+
+/** Letzter Bullet-Snapshot für Verschwinden-Erkennung */
+/** @type {{ x: number; y: number; vx: number; vy: number; o: number }[]} */
+let prevBullets = [];
+let wasMatchLive = false;
+let myPrevBulletCount = 0;
+let lastShootSfxMs = 0;
+let lastThrustSfxMs = 0;
+let lastDespawnSfxMs = 0;
+
+/** Parallax-Sterne (Weltkoordinaten) */
+/** @type {{ x: number; y: number; z: number; tw: number }[]} */
+let starField = [];
+
+/** Schub-Kondensstreifen (eigener Jet) */
+/** @type {{ x: number; y: number; life: number }[]} */
+let engineTrail = [];
+
+/** @type {AudioContext | null} */
+let audioCtx = null;
 
 function roundRectPath(c, x, y, w, h, r) {
   const rr = Math.min(r, w / 2, h / 2);
@@ -80,6 +108,216 @@ function stepParticles(dt) {
     p.life -= sec;
   }
   particles = particles.filter((p) => p.life > 0);
+  for (const r of shockRings) {
+    r.life -= sec;
+    r.r += dt * 0.22;
+  }
+  shockRings = shockRings.filter((r) => r.life > 0);
+  for (const m of muzzleFlashes) {
+    m.life -= sec;
+  }
+  muzzleFlashes = muzzleFlashes.filter((m) => m.life > 0);
+  for (const tr of engineTrail) {
+    tr.life -= sec;
+  }
+  engineTrail = engineTrail.filter((tr) => tr.life > 0);
+  if (engineTrail.length > 140) engineTrail.splice(0, engineTrail.length - 140);
+}
+
+function initStarField() {
+  if (starField.length) return;
+  const rnd = (s) => {
+    let x = Math.sin(s) * 10000;
+    return x - Math.floor(x);
+  };
+  let s = 12.9898;
+  const n = 420;
+  for (let i = 0; i < n; i++) {
+    s += 1.618;
+    starField.push({
+      x: rnd(s) * WORLD_W,
+      y: rnd(s * 1.7) * WORLD_H,
+      z: 0.3 + rnd(s * 2.1) * 0.7,
+      tw: rnd(s * 3.2) > 0.92 ? 2.2 : 1,
+    });
+  }
+}
+
+function ensureAudio() {
+  if (audioCtx) return audioCtx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  try {
+    audioCtx = new AC();
+  } catch {
+    return null;
+  }
+  return audioCtx;
+}
+
+function resumeAudio() {
+  const c = ensureAudio();
+  if (c && c.state === "suspended") c.resume().catch(() => {});
+}
+
+["pointerdown", "keydown", "touchstart"].forEach((ev) => {
+  window.addEventListener(ev, () => resumeAudio(), { passive: true });
+});
+
+/** Kurzer SFX — Asteroiden-Cab-Stil */
+function sfxShoot() {
+  const c = ensureAudio();
+  if (!c) return;
+  const t = c.currentTime;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  const f = c.createBiquadFilter();
+  o.type = "square";
+  o.frequency.setValueAtTime(880, t);
+  o.frequency.exponentialRampToValueAtTime(2200, t + 0.02);
+  o.frequency.exponentialRampToValueAtTime(400, t + 0.06);
+  f.type = "highpass";
+  f.frequency.value = 200;
+  g.gain.setValueAtTime(0.06, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+  o.connect(f);
+  f.connect(g);
+  g.connect(c.destination);
+  o.start(t);
+  o.stop(t + 0.08);
+}
+
+function sfxDespawn() {
+  const c = ensureAudio();
+  if (!c) return;
+  const t = c.currentTime;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(420, t);
+  o.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+  g.gain.setValueAtTime(0.05, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+  o.connect(g);
+  g.connect(c.destination);
+  o.start(t);
+  o.stop(t + 0.12);
+}
+
+function sfxThrust() {
+  const c = ensureAudio();
+  if (!c) return;
+  const t = c.currentTime;
+  const dur = 0.05;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = "sawtooth";
+  o.frequency.setValueAtTime(55 + Math.random() * 25, t);
+  g.gain.setValueAtTime(0.028, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g);
+  g.connect(c.destination);
+  o.start(t);
+  o.stop(t + dur + 0.01);
+}
+
+function sfxHit() {
+  const c = ensureAudio();
+  if (!c) return;
+  const t = c.currentTime;
+  for (let i = 0; i < 3; i++) {
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(180 - i * 40, t);
+    g.gain.setValueAtTime(0.05 - i * 0.012, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.2 + i * 0.04);
+    o.connect(g);
+    g.connect(c.destination);
+    o.start(t + i * 0.02);
+    o.stop(t + 0.35);
+  }
+}
+
+/** Wenn eine Kugel aus dem State fällt: Funken + Ringe + Sound */
+function spawnBulletVanishFX(x, y, vx, vy, col) {
+  const spd = Math.hypot(vx, vy) || 1;
+  const bx = -vx / spd;
+  const by = -vy / spd;
+  const n = 22 + ((Math.random() * 14) | 0);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 80 + Math.random() * 320;
+    const bias = 0.55;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(a) * sp * 0.55 + bx * sp * bias,
+      vy: Math.sin(a) * sp * 0.55 + by * sp * bias,
+      life: 0.15 + Math.random() * 0.45,
+      col: Math.random() > 0.35 ? col : i % 3 === 0 ? "#fff7c2" : "#ffffff",
+      sz: 0.8 + Math.random() * 2.8,
+    });
+  }
+  for (let k = 0; k < 2; k++) {
+    shockRings.push({
+      x: x + (Math.random() - 0.5) * 6,
+      y: y + (Math.random() - 0.5) * 6,
+      r: 6 + k * 4,
+      life: 0.28 + k * 0.08,
+      maxLife: 0.28 + k * 0.08,
+      col,
+    });
+  }
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(a) * 420,
+      vy: Math.sin(a) * 420,
+      life: 0.08 + Math.random() * 0.06,
+      col: "rgba(255,255,255,0.95)",
+      sz: 3.5,
+    });
+  }
+  if (shockRings.length > 80) shockRings.splice(0, shockRings.length - 80);
+  if (particles.length > 650) particles.splice(0, particles.length - 650);
+  const tms = performance.now();
+  if (tms - lastDespawnSfxMs > 32) {
+    lastDespawnSfxMs = tms;
+    sfxDespawn();
+  }
+}
+
+function reconcileBullets(curr) {
+  const list = curr || [];
+  if (!prevBullets.length) {
+    prevBullets = list.map((b) => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, o: b.o }));
+    return;
+  }
+  const used = new Set();
+  const maxD = 110;
+  for (const pb of prevBullets) {
+    let best = -1;
+    let bestD = maxD;
+    for (let i = 0; i < list.length; i++) {
+      if (used.has(i)) continue;
+      if (list[i].o !== pb.o) continue;
+      const d = Math.hypot(list[i].x - pb.x, list[i].y - pb.y);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    if (best < 0) {
+      const col = COLORS[pb.o % COLORS.length] || "#fff";
+      spawnBulletVanishFX(pb.x, pb.y, pb.vx, pb.vy, col);
+    } else {
+      used.add(best);
+    }
+  }
+  prevBullets = list.map((b) => ({ x: b.x, y: b.y, vx: b.vx, vy: b.vy, o: b.o }));
 }
 
 try {
@@ -126,6 +364,15 @@ function drawWorld(camX, camY, dt, t) {
   const tyi0 = Math.max(0, Math.floor(camY / TW) - 1);
   const tyi1 = Math.min(rows - 1, Math.ceil((camY + VH) / TW) + 1);
 
+  const margin = 80;
+  for (const st of starField) {
+    if (st.x < camX - margin || st.x > camX + VW + margin || st.y < camY - margin || st.y > camY + VH + margin) continue;
+    const tw = st.tw * st.z;
+    const flick = 0.65 + 0.35 * Math.sin(t * (1.2 + st.z * 2) + st.x * 0.01);
+    ctx.fillStyle = `rgba(255,255,255,${0.15 * st.z * flick})`;
+    ctx.fillRect(st.x, st.y, tw, tw);
+  }
+
   const gridStep = 200;
   const gx0 = Math.floor(camX / gridStep) * gridStep;
   ctx.strokeStyle = "rgba(34,211,238,0.06)";
@@ -160,35 +407,77 @@ function drawWorld(camX, camY, dt, t) {
     }
   }
 
+  for (const tr of engineTrail) {
+    const a = Math.max(0, tr.life / 0.35);
+    ctx.globalAlpha = a * 0.55;
+    const g = ctx.createRadialGradient(tr.x, tr.y, 0, tr.x, tr.y, 14);
+    g.addColorStop(0, "rgba(120,220,255,0.55)");
+    g.addColorStop(0.4, "rgba(93,255,180,0.25)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(tr.x, tr.y, 14, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
   for (const b of lastState.b || []) {
     const col = COLORS[b.o % COLORS.length] || "#fff";
     const spd = Math.hypot(b.vx, b.vy) || 1;
     const nx = b.vx / spd;
     const ny = b.vy / spd;
-    const len = 22;
-    const x1 = b.x - nx * len * 0.35;
-    const y1 = b.y - ny * len * 0.35;
-    const x2 = b.x + nx * len * 0.65;
-    const y2 = b.y + ny * len * 0.65;
-    const lg = ctx.createLinearGradient(x1, y1, x2, y2);
-    lg.addColorStop(0, "rgba(255,255,255,0.05)");
-    lg.addColorStop(0.35, col);
-    lg.addColorStop(0.7, "#fff7c2");
-    lg.addColorStop(1, "rgba(255,200,80,0)");
-    ctx.strokeStyle = lg;
-    ctx.lineWidth = 3.2;
-    ctx.lineCap = "round";
+    const len = 26;
+    for (let layer = 0; layer < 3; layer++) {
+      const lag = layer * 5;
+      const x1 = b.x - nx * (len * 0.42 + lag);
+      const y1 = b.y - ny * (len * 0.42 + lag);
+      const x2 = b.x + nx * (len * 0.62 - lag * 0.15);
+      const y2 = b.y + ny * (len * 0.62 - lag * 0.15);
+      const lg = ctx.createLinearGradient(x1, y1, x2, y2);
+      lg.addColorStop(0, `rgba(255,255,255,${0.06 + 0.04 * (2 - layer)})`);
+      lg.addColorStop(0.35, col);
+      lg.addColorStop(0.72, "#fff7c2");
+      lg.addColorStop(1, "rgba(255,200,80,0)");
+      ctx.strokeStyle = lg;
+      ctx.lineWidth = 4.2 - layer * 0.9;
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 0.35 + (0.32 * (2 - layer)) / 2;
+      ctx.shadowColor = col;
+      ctx.shadowBlur = layer === 0 ? 16 : 7;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
-    ctx.shadowColor = col;
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, 2.4, 0, Math.PI * 2);
+    ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
     ctx.fillStyle = "#fff";
     ctx.fill();
-    ctx.shadowBlur = 0;
+  }
+
+  for (const m of muzzleFlashes) {
+    const a = Math.max(0, m.life / m.maxLife);
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(m.a);
+    ctx.globalAlpha = 0.55 + 0.45 * a;
+    const gr = ctx.createRadialGradient(8, 0, 0, 22, 0, 36);
+    gr.addColorStop(0, "rgba(255,255,255,0.95)");
+    gr.addColorStop(0.25, "#fff7c2");
+    gr.addColorStop(0.55, "rgba(255,160,60,0.75)");
+    gr.addColorStop(1, "rgba(255,80,20,0)");
+    ctx.fillStyle = gr;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(32, -10);
+    ctx.lineTo(38, 0);
+    ctx.lineTo(32, 10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
   }
 
   (lastState.p || []).forEach((pl, i) => {
@@ -260,12 +549,25 @@ function drawWorld(camX, camY, dt, t) {
   });
 
   for (const p of particles) {
-    const a = Math.max(0, p.life / 0.4);
+    const maxL = 0.45;
+    const a = Math.max(0, Math.min(1, p.life / maxL));
     ctx.globalAlpha = a;
     ctx.fillStyle = p.col;
+    const rad = (p.sz != null ? p.sz : 2) + 2.2 * a;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 2 + 2.5 * a, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, rad, 0, Math.PI * 2);
     ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (const r of shockRings) {
+    const a = Math.max(0, r.life / r.maxLife);
+    ctx.strokeStyle = r.col;
+    ctx.globalAlpha = a * 0.85;
+    ctx.lineWidth = 2.5 + (1 - a) * 2;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
+    ctx.stroke();
   }
   ctx.globalAlpha = 1;
 }
@@ -335,7 +637,8 @@ function draw() {
     const hp = me.hp;
     if (prevMyHp != null && hp < prevMyHp) {
       screenShake = Math.min(1.2, screenShake + 0.5);
-      spawnBurst(me.x, me.y, "#ff6b6b", 16);
+      spawnBurst(me.x, me.y, "#ff6b6b", 22);
+      sfxHit();
     }
     prevMyHp = hp;
   } else {
@@ -356,6 +659,59 @@ function draw() {
   ctx.fillRect(0, 0, VW, VH);
 
   if (!lastState) return;
+
+  if (wasMatchLive && !lastState.live) {
+    prevBullets = [];
+    shockRings.length = 0;
+    muzzleFlashes.length = 0;
+    engineTrail.length = 0;
+  }
+  wasMatchLive = !!lastState.live;
+  if (!lastState.live) prevBullets = [];
+
+  initStarField();
+
+  if (lastState.live) {
+    reconcileBullets(lastState.b || []);
+    const myB = (lastState.b || []).filter((b) => b.o === mySlot).length;
+    if (me && myB > myPrevBulletCount) {
+      const nowMs = performance.now();
+      if (nowMs - lastShootSfxMs > 42) {
+        lastShootSfxMs = nowMs;
+        sfxShoot();
+        const cs = Math.cos(me.a);
+        const sn = Math.sin(me.a);
+        if (muzzleFlashes.length < 10) {
+          muzzleFlashes.push({
+            x: me.x + cs * 26,
+            y: me.y + sn * 26,
+            a: me.a,
+            life: 0.1,
+            maxLife: 0.1,
+          });
+        }
+      }
+    }
+    myPrevBulletCount = myB;
+
+    const thrust = keys.has("KeyW") || keys.has("ArrowUp");
+    if (me && thrust) {
+      const tms = performance.now();
+      if (tms - lastThrustSfxMs > 95) {
+        lastThrustSfxMs = tms;
+        sfxThrust();
+      }
+      if (Math.random() < dt / 90) {
+        engineTrail.push({
+          x: me.x - Math.cos(me.a) * 18 + (Math.random() - 0.5) * 6,
+          y: me.y - Math.sin(me.a) * 18 + (Math.random() - 0.5) * 6,
+          life: 0.28 + Math.random() * 0.12,
+        });
+      }
+    }
+  } else {
+    myPrevBulletCount = (lastState.b || []).filter((b) => b.o === mySlot).length;
+  }
 
   stepParticles(dt);
 
@@ -537,6 +893,8 @@ function connect(code) {
       }
       if (msg.tw) TW = msg.tw;
       if (msg.walls) wallStr = msg.walls;
+      starField = [];
+      initStarField();
       resizeCanvas();
       setNetLabel(`Online · ${roomCode} · Du: P${mySlot + 1}`, true);
       return;
