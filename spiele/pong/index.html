@@ -92,7 +92,7 @@
         <ul id="lobbyList"></ul>
         <p id="lobbyHint" class="hint" style="margin-top:8px;text-align:left"></p>
         <div class="lobbyRow">
-          <button type="button" class="readyToggle" id="btnReady">Ready</button>
+          <button type="button" class="readyToggle btn-ready-online" id="btnReady">Ready</button>
           <span id="lobbyStatus" class="pill" style="border-color:rgba(255,255,255,.12)">—</span>
         </div>
       </div>
@@ -254,7 +254,10 @@
         imReady = false;
         lobbyAllReady = false;
         if (lobbyBox) lobbyBox.hidden = true;
-        if (btnReady) btnReady.textContent = "Ready";
+        if (btnReady) {
+          btnReady.textContent = "Ready";
+          btnReady.classList.remove("is-ready");
+        }
         connecting = false;
         btnHost.disabled = false;
         btnJoin.disabled = false;
@@ -286,7 +289,10 @@
           imReady = false;
           lobbyAllReady = false;
           if (lobbyBox) lobbyBox.hidden = false;
-          if (btnReady) btnReady.textContent = "Ready";
+          if (btnReady) {
+            btnReady.textContent = "Ready";
+            btnReady.classList.remove("is-ready");
+          }
           resetGame();
           draw();
           return;
@@ -325,7 +331,10 @@
           }
           const meR = roster.find((r) => String(r.side) === String(mySide));
           if (meR) imReady = !!meR.ready;
-          if (btnReady) btnReady.textContent = imReady ? "Nicht ready" : "Ready";
+          if (btnReady) {
+            btnReady.textContent = imReady ? "Nicht ready" : "Ready";
+            btnReady.classList.toggle("is-ready", imReady);
+          }
           btnStart.disabled = online && !lobbyAllReady;
           return;
         }
@@ -764,6 +773,7 @@
       imReady = !imReady;
       ws.send(JSON.stringify({ t: "ready", v: imReady }));
       btnReady.textContent = imReady ? "Nicht ready" : "Ready";
+      btnReady.classList.toggle("is-ready", imReady);
     });
     aiSel.addEventListener("change", resetGame);
     btnHost.addEventListener("click", ()=>{

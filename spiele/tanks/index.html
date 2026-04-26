@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Panzer · thomas.fun</title>
-  <meta name="description" content="Top-Down Panzer: bis 4 Spieler, Kugeln prallen ab, Powerups." />
+  <title>Multiplayer Jetkampf · thomas.fun</title>
+  <meta name="description" content="2D-Jetkampf: große Arena, Kamera am Jet, MG-Dauerfeuer, bis 4 Spieler online." />
   <meta name="theme-color" content="#0a0e14" />
   <link rel="stylesheet" href="../_game-shell.css" />
   <link rel="stylesheet" href="style.css?v=2" />
@@ -12,7 +12,7 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Panzer</h1>
+      <h1>Multiplayer Jetkampf</h1>
       <a href="../../index.html">← zurück</a>
     </header>
 
@@ -28,15 +28,15 @@
           <input id="netUrl" type="text" value="wss://thomas-projekte.onrender.com" placeholder="wss://…" autocomplete="off" />
           <input id="roomInp" type="text" placeholder="Room" maxlength="8" autocomplete="off" />
           <input id="playerName" type="text" placeholder="Name" maxlength="18" autocomplete="off" style="max-width:120px" />
-          <button type="button" id="btnReady">Ready</button>
+          <button type="button" class="btn-ready-online" id="btnReady">Ready</button>
         </div>
       </div>
       <p class="hint" id="lobbyLine" style="margin:4px 0 0"></p>
-      <canvas id="cv" width="768" height="624" aria-label="Panzer-Karte"></canvas>
+      <canvas id="cv" width="920" height="520" aria-label="Jetkampf-Ansicht"></canvas>
       <div class="hud" id="hud"></div>
       <p class="hint">
-        <strong>PC:</strong> W&nbsp;A&nbsp;S&nbsp;D oder Pfeile drehen/fahren · <strong>Leertaste</strong> schießen (Kugeln prallen an Wänden).
-        Bis zu <strong>4</strong> Spieler pro Room — <strong>alle Ready</strong>, dann startet der Kampf (gleicher WebSocket wie Pong).
+        <strong>PC:</strong> W&nbsp;A&nbsp;S&nbsp;D oder Pfeile — Schub vor/zurück und drehen · <strong>Leertaste halten</strong> für MG.
+        Rand-Pfeile zeigen Gegner außerhalb des sichtbaren Bereichs. Bis zu <strong>4</strong> Spieler, <strong>alle Ready</strong>, dann Live-Kampf (gleicher WebSocket-Server wie Pong).
       </p>
     </div>
   </div>

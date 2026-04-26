@@ -284,10 +284,11 @@ a {
   padding: 14px 16px 16px;
   border-radius: 18px;
   background:
-    linear-gradient(135deg, rgba(34, 211, 238, 0.09), rgba(93, 255, 180, 0.05)),
+    linear-gradient(135deg, rgba(34, 211, 238, 0.09), rgba(93, 255, 180, 0.12)),
     rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(100, 170, 255, 0.35);
+  border: 2px solid rgba(93, 255, 180, 0.45);
   box-shadow:
+    0 0 48px rgba(93, 255, 180, 0.2),
     0 0 40px rgba(34, 211, 238, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
@@ -371,10 +372,17 @@ a {
 }
 
 .btn-ready--off .btn-ready__inner {
-  border-color: rgba(34, 211, 238, 0.45);
+  border: 2px solid rgba(180, 255, 210, 0.95);
+  color: #03150c;
+  font-weight: 900;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(165deg, #7affc8 0%, #42e8a8 35%, #1fb87a 100%);
   box-shadow:
-    0 0 28px rgba(34, 211, 238, 0.2),
-    0 10px 32px rgba(0, 0, 0, 0.35);
+    0 0 0 1px rgba(0, 0, 0, 0.2),
+    0 4px 0 rgba(12, 90, 58, 0.45),
+    0 8px 28px rgba(34, 200, 130, 0.5),
+    0 0 44px rgba(93, 255, 180, 0.4);
+  animation: thomasfun-ready-glow 2.2s ease-in-out infinite;
 }
 
 .btn-ready--on .btn-ready__inner {

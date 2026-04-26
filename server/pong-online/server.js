@@ -587,12 +587,6 @@ wss.on("connection", (ws) => {
       if (slot >= 0 && slot <= 3) tanks.tanksApplyInput(room.state, slot, msg);
       return;
     }
-    if (room.game === "tanks" && msg.t === "fire") {
-      const slot = Number(meta.side);
-      if (slot >= 0 && slot <= 3) tanks.tanksSetFire(room.state, slot);
-      return;
-    }
-
     if (room.game === "pong" && msg.t === "start") {
       const st = room.state;
       const n = room.clients.size;

@@ -67,6 +67,8 @@ export function makeTriviaState() {
     round: 0,
     totalRounds: 10,
     usedIds: [],
+    /** Zähler pro Kategorie im laufenden Match — für ausgewogene Themenwahl */
+    catPickCounts: Object.create(null),
     /** verhindert dieselbe Frage direkt zweimal hintereinander */
     lastQuestionId: null,
     current: null,
@@ -102,7 +104,37 @@ function pickQuestion(st) {
     if (banId != null && pool.length > 1) pool = pool.filter((q) => q.id !== banId);
   }
   if (!pool.length) return null;
-  const raw = pool[(Math.random() * pool.length) | 0];
+
+  if (!st.catPickCounts) st.catPickCounts = Object.create(null);
+
+  const wantCats = st.opts.cats && st.opts.cats.length ? st.opts.cats : null;
+  const byCat = new Map();
+  for (const q of pool) {
+    if (wantCats && !wantCats.includes(q.cat)) continue;
+    if (!byCat.has(q.cat)) byCat.set(q.cat, []);
+    byCat.get(q.cat).push(q);
+  }
+
+  const catsWithQs = [...byCat.keys()];
+  let raw;
+  if (catsWithQs.length === 0) {
+    raw = pool[(Math.random() * pool.length) | 0];
+  } else if (catsWithQs.length === 1) {
+    const one = byCat.get(catsWithQs[0]);
+    raw = one[(Math.random() * one.length) | 0];
+  } else {
+    for (const c of catsWithQs) {
+      if (st.catPickCounts[c] == null) st.catPickCounts[c] = 0;
+    }
+    let min = Infinity;
+    for (const c of catsWithQs) min = Math.min(min, st.catPickCounts[c]);
+    const tier = catsWithQs.filter((c) => st.catPickCounts[c] === min);
+    const pickCat = tier[(Math.random() * tier.length) | 0];
+    const catPool = byCat.get(pickCat);
+    raw = catPool[(Math.random() * catPool.length) | 0];
+  }
+
+  st.catPickCounts[raw.cat] = (st.catPickCounts[raw.cat] || 0) + 1;
   st.usedIds.push(raw.id);
   st.lastQuestionId = raw.id;
   return raw;
@@ -128,6 +160,7 @@ export function triviaBeginMatch(room) {
   st.round = 0;
   st.usedIds = [];
   st.lastQuestionId = null;
+  st.catPickCounts = Object.create(null);
   st.lastReveal = null;
   st.current = null;
   st.phase = "lobby";
@@ -310,6 +343,7 @@ export function triviaResetRoom(room) {
   st.totalRounds = 10;
   st.usedIds = [];
   st.lastQuestionId = null;
+  st.catPickCounts = Object.create(null);
   st.current = null;
   st.answers = {};
   st.answerTimes = {};

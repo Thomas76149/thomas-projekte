@@ -6,6 +6,7 @@
 
 import { TRIVIA_MORE } from "./trivia-more.js";
 import { TRIVIA_MILITARY } from "./trivia-military.js";
+import { TRIVIA_BULK } from "./trivia-bulk.js";
 
 export const TRIVIA_QUESTIONS = [
   // --- tech (easy) ---
@@ -238,6 +239,7 @@ export const TRIVIA_QUESTIONS = [
 
   ...TRIVIA_MORE,
   ...TRIVIA_MILITARY,
+  ...TRIVIA_BULK,
 ];
 
 export const TRIVIA_CATS = [

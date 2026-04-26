@@ -125,7 +125,7 @@
           <button id="btnHost" type="button">Host</button>
           <button id="btnJoin" type="button">Join</button>
           <input id="playerName" placeholder="Name" maxlength="18" style="width:110px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:700" />
-          <button type="button" id="btnReady" style="border-radius:14px;border:1px solid rgba(93,255,180,.45);background:rgba(40,90,70,.35);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px">Ready</button>
+          <button type="button" class="btn-ready-online" id="btnReady">Ready</button>
         </div>
         <div class="meta">
           <span class="pill" id="turnPill">Zug: X</span>
@@ -515,7 +515,10 @@
         const lb = document.getElementById("lobbyBox");
         if (lb) lb.style.display = "none";
         const br = document.getElementById("btnReady");
-        if (br) br.textContent = "Ready";
+        if (br) {
+          br.textContent = "Ready";
+          br.classList.remove("is-ready");
+        }
         modeSel.disabled = false;
         botLevelSel.disabled = (modeSel.value !== "bot");
         hint.textContent = "Klicke ein Feld. X startet.";
@@ -556,7 +559,10 @@
           const me = roster.find((r) => String(r.side) === String(mySide));
           if (me) imReady = !!me.ready;
           const br = document.getElementById("btnReady");
-          if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
+          if (br) {
+            br.textContent = imReady ? "Nicht ready" : "Ready";
+            br.classList.toggle("is-ready", imReady);
+          }
           return;
         }
         if (msg.t === "state" && msg.game === "ttt"){
@@ -593,7 +599,10 @@
       imReady = !imReady;
       ws.send(JSON.stringify({ t: "ready", v: imReady }));
       const br = document.getElementById("btnReady");
-      if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
+      if (br) {
+        br.textContent = imReady ? "Nicht ready" : "Ready";
+        br.classList.toggle("is-ready", imReady);
+      }
     });
     btnHost.addEventListener("click", ()=> connect(roomInp.value || ""));
     btnJoin.addEventListener("click", ()=>{

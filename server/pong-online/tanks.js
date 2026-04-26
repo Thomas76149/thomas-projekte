@@ -1,51 +1,21 @@
-/** Top-Down-Panzer: Server-Autorität, Kachelkarte, abprallende Kugeln, bis 4 Spieler. */
+/**
+ * Multiplayer Jetkampf (game id weiterhin "tanks"):
+ * Große offene Arena (nur Rand-Wände), Jet mit Schub/Drehung, MG-Dauerfeuer, keine Powerups.
+ */
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export function makeTanksWallStr() {
-  const C = 32;
-  const R = 26;
-  const a = Array.from({ length: R }, () => Array(C).fill(0));
-  for (let x = 0; x < C; x++) {
+/** Nur Außenwand — kein Labyrinth */
+export function makeTanksWallStr(cols, rows) {
+  const a = Array.from({ length: rows }, () => Array(cols).fill(0));
+  for (let x = 0; x < cols; x++) {
     a[0][x] = 1;
-    a[R - 1][x] = 1;
+    a[rows - 1][x] = 1;
   }
-  for (let y = 0; y < R; y++) {
+  for (let y = 0; y < rows; y++) {
     a[y][0] = 1;
-    a[y][C - 1] = 1;
+    a[y][cols - 1] = 1;
   }
-  // Halb-Labyrinth: Blöcke + Lücken, mittlerer Ost-West-Korridor
-  const mid = Math.floor(R / 2);
-  for (let x = 2; x < C - 2; x++) a[mid][x] = 0;
-
-  for (let y = 3; y < R - 3; y += 2) {
-    for (let x = 3; x < C - 3; x += 3) {
-      if (((x + y) >> 2) % 3 === 0) continue;
-      a[y][x] = 1;
-      if (y % 4 === 1 && x + 1 < C - 1) a[y][x + 1] = 1;
-    }
-  }
-  for (let y = 4; y < R - 4; y += 5) {
-    for (let x = 5; x < C - 5; x += 6) {
-      a[y][x] = 0;
-      a[y][x + 1] = 0;
-      a[y + 1][x] = 0;
-    }
-  }
-  const clear2 = (tx, ty) => {
-    for (let dy = 0; dy < 3; dy++) {
-      for (let dx = 0; dx < 3; dx++) {
-        const xx = tx + dx;
-        const yy = ty + dy;
-        if (xx > 0 && xx < C - 1 && yy > 0 && yy < R - 1) a[yy][xx] = 0;
-      }
-    }
-  };
-  clear2(1, 1);
-  clear2(C - 4, 1);
-  clear2(1, R - 4);
-  clear2(C - 4, R - 4);
-
   return a.map((row) => row.map((c) => (c ? "1" : "0")).join("")).join("");
 }
 
@@ -77,7 +47,7 @@ function resolveCircleWall(x, y, r, st) {
   let cx = x;
   let cy = y;
   const tw = st.TW;
-  for (let iter = 0; iter < 6; iter++) {
+  for (let iter = 0; iter < 8; iter++) {
     const txi = Math.floor(cx / tw);
     const tyi = Math.floor(cy / tw);
     let hit = false;
@@ -105,48 +75,38 @@ function resolveCircleWall(x, y, r, st) {
 }
 
 export function spawnTank(st, slot) {
+  const margin = 6;
   const corners = [
-    [2, 2],
-    [st.COLS - 4, 2],
-    [2, st.ROWS - 4],
-    [st.COLS - 4, st.ROWS - 4],
+    [margin, margin],
+    [st.COLS - margin - 2, margin],
+    [margin, st.ROWS - margin - 2],
+    [st.COLS - margin - 2, st.ROWS - margin - 2],
   ];
-  let [tx, ty] = corners[slot] || [4, 4];
-  for (let d = 0; d < 80; d++) {
-    let ok = true;
-    for (let dy = 0; dy < 2 && ok; dy++) {
-      for (let dx = 0; dx < 2 && ok; dx++) {
-        if (wallAt(st, tx + dx, ty + dy)) ok = false;
-      }
-    }
-    if (ok) break;
-    tx = 2 + ((d * 11) % (st.COLS - 6));
-    ty = 2 + ((d * 5) % (st.ROWS - 6));
-  }
+  let [tx, ty] = corners[slot] || [margin, margin];
   const cx = (tx + 1) * st.TW;
   const cy = (ty + 1) * st.TW;
   const ang = Math.atan2(st.H / 2 - cy, st.W / 2 - cx);
   return {
     x: cx,
     y: cy,
+    vx: 0,
+    vy: 0,
     a: ang,
-    hp: 3,
+    hp: 4,
     kills: 0,
     cd: 0,
     shield: 0,
-    speedT: 0,
-    rapidT: 0,
     invuln: 2000,
-    wantFire: false,
+    fireHeld: false,
     in: { u: false, d: false, l: false, r: false },
   };
 }
 
 export function makeTanksState() {
-  const TW = 24;
-  const COLS = 32;
-  const ROWS = 26;
-  const wallStr = makeTanksWallStr();
+  const TW = 40;
+  const COLS = 120;
+  const ROWS = 90;
+  const wallStr = makeTanksWallStr(COLS, ROWS);
   return {
     TW,
     COLS,
@@ -159,43 +119,28 @@ export function makeTanksState() {
     powerups: [],
     pupAcc: 0,
     lastTick: Date.now(),
-    /** Bis alle Ready: kein Tick, keine Inputs */
     matchLive: false,
   };
 }
 
-const TR = 13;
-const BR = 4;
-const BULLET_SPEED = 430;
-const ROT_SPEED = 2.75;
-const BASE_SPEED = 112;
-const MAX_BOUNCES = 14;
-const MAX_BULLETS = 32;
-const BULLET_LIFE_MS = 5200;
+const JR = 14;
+const BR = 2.8;
+const BULLET_SPEED = 820;
+const ROT_SPEED = 3.1;
+const BASE_ACCEL = 520;
+const MAX_SPEED = 540;
+const MAX_BULLETS = 220;
+const BULLET_LIFE_MS = 520;
+const MG_CD_MS = 52;
 
-function moveBulletReflect(b, dt, st) {
+function moveBulletLinear(b, dt, st) {
   const sec = dt / 1000;
-  let { x, y, vx, vy } = b;
-
-  const stepX = vx * sec;
-  x += stepX;
-  if (circleHitsWall(x, y, BR, st)) {
-    x -= stepX;
-    vx *= -1;
-    b.bz = (b.bz || 0) + 1;
-  }
-  const stepY = vy * sec;
-  y += stepY;
-  if (circleHitsWall(x, y, BR, st)) {
-    y -= stepY;
-    vy *= -1;
-    b.bz = (b.bz || 0) + 1;
-  }
-  b.x = x;
-  b.y = y;
-  b.vx = vx;
-  b.vy = vy;
+  b.x += b.vx * sec;
+  b.y += b.vy * sec;
   b.age = (b.age || 0) + dt;
+  if (b.age > BULLET_LIFE_MS) return false;
+  if (circleHitsWall(b.x, b.y, BR, st)) return false;
+  return true;
 }
 
 export function tickTanks(st, dtMs) {
@@ -207,31 +152,47 @@ export function tickTanks(st, dtMs) {
     const p = st.players[si];
     if (!p || p.hp <= 0) continue;
     if (p.invuln > 0) p.invuln -= dt;
-    if (p.speedT > 0) p.speedT -= dt;
-    if (p.rapidT > 0) p.rapidT -= dt;
     if (p.cd > 0) p.cd -= dt;
 
-    const spMul = p.speedT > 0 ? 1.38 : 1;
     const rot = ((p.in.r ? 1 : 0) - (p.in.l ? 1 : 0)) * ROT_SPEED * sec;
     p.a += rot;
 
     const cs = Math.cos(p.a);
     const sn = Math.sin(p.a);
-    let spd = BASE_SPEED * spMul;
+
+    const thrust = BASE_ACCEL;
     if (p.in.u) {
-      p.x += cs * spd * sec;
-      p.y += sn * spd * sec;
+      p.vx += cs * thrust * sec;
+      p.vy += sn * thrust * sec;
     }
     if (p.in.d) {
-      p.x -= cs * spd * 0.52 * sec;
-      p.y -= sn * spd * 0.52 * sec;
+      p.vx -= cs * thrust * 0.42 * sec;
+      p.vy -= sn * thrust * 0.42 * sec;
     }
-    const r = resolveCircleWall(p.x, p.y, TR, st);
+
+    const fr = p.in.u || p.in.d ? 0.9975 : 0.985;
+    const fmul = Math.pow(fr, dt / 16);
+    p.vx *= fmul;
+    p.vy *= fmul;
+
+    const spd = Math.hypot(p.vx, p.vy);
+    if (spd > MAX_SPEED) {
+      const k = MAX_SPEED / spd;
+      p.vx *= k;
+      p.vy *= k;
+    }
+
+    p.x += p.vx * sec;
+    p.y += p.vy * sec;
+    const r = resolveCircleWall(p.x, p.y, JR, st);
     p.x = r.x;
     p.y = r.y;
+    if (circleHitsWall(p.x, p.y, JR - 0.5, st)) {
+      p.vx *= 0.88;
+      p.vy *= 0.88;
+    }
   }
 
-  // Tank–Tank weich trennen
   for (let a = 0; a < 4; a++) {
     const pa = st.players[a];
     if (!pa || pa.hp <= 0) continue;
@@ -241,7 +202,7 @@ export function tickTanks(st, dtMs) {
       const dx = pb.x - pa.x;
       const dy = pb.y - pa.y;
       const d = Math.hypot(dx, dy) || 1;
-      const minD = TR * 2 + 2;
+      const minD = JR * 2 + 2;
       if (d < minD) {
         const push = (minD - d) / 2;
         const nx = dx / d;
@@ -250,8 +211,8 @@ export function tickTanks(st, dtMs) {
         pa.y -= ny * push;
         pb.x += nx * push;
         pb.y += ny * push;
-        const ra = resolveCircleWall(pa.x, pa.y, TR, st);
-        const rb = resolveCircleWall(pb.x, pb.y, TR, st);
+        const ra = resolveCircleWall(pa.x, pa.y, JR, st);
+        const rb = resolveCircleWall(pb.x, pb.y, JR, st);
         pa.x = ra.x;
         pa.y = ra.y;
         pb.x = rb.x;
@@ -260,11 +221,9 @@ export function tickTanks(st, dtMs) {
     }
   }
 
-  // Schüsse
   for (let i = st.bullets.length - 1; i >= 0; i--) {
     const b = st.bullets[i];
-    moveBulletReflect(b, dt, st);
-    if ((b.bz || 0) > MAX_BOUNCES || (b.age || 0) > BULLET_LIFE_MS) {
+    if (!moveBulletLinear(b, dt, st)) {
       st.bullets.splice(i, 1);
       continue;
     }
@@ -275,7 +234,7 @@ export function tickTanks(st, dtMs) {
       if (si === b.own) continue;
       if (p.invuln > 0) continue;
       const d = Math.hypot(p.x - b.x, p.y - b.y);
-      if (d < TR + BR - 1) {
+      if (d < JR + BR) {
         hit = true;
         if (p.shield > 0) {
           p.shield -= 1;
@@ -287,10 +246,12 @@ export function tickTanks(st, dtMs) {
             const sp = spawnTank(st, si);
             p.x = sp.x;
             p.y = sp.y;
+            p.vx = sp.vx;
+            p.vy = sp.vy;
             p.a = sp.a;
-            p.hp = 3;
+            p.hp = 4;
             p.invuln = 2200;
-            p.cd = 400;
+            p.cd = 350;
           }
         }
         break;
@@ -299,67 +260,22 @@ export function tickTanks(st, dtMs) {
     if (hit) st.bullets.splice(i, 1);
   }
 
-  // Feuern
   for (let si = 0; si < 4; si++) {
     const p = st.players[si];
     if (!p || p.hp <= 0) continue;
-    if (p.wantFire && p.cd <= 0 && st.bullets.length < MAX_BULLETS) {
-      p.wantFire = false;
-      const cdBase = p.rapidT > 0 ? 210 : 380;
-      p.cd = cdBase;
+    if (p.fireHeld && p.cd <= 0 && st.bullets.length < MAX_BULLETS) {
+      p.cd = MG_CD_MS;
       const cs = Math.cos(p.a);
       const sn = Math.sin(p.a);
-      const muzzle = TR + BR + 4;
+      const muzzle = JR + BR + 5;
       st.bullets.push({
         x: p.x + cs * muzzle,
         y: p.y + sn * muzzle,
         vx: cs * BULLET_SPEED,
         vy: sn * BULLET_SPEED,
         own: si,
-        bz: 0,
         age: 0,
       });
-    }
-  }
-
-  // Powerups
-  st.pupAcc += dt;
-  if (st.powerups.length < 4 && st.pupAcc > 9000) {
-    st.pupAcc = 0;
-    for (let tryN = 0; tryN < 35; tryN++) {
-      const tx = 2 + ((Math.random() * (st.COLS - 4)) | 0);
-      const ty = 2 + ((Math.random() * (st.ROWS - 4)) | 0);
-      if (wallAt(st, tx, ty)) continue;
-      const px = (tx + 0.5) * st.TW;
-      const py = (ty + 0.5) * st.TW;
-      let free = true;
-      for (const p of st.players) {
-        if (!p || p.hp <= 0) continue;
-        if (Math.hypot(p.x - px, p.y - py) < TR + 18) free = false;
-      }
-      for (const u of st.powerups) {
-        if (Math.hypot(u.x - px, u.y - py) < 40) free = false;
-      }
-      if (!free) continue;
-      const types = ["R", "S", "H", "P"];
-      st.powerups.push({ x: px, y: py, t: types[(Math.random() * types.length) | 0] });
-      break;
-    }
-  }
-
-  for (let pi = st.powerups.length - 1; pi >= 0; pi--) {
-    const u = st.powerups[pi];
-    for (let si = 0; si < 4; si++) {
-      const p = st.players[si];
-      if (!p || p.hp <= 0) continue;
-      if (Math.hypot(p.x - u.x, p.y - u.y) < TR + 14) {
-        if (u.t === "H") p.hp = Math.min(5, p.hp + 2);
-        if (u.t === "R") p.rapidT = 10000;
-        if (u.t === "S") p.speedT = 9000;
-        if (u.t === "P") p.shield = Math.min(2, p.shield + 1);
-        st.powerups.splice(pi, 1);
-        break;
-      }
     }
   }
 }
@@ -389,12 +305,7 @@ export function serializeTanksState(st) {
     vy: Math.round(z.vy * 10) / 10,
     o: z.own,
   }));
-  const u = st.powerups.map((z) => ({
-    x: Math.round(z.x * 10) / 10,
-    y: Math.round(z.y * 10) / 10,
-    t: z.t,
-  }));
-  return { p, b, u, live: !!st.matchLive };
+  return { p, b, u: [], live: !!st.matchLive };
 }
 
 export function tanksApplyInput(st, slot, msg) {
@@ -405,11 +316,8 @@ export function tanksApplyInput(st, slot, msg) {
   p.in.d = !!msg.d;
   p.in.l = !!msg.l;
   p.in.r = !!msg.r;
+  p.fireHeld = !!msg.f;
 }
 
-export function tanksSetFire(st, slot) {
-  if (!st.matchLive) return;
-  const p = st.players[slot];
-  if (!p || p.hp <= 0) return;
-  p.wantFire = true;
-}
+/** Legacy: Einzelfeuer — nicht mehr genutzt (MG über msg.f) */
+export function tanksSetFire() {}
