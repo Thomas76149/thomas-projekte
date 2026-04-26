@@ -188,18 +188,45 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(150deg, rgba(40, 55, 95, 0.55), rgba(14, 20, 42, 0.92));
+  border: 1px solid rgba(120, 180, 255, 0.28);
+  box-shadow:
+    0 4px 18px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow:
+    0 8px 26px rgba(0, 0, 0, 0.38),
+    0 0 22px rgba(34, 211, 238, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.chip:active {
+  transform: translateY(0);
 }
 
 .chip:has(input:checked) {
-  border-color: rgba(93, 255, 180, 0.55);
-  box-shadow: 0 0 18px rgba(93, 255, 180, 0.15);
+  background: linear-gradient(150deg, rgba(45, 115, 95, 0.65), rgba(18, 42, 52, 0.95));
+  border-color: rgba(93, 255, 180, 0.65);
+  box-shadow:
+    0 0 28px rgba(93, 255, 180, 0.22),
+    0 6px 22px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.chip:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .startRow {
@@ -483,27 +510,111 @@ button.ans.wrong {
 .catGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .catGrid label {
-  display: flex;
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
-  font-weight: 600;
+  gap: 10px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 10px 16px 10px 12px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(148deg, rgba(38, 52, 88, 0.75), rgba(14, 18, 38, 0.94));
+  border: 1px solid rgba(110, 165, 240, 0.28);
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  color: rgba(235, 241, 255, 0.96);
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.2s ease,
+    background 0.25s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.catGrid label:hover {
+  transform: translateY(-2px);
+  border-color: rgba(34, 211, 238, 0.42);
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.42),
+    0 0 32px rgba(34, 211, 238, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+
+.catGrid label:active {
+  transform: translateY(0);
+}
+
+.catGrid label:has(input:checked) {
+  background: linear-gradient(148deg, rgba(42, 110, 88, 0.55), rgba(22, 48, 58, 0.96));
+  border-color: rgba(93, 255, 180, 0.55);
+  box-shadow:
+    0 0 32px rgba(93, 255, 180, 0.2),
+    0 8px 28px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.catGrid label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.catGrid label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 2px solid rgba(255, 255, 255, 0.32);
+  background: linear-gradient(160deg, rgba(0, 0, 0, 0.45), rgba(30, 40, 70, 0.5));
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.catGrid label:hover input[type="checkbox"] {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.35),
+    0 0 12px rgba(34, 211, 238, 0.2);
+}
+
+.catGrid label input[type="checkbox"]:checked {
+  background: linear-gradient(165deg, #6affe0, #3ad59a);
+  border-color: rgba(12, 70, 52, 0.95);
+  box-shadow:
+    0 0 14px rgba(93, 255, 180, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.catGrid label input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -54%);
+  font-size: 0.6rem;
+  font-weight: 1000;
+  line-height: 1;
+  color: rgba(5, 45, 32, 0.92);
+  pointer-events: none;
 }
 
 .row2 {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
 }
 
@@ -513,7 +624,33 @@ button.ans.wrong {
   color: var(--muted);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.row2 select,
+.row2 input[type="number"] {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: linear-gradient(165deg, rgba(35, 48, 82, 0.85), rgba(12, 16, 32, 0.92));
+  border: 1px solid rgba(120, 170, 255, 0.28);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font-weight: 750;
+  min-height: 44px;
+  transition: border-color 0.18s ease, box-shadow 0.2s ease;
+}
+
+.row2 select:hover,
+.row2 input[type="number"]:hover {
+  border-color: rgba(34, 211, 238, 0.4);
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.1), 0 4px 16px rgba(0, 0, 0, 0.32);
+}
+
+.row2 select:focus-visible,
+.row2 input[type="number"]:focus-visible {
+  outline: none;
+  border-color: rgba(93, 255, 180, 0.55);
+  box-shadow: 0 0 24px rgba(93, 255, 180, 0.15);
 }
 
 .quiz {
