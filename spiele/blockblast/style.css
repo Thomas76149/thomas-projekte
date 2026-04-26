@@ -76,9 +76,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .boardWrap{
   flex:1 1 auto;
   min-height:0;
+  min-width:0;
   display:grid;
   place-items:center;
   padding-bottom: 6px; /* optischer Abstand zur Tray */
+  overflow:hidden; /* Canvas darf visuell nicht unter Tray „laufen“ */
 }
 canvas{
   width:min(640px, 92vw);
@@ -92,6 +94,9 @@ canvas{
     linear-gradient(180deg, rgba(8,12,26,.95), rgba(0,0,0,.35));
   touch-action:none;
   box-shadow: 0 18px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+  /* In flex/grid-Resthöhe: Seitenverhältnis beibehalten, aber nicht über Eltern hinaus */
+  max-width:100%;
+  object-fit:contain;
 }
 
 .tray{
@@ -114,6 +119,35 @@ canvas{
   box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
 }
 .hint{color:rgba(180,200,230,.78);font-size:.92rem;text-align:center;font-weight:800}
+
+/* Handy / Touch: Tray kompakt, Board nutzt restliche Card-Höhe (nicht von riesigen Slots verdrängt) */
+@media (pointer: coarse), (max-width: 900px) {
+  .boardWrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .boardWrap canvas{
+    flex:0 1 auto;
+    min-height:0;
+    width:auto !important;
+    max-width:100% !important;
+    height:auto !important;
+    max-height:100%;
+  }
+  .tray{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:6px;
+  }
+  .slot{
+    min-height:0;
+    max-height:min(20dvh, 92px);
+    height:clamp(56px, 14dvh, 88px);
+    padding:4px 6px;
+    overflow:hidden;
+  }
+}
 
 /* Damit das Board NIE in die Tray "reinwächst": Canvas bekommt eine Max-Höhe aus Viewport */
 @media (max-height: 860px){
@@ -144,7 +178,7 @@ canvas{
 .cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
 @media (max-width: 560px){
-  .slot{min-height:108px}
-  .tray{gap:8px}
+  /* Slot-Höhe kommt aus (pointer:coarse)|900px-Regel; hier nur Feintuning */
+  .tray{gap:6px}
 }
 

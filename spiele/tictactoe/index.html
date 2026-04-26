@@ -2,7 +2,7 @@
 <html lang="de" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <title>Tic‑Tac‑Toe · thomas.fun</title>
   <meta name="description" content="Tic-Tac-Toe gegen einen soliden Bot oder 2-Spieler." />
@@ -124,12 +124,15 @@
           <input id="room" placeholder="Room (z.B. SCHULE1)" style="width:170px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:900;letter-spacing:.12em;text-transform:uppercase" />
           <button id="btnHost" type="button">Host</button>
           <button id="btnJoin" type="button">Join</button>
+          <input id="playerName" placeholder="Name" maxlength="18" style="width:110px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:700" />
+          <button type="button" id="btnReady" style="border-radius:14px;border:1px solid rgba(93,255,180,.45);background:rgba(40,90,70,.35);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px">Ready</button>
         </div>
         <div class="meta">
           <span class="pill" id="turnPill">Zug: X</span>
           <span class="pill" id="scorePill">X 0 · 0 O</span>
         </div>
       </div>
+      <div class="meta" id="lobbyBox" style="display:none;margin:6px 0 0;font-weight:800" aria-live="polite"></div>
       <div class="grid" id="grid" aria-label="Tic Tac Toe Feld"></div>
       <div class="hint" id="hint">Klicke ein Feld. X startet.</div>
     </div>
@@ -187,6 +190,8 @@
     let online = false;
     let mySide = "X"; // X/O
     let connecting = false;
+    let netAllowMoves = false;
+    let imReady = false;
 
     function setLobbyJoined(joined){
       btnHost.style.display = joined ? "none" : "";
@@ -325,7 +330,7 @@
         el.type = "button";
         el.setAttribute("aria-label", `Feld ${i+1}`);
         const v = b[i];
-        el.disabled = over || !!v || (online && turn.toUpperCase() !== mySide);
+        el.disabled = over || !!v || (online && (!netAllowMoves || turn.toUpperCase() !== mySide));
         if (v) {
           el.textContent = v.toUpperCase();
           el.classList.add(v === "x" ? "x" : "o");
@@ -474,8 +479,13 @@
       over = !!s.over;
       netScoreX = Number(s.sX||0);
       netScoreO = Number(s.sO||0);
+      if (typeof s.allowMoves === "boolean") netAllowMoves = s.allowMoves;
       render();
-      if (!over) hint.textContent = online ? "Online: mach deinen Zug." : hint.textContent;
+      if (!over) {
+        hint.textContent = online
+          ? (netAllowMoves ? "Online: mach deinen Zug." : "Beide Ready — dann geht's los.")
+          : hint.textContent;
+      }
     }
 
     function connect(code){
@@ -491,7 +501,8 @@
       ws = new WebSocket(url);
       ws.addEventListener("open", ()=>{
         setNetLabel("Connected", true);
-        ws.send(JSON.stringify({t:"join", game:"ttt", code: c}));
+        const nm = (document.getElementById("playerName")?.value || "").trim().slice(0, 18);
+        ws.send(JSON.stringify({ t: "join", game: "ttt", code: c, name: nm }));
       });
       ws.addEventListener("close", ()=>{
         setNetLabel("Offline");
@@ -499,6 +510,12 @@
         setConnecting(false);
         setLobbyJoined(false);
         mySide = "X";
+        netAllowMoves = false;
+        imReady = false;
+        const lb = document.getElementById("lobbyBox");
+        if (lb) lb.style.display = "none";
+        const br = document.getElementById("btnReady");
+        if (br) br.textContent = "Ready";
         modeSel.disabled = false;
         botLevelSel.disabled = (modeSel.value !== "bot");
         hint.textContent = "Klicke ein Feld. X startet.";
@@ -516,12 +533,30 @@
           setNetLabel(`Online · ${roomInp.value} · Du: ${mySide}`, true);
           setConnecting(false);
           setLobbyJoined(true);
+          const lb = document.getElementById("lobbyBox");
+          if (lb) lb.style.display = "block";
           // reset local board visuals; server state will arrive
           b = Array(9).fill("");
           turn = "x";
           over = false;
+          netAllowMoves = false;
           hideOverlay();
           render();
+          return;
+        }
+        if (msg.t === "lobby"){
+          const roster = Array.isArray(msg.roster) ? msg.roster : [];
+          const lb = document.getElementById("lobbyBox");
+          if (lb){
+            lb.style.display = "block";
+            lb.textContent = roster.length
+              ? "Raum: " + roster.map((r) => `${r.side}${r.name ? " " + r.name : ""}:${r.ready ? "✓" : "…"}`).join(" · ")
+              : `Verbunden: ${msg.peers || 0}`;
+          }
+          const me = roster.find((r) => String(r.side) === String(mySide));
+          if (me) imReady = !!me.ready;
+          const br = document.getElementById("btnReady");
+          if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
           return;
         }
         if (msg.t === "state" && msg.game === "ttt"){
@@ -553,6 +588,13 @@
       });
     }
 
+    document.getElementById("btnReady")?.addEventListener("click", ()=>{
+      if (!online || !ws || ws.readyState !== 1) return;
+      imReady = !imReady;
+      ws.send(JSON.stringify({ t: "ready", v: imReady }));
+      const br = document.getElementById("btnReady");
+      if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
+    });
     btnHost.addEventListener("click", ()=> connect(roomInp.value || ""));
     btnJoin.addEventListener("click", ()=>{
       const c = (roomInp.value || "").trim();

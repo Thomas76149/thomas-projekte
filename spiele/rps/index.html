@@ -2,7 +2,7 @@
 <html lang="de" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <title>Stein‑Schere‑Papier · thomas.fun</title>
   <meta name="description" content="Stein-Schere-Papier mit Effekten, Streak und Bestscore." />
@@ -71,7 +71,12 @@
           <button id="btnHost" type="button" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Host</button>
           <button id="btnJoin" type="button" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Join</button>
           <button id="reset" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Reset</button>
+          <input id="playerName" placeholder="Name" maxlength="18" style="width:120px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:700" />
+          <button type="button" id="btnReady" style="font:inherit;border-radius:14px;border:1px solid rgba(93,255,180,.45);background:rgba(40,90,70,.35);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Ready</button>
         </div>
+      </div>
+      <div id="lobbyBox" class="meta" style="margin:8px 0 0;display:none;flex-direction:column;align-items:stretch;gap:6px">
+        <span id="lobbyLine" style="font-weight:800;color:rgba(200,220,255,.9)"></span>
       </div>
 
       <div class="arena">
@@ -207,6 +212,7 @@
     function play(me){
       if (online){
         if (!ws || ws.readyState !== 1){ hint.textContent = "Nicht verbunden."; return; }
+        if (!netAcceptPicks){ hint.textContent = "Beide müssen Ready drücken."; return; }
         if (pickLocked){ hint.textContent = "Warte auf Gegner…"; return; }
         pickLocked = true;
         meBig.textContent = emo[me] || "❔";
@@ -266,6 +272,8 @@
     let mySide = "A"; // A/B
     let pickLocked = false;
     let connecting = false;
+    let netAcceptPicks = false;
+    let imReady = false;
     function setLobbyJoined(joined){
       btnHost.style.display = joined ? "none" : "";
       btnJoin.style.display = joined ? "none" : "";
@@ -305,7 +313,8 @@
       ws = new WebSocket(url);
       ws.addEventListener("open", ()=>{
         setNetLabel("Connected", true);
-        ws.send(JSON.stringify({t:"join", game:"rps", code: c}));
+        const nm = (document.getElementById("playerName")?.value || "").trim().slice(0, 18);
+        ws.send(JSON.stringify({ t: "join", game: "rps", code: c, name: nm }));
       });
       ws.addEventListener("close", ()=>{
         setNetLabel("Offline");
@@ -314,6 +323,12 @@
         setLobbyJoined(false);
         enemyLabel.textContent = "Bot";
         pickLocked = false;
+        netAcceptPicks = false;
+        imReady = false;
+        const lb = document.getElementById("lobbyBox");
+        if (lb) lb.style.display = "none";
+        const br = document.getElementById("btnReady");
+        if (br) br.textContent = "Ready";
       });
       ws.addEventListener("error", ()=> setNetLabel("Fehler"));
       ws.addEventListener("message", (ev)=>{
@@ -325,9 +340,29 @@
           mySide = msg.side || "A";
           roomInp.value = (msg.code || "").toUpperCase();
           setNetLabel(`Online · ${roomInp.value} · Du: ${mySide}`, true);
-          hint.textContent = "Online: wähle Stein/Papier/Schere.";
+          hint.textContent = "Beide Ready drücken, dann Runde spielen.";
           setConnecting(false);
           setLobbyJoined(true);
+          const lb = document.getElementById("lobbyBox");
+          if (lb) lb.style.display = "flex";
+          return;
+        }
+        if (msg.t === "lobby"){
+          const roster = Array.isArray(msg.roster) ? msg.roster : [];
+          const parts = roster.map((r) => `${r.side}${r.name ? " " + r.name : ""}:${r.ready ? "✓" : "…"}`);
+          const line = document.getElementById("lobbyLine");
+          if (line) line.textContent = parts.length ? `Raum: ${parts.join(" · ")}` : `Im Raum: ${msg.peers || 0}`;
+          const me = roster.find((r) => String(r.side) === String(mySide));
+          if (me) imReady = !!me.ready;
+          const br = document.getElementById("btnReady");
+          if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
+          return;
+        }
+        if (msg.t === "state" && msg.game === "rps" && msg.s){
+          netAcceptPicks = !!msg.s.acceptPicks;
+          hint.textContent = netAcceptPicks
+            ? "Online: wähle Stein/Papier/Schere."
+            : "Beide: Ready drücken für die nächste Runde.";
           return;
         }
         if (msg.t === "rps_result" && msg.r){
@@ -356,6 +391,13 @@
       });
     }
 
+    document.getElementById("btnReady")?.addEventListener("click", ()=>{
+      if (!online || !ws || ws.readyState !== 1) return;
+      imReady = !imReady;
+      ws.send(JSON.stringify({ t: "ready", v: imReady }));
+      const br = document.getElementById("btnReady");
+      if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
+    });
     btnHost.addEventListener("click", ()=> connect(roomInp.value || ""));
     btnJoin.addEventListener("click", ()=>{
       const c = (roomInp.value || "").trim();

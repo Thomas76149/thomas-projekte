@@ -2,7 +2,7 @@
 <html lang="de" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Panzer · thomas.fun</title>
   <meta name="description" content="Top-Down Panzer: bis 4 Spieler, Kugeln prallen ab, Powerups." />
   <meta name="theme-color" content="#0a0e14" />
@@ -27,13 +27,16 @@
           <span id="netStat">Offline</span>
           <input id="netUrl" type="text" value="wss://thomas-projekte.onrender.com" placeholder="wss://…" autocomplete="off" />
           <input id="roomInp" type="text" placeholder="Room" maxlength="8" autocomplete="off" />
+          <input id="playerName" type="text" placeholder="Name" maxlength="18" autocomplete="off" style="max-width:120px" />
+          <button type="button" id="btnReady">Ready</button>
         </div>
       </div>
+      <p class="hint" id="lobbyLine" style="margin:4px 0 0"></p>
       <canvas id="cv" width="768" height="624" aria-label="Panzer-Karte"></canvas>
       <div class="hud" id="hud"></div>
       <p class="hint">
         <strong>PC:</strong> W&nbsp;A&nbsp;S&nbsp;D oder Pfeile drehen/fahren · <strong>Leertaste</strong> schießen (Kugeln prallen an Wänden).
-        Bis zu <strong>4</strong> Spieler pro Room (gleicher WebSocket wie Pong).
+        Bis zu <strong>4</strong> Spieler pro Room — <strong>alle Ready</strong>, dann startet der Kampf (gleicher WebSocket wie Pong).
       </p>
     </div>
   </div>

@@ -159,6 +159,8 @@ export function makeTanksState() {
     powerups: [],
     pupAcc: 0,
     lastTick: Date.now(),
+    /** Bis alle Ready: kein Tick, keine Inputs */
+    matchLive: false,
   };
 }
 
@@ -197,6 +199,7 @@ function moveBulletReflect(b, dt, st) {
 }
 
 export function tickTanks(st, dtMs) {
+  if (!st.matchLive) return;
   const dt = clamp(dtMs, 1, 55);
   const sec = dt / 1000;
 
@@ -391,10 +394,11 @@ export function serializeTanksState(st) {
     y: Math.round(z.y * 10) / 10,
     t: z.t,
   }));
-  return { p, b, u };
+  return { p, b, u, live: !!st.matchLive };
 }
 
 export function tanksApplyInput(st, slot, msg) {
+  if (!st.matchLive) return;
   const p = st.players[slot];
   if (!p || p.hp <= 0) return;
   p.in.u = !!msg.u;
@@ -404,6 +408,7 @@ export function tanksApplyInput(st, slot, msg) {
 }
 
 export function tanksSetFire(st, slot) {
+  if (!st.matchLive) return;
   const p = st.players[slot];
   if (!p || p.hp <= 0) return;
   p.wantFire = true;

@@ -17,19 +17,28 @@ function randRoomCode() {
 function makePongState() {
   const W = 720;
   const H = 420;
-  const P = { w: 14, h: 92, sp: 540 };
-  const left = { x: 26, y: H / 2 - P.h / 2, ...P, up: false, down: false };
-  const right = { x: W - 26 - P.w, y: H / 2 - P.h / 2, ...P, up: false, down: false };
+  const Pv = { w: 14, h: 92, sp: 540 };
+  const Ph = { w: 92, h: 14, sp: 540 };
+  const left = { x: 26, y: H / 2 - Pv.h / 2, ...Pv, up: false, down: false };
+  const right = { x: W - 26 - Pv.w, y: H / 2 - Pv.h / 2, ...Pv, up: false, down: false };
+  const top = { x: W / 2 - Ph.w / 2, y: 12, ...Ph, left: false, right: false };
+  const bot = { x: W / 2 - Ph.w / 2, y: H - 12 - Ph.h, ...Ph, left: false, right: false };
   const ball0 = { r: 10, spin: 0 };
   const ball = { x: W / 2, y: H / 2, vx: 420, vy: 180, spin: 0, ...ball0 };
   return {
-    W, H,
+    W,
+    H,
+    mode: "2",
     running: false,
     overSent: false,
     sL: 0,
     sR: 0,
+    sT: 0,
+    sB: 0,
     left,
     right,
+    top,
+    bot,
     ball,
     lastTick: nowMs(),
   };
@@ -43,6 +52,7 @@ function makeRpsState() {
     sA: 0,
     sB: 0,
     lastResult: null, // {A,B,w}
+    acceptPicks: false,
   };
 }
 
@@ -55,6 +65,7 @@ function makeTttState() {
     winLine: [],
     sX: 0,
     sO: 0,
+    allowMoves: false,
   };
 }
 
@@ -85,30 +96,62 @@ function makeState(game) {
   return makePongState();
 }
 
-function resetRound(st, dir = 1) {
-  st.ball = {
-    x: st.W / 2,
-    y: st.H / 2,
-    vx: 420 * dir,
-    vy: (Math.random() * 2 - 1) * 220,
-    spin: 0,
-    r: 10,
-  };
+function resetPongRound(st, dir = 1) {
+  const W = st.W;
+  const H = st.H;
+  if (st.mode === "4") {
+    const ang = Math.random() * Math.PI * 2;
+    const spd = 440;
+    st.ball = {
+      x: W / 2,
+      y: H / 2,
+      vx: Math.cos(ang) * spd,
+      vy: Math.sin(ang) * spd,
+      spin: 0,
+      r: 10,
+    };
+  } else {
+    st.ball = {
+      x: W / 2,
+      y: H / 2,
+      vx: 420 * dir,
+      vy: (Math.random() * 2 - 1) * 220,
+      spin: 0,
+      r: 10,
+    };
+  }
   st.left.y = st.H / 2 - st.left.h / 2;
   st.right.y = st.H / 2 - st.right.h / 2;
+  st.top.x = st.W / 2 - st.top.w / 2;
+  st.bot.x = st.W / 2 - st.bot.w / 2;
+}
+
+function pongCollide(p, b) {
+  const nx = clamp(b.x, p.x, p.x + p.w);
+  const ny = clamp(b.y, p.y, p.y + p.h);
+  const dx = b.x - nx;
+  const dy = b.y - ny;
+  return dx * dx + dy * dy <= b.r * b.r;
 }
 
 function tickRoom(st, dtMs) {
   const dt = Math.min(40, Math.max(1, dtMs));
   const sec = dt / 1000;
 
-  const moveP = (p) => {
+  const moveV = (p) => {
     if (p.up) p.y -= p.sp * sec;
     if (p.down) p.y += p.sp * sec;
     p.y = clamp(p.y, 10, st.H - p.h - 10);
   };
-  moveP(st.left);
-  moveP(st.right);
+  const moveH = (p) => {
+    if (p.left) p.x -= p.sp * sec;
+    if (p.right) p.x += p.sp * sec;
+    p.x = clamp(p.x, 10, st.W - p.w - 10);
+  };
+  moveV(st.left);
+  moveV(st.right);
+  moveH(st.top);
+  moveH(st.bot);
 
   if (!st.running) return;
 
@@ -118,26 +161,25 @@ function tickRoom(st, dtMs) {
   b.vy += b.spin * sec;
   b.spin *= Math.pow(0.88, dt / 16);
 
-  // walls
-  if (b.y - b.r < 10) { b.y = 10 + b.r; b.vy *= -1; }
-  if (b.y + b.r > st.H - 10) { b.y = st.H - 10 - b.r; b.vy *= -1; }
+  if (st.mode === "2") {
+    if (b.y - b.r < 10) {
+      b.y = 10 + b.r;
+      b.vy *= -1;
+    }
+    if (b.y + b.r > st.H - 10) {
+      b.y = st.H - 10 - b.r;
+      b.vy *= -1;
+    }
+  }
 
-  const collide = (p) => {
-    const nx = clamp(b.x, p.x, p.x + p.w);
-    const ny = clamp(b.y, p.y, p.y + p.h);
-    const dx = b.x - nx, dy = b.y - ny;
-    return dx * dx + dy * dy <= b.r * b.r;
-  };
-
-  // paddles
-  if (b.vx < 0 && collide(st.left)) {
+  if (b.vx < 0 && pongCollide(st.left, b)) {
     b.x = st.left.x + st.left.w + b.r;
     const off = (b.y - (st.left.y + st.left.h / 2)) / (st.left.h / 2);
     b.vx = Math.abs(b.vx) * 1.04;
     b.vy += off * 240;
     b.spin = clamp(b.spin + off * 220, -520, 520);
   }
-  if (b.vx > 0 && collide(st.right)) {
+  if (b.vx > 0 && pongCollide(st.right, b)) {
     b.x = st.right.x - b.r;
     const off = (b.y - (st.right.y + st.right.h / 2)) / (st.right.h / 2);
     b.vx = -Math.abs(b.vx) * 1.04;
@@ -145,17 +187,58 @@ function tickRoom(st, dtMs) {
     b.spin = clamp(b.spin + off * 220, -520, 520);
   }
 
-  // cap
+  if (st.mode === "4") {
+    if (b.vy < 0 && pongCollide(st.top, b)) {
+      b.y = st.top.y + st.top.h + b.r;
+      b.vy = Math.abs(b.vy) * 1.04;
+      const off = (b.x - (st.top.x + st.top.w / 2)) / (st.top.w / 2);
+      b.vx += off * 240;
+      b.spin = clamp(b.spin + off * 220, -520, 520);
+    }
+    if (b.vy > 0 && pongCollide(st.bot, b)) {
+      b.y = st.bot.y - b.r;
+      b.vy = -Math.abs(b.vy) * 1.04;
+      const off = (b.x - (st.bot.x + st.bot.w / 2)) / (st.bot.w / 2);
+      b.vx += off * 240;
+      b.spin = clamp(b.spin + off * 220, -520, 520);
+    }
+  }
+
   const sp = Math.hypot(b.vx, b.vy) || 1;
   const cap = 1020;
-  if (sp > cap) { b.vx = (b.vx / sp) * cap; b.vy = (b.vy / sp) * cap; }
+  if (sp > cap) {
+    b.vx = (b.vx / sp) * cap;
+    b.vy = (b.vy / sp) * cap;
+  }
 
-  // score
-  if (b.x < -50) { st.sR++; resetRound(st, 1); }
-  if (b.x > st.W + 50) { st.sL++; resetRound(st, -1); }
-
-  if (st.sL >= 7 || st.sR >= 7) {
-    st.running = false;
+  if (st.mode === "2") {
+    if (b.x < -50) {
+      st.sR++;
+      resetPongRound(st, 1);
+    }
+    if (b.x > st.W + 50) {
+      st.sL++;
+      resetPongRound(st, -1);
+    }
+    if (st.sL >= 7 || st.sR >= 7) st.running = false;
+  } else {
+    if (b.x < -50) {
+      st.sR++;
+      resetPongRound(st);
+    }
+    if (b.x > st.W + 50) {
+      st.sL++;
+      resetPongRound(st);
+    }
+    if (b.y < -50) {
+      st.sB++;
+      resetPongRound(st);
+    }
+    if (b.y > st.H + 50) {
+      st.sT++;
+      resetPongRound(st);
+    }
+    if (st.sL >= 7 || st.sR >= 7 || st.sT >= 7 || st.sB >= 7) st.running = false;
   }
 }
 
@@ -197,8 +280,9 @@ function roomSides(room) {
 function pickSide(room) {
   const used = roomSides(room);
   if (room.game === "pong") {
-    if (!used.has("L")) return "L";
-    if (!used.has("R")) return "R";
+    for (const s of ["L", "R", "T", "B"]) {
+      if (!used.has(s)) return s;
+    }
     return null;
   }
   if (room.game === "rps") {
@@ -243,6 +327,67 @@ function send(ws, obj) {
   if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(obj));
 }
 
+function clearAllReady(room) {
+  for (const meta of room.clients.values()) {
+    if (meta) meta.ready = false;
+  }
+}
+
+function buildLobbyPayload(room) {
+  const roster = [];
+  for (const [ws, meta] of room.clients) {
+    if (ws.readyState !== ws.OPEN) continue;
+    roster.push({
+      side: meta.side,
+      ready: !!meta.ready,
+      name: meta.name || "",
+    });
+  }
+  roster.sort((a, b) => String(a.side).localeCompare(String(b.side)));
+  let allReady = roster.length > 0 && roster.every((r) => r.ready);
+  if (room.game === "pong") allReady = allReady && (roster.length === 2 || roster.length === 4);
+  if (room.game === "ttt" || room.game === "rps") allReady = allReady && roster.length === 2;
+  if (room.game === "tanks") allReady = allReady && roster.length >= 2;
+  return { t: "lobby", game: room.game, code: room.code, peers: roster.length, roster, allReady };
+}
+
+function broadcastLobby(room) {
+  if (room.game === "uno") return;
+  broadcast(room, buildLobbyPayload(room));
+}
+
+function syncRpsAcceptPicks(room) {
+  const st = room.state;
+  if (room.game !== "rps") return;
+  let a = false;
+  let b = false;
+  for (const [, meta] of room.clients) {
+    if (meta.side === "A") a = !!meta.ready;
+    if (meta.side === "B") b = !!meta.ready;
+  }
+  st.acceptPicks = a && b;
+}
+
+function syncTttAllowMoves(room) {
+  const st = room.state;
+  if (room.game !== "ttt") return;
+  let x = false;
+  let o = false;
+  for (const [, meta] of room.clients) {
+    if (meta.side === "X") x = !!meta.ready;
+    if (meta.side === "O") o = !!meta.ready;
+  }
+  st.allowMoves = x && o;
+}
+
+function tanksTryStartMatch(room) {
+  if (room.game !== "tanks") return;
+  const st = room.state;
+  const metas = [...room.clients.values()];
+  if (metas.length < 2 || !metas.every((m) => m.ready)) st.matchLive = false;
+  else st.matchLive = true;
+}
+
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
@@ -270,7 +415,11 @@ wss.on("connection", (ws) => {
       const room = getOrCreateRoom(msg.game || "pong", msg.code || "");
       let side = pickSide(room);
       if (room.game !== "uno" && !side) {
-        send(ws, { t: "err", m: room.game === "tanks" ? "Room voll (max 4)." : "Room voll (max 2)." });
+        const fullMsg =
+          room.game === "tanks" || room.game === "pong"
+            ? "Room voll (max 4)."
+            : "Room voll (max 2).";
+        send(ws, { t: "err", m: fullMsg });
         return;
       }
       // leave previous
@@ -317,13 +466,16 @@ wss.on("connection", (ws) => {
         broadcastUno(room);
         return;
       } else {
-        room.clients.set(ws, { side });
+        const cname = String(msg.name || "").slice(0, 18);
+        room.clients.set(ws, { side, ready: false, name: cname });
         if (room.game === "tanks") {
           const st = room.state;
           const slot = Number(side);
           if (slot >= 0 && slot <= 3 && !st.players[slot]) {
             st.players[slot] = tanks.spawnTank(st, slot);
           }
+          st.matchLive = false;
+          tanksTryStartMatch(room);
         }
       }
       const extra = {};
@@ -340,8 +492,11 @@ wss.on("connection", (ws) => {
       }
       send(ws, { t: "joined", game: room.game, code: room.code, side, ...extra });
       broadcast(room, { t: "peers", n: room.clients.size });
-      // send snapshot immediately
-      send(ws, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      broadcastLobby(room);
+      if (room.game === "rps") syncRpsAcceptPicks(room);
+      if (room.game === "ttt") syncTttAllowMoves(room);
+      if (room.game === "tanks") tanksTryStartMatch(room);
+      broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       return;
     }
 
@@ -350,11 +505,44 @@ wss.on("connection", (ws) => {
     const meta = room.clients.get(ws);
     if (!meta) return;
 
+    if (msg.t === "ready") {
+      meta.ready = !!msg.v;
+      broadcastLobby(room);
+      if (room.game === "rps") syncRpsAcceptPicks(room);
+      if (room.game === "ttt") syncTttAllowMoves(room);
+      tanksTryStartMatch(room);
+      if (room.game === "rps" || room.game === "ttt") {
+        broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      }
+      if (room.game === "tanks") {
+        broadcast(room, { t: "state", game: "tanks", s: serializeState("tanks", room.state) });
+      }
+      return;
+    }
+
     if (room.game === "pong" && msg.t === "in") {
+      const st = room.state;
+      if (!st.running) return;
       const up = !!msg.up;
       const down = !!msg.down;
-      if (meta.side === "L") { room.state.left.up = up; room.state.left.down = down; }
-      if (meta.side === "R") { room.state.right.up = up; room.state.right.down = down; }
+      const left = !!msg.left;
+      const right = !!msg.right;
+      if (meta.side === "L") {
+        st.left.up = up;
+        st.left.down = down;
+      }
+      if (meta.side === "R") {
+        st.right.up = up;
+        st.right.down = down;
+      }
+      if (meta.side === "T") {
+        st.top.left = left;
+        st.top.right = right;
+      }
+      if (meta.side === "B") {
+        st.bot.left = left;
+        st.bot.right = right;
+      }
       return;
     }
 
@@ -370,10 +558,23 @@ wss.on("connection", (ws) => {
     }
 
     if (room.game === "pong" && msg.t === "start") {
-      room.state.running = true;
-      room.state.overSent = false;
-      room.state.lastTick = nowMs();
+      const st = room.state;
+      const n = room.clients.size;
+      if (n !== 2 && n !== 4) {
+        send(ws, { t: "err", m: "Pong: genau 2 oder 4 Spieler nötig." });
+        return;
+      }
+      if (![...room.clients.values()].every((m) => m.ready)) {
+        send(ws, { t: "err", m: "Alle müssen Ready drücken." });
+        return;
+      }
+      st.mode = n === 4 ? "4" : "2";
+      st.running = true;
+      st.overSent = false;
+      st.lastTick = nowMs();
+      resetPongRound(st, Math.random() < 0.5 ? 1 : -1);
       broadcast(room, { t: "run", v: true });
+      broadcast(room, { t: "state", game: "pong", s: serializeState("pong", st) });
       return;
     }
 
@@ -387,8 +588,13 @@ wss.on("connection", (ws) => {
       } else {
         room.state = makeState(room.game);
       }
+      clearAllReady(room);
+      if (room.game === "rps") syncRpsAcceptPicks(room);
+      if (room.game === "ttt") syncTttAllowMoves(room);
+      if (room.game === "tanks") tanksTryStartMatch(room);
       broadcast(room, { t: "reset" });
       broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+      broadcastLobby(room);
       return;
     }
 
@@ -396,6 +602,10 @@ wss.on("connection", (ws) => {
       const m = String(msg.m || "").toLowerCase();
       if (!["r", "p", "s"].includes(m)) return;
       const st = room.state;
+      if (!st.acceptPicks) {
+        send(ws, { t: "err", m: "Beide müssen Ready drücken." });
+        return;
+      }
       if (meta.side !== "A" && meta.side !== "B") return;
       st.picks[meta.side] = m;
       broadcast(room, { t: "state", game: "rps", s: serializeState("rps", st) });
@@ -407,14 +617,18 @@ wss.on("connection", (ws) => {
         st.round++;
         st.picks.A = null;
         st.picks.B = null;
+        clearAllReady(room);
+        st.acceptPicks = false;
         broadcast(room, { t: "rps_result", r: st.lastResult, sA: st.sA, sB: st.sB, round: st.round });
         broadcast(room, { t: "state", game: "rps", s: serializeState("rps", st) });
+        broadcastLobby(room);
       }
       return;
     }
 
     if (room.game === "ttt" && msg.t === "move") {
       const st = room.state;
+      if (!st.allowMoves) return;
       if (st.over) return;
       const idx = Number(msg.i);
       if (!Number.isFinite(idx) || idx < 0 || idx > 8) return;
@@ -528,11 +742,26 @@ wss.on("connection", (ws) => {
         room.state.players[slot] = null;
         room.state.bullets = room.state.bullets.filter((b) => b.own !== slot);
       }
+      room.state.matchLive = false;
+      tanksTryStartMatch(room);
       broadcast(room, { t: "peers", n: room.clients.size });
       broadcast(room, { t: "state", game: "tanks", s: serializeState("tanks", room.state) });
+      broadcastLobby(room);
       return;
     }
+    if (room.game === "pong" && room.state.running) {
+      room.state.running = false;
+    }
+    if (room.game === "rps") syncRpsAcceptPicks(room);
+    if (room.game === "ttt") syncTttAllowMoves(room);
     broadcast(room, { t: "peers", n: room.clients.size });
+    broadcastLobby(room);
+    if (room.game === "pong") {
+      broadcast(room, { t: "state", game: "pong", s: serializeState("pong", room.state) });
+    }
+    if (room.game === "rps" || room.game === "ttt") {
+      broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
+    }
     // cleanup empty rooms after some time
   });
 });
@@ -545,6 +774,7 @@ function serializeState(game, st, room) {
       picks: { A: !!st.picks.A, B: !!st.picks.B }, // don't leak actual pick
       sA: st.sA,
       sB: st.sB,
+      acceptPicks: !!st.acceptPicks,
     };
   }
   if (game === "ttt") {
@@ -555,6 +785,7 @@ function serializeState(game, st, room) {
       line: st.winLine || [],
       sX: st.sX,
       sO: st.sO,
+      allowMoves: !!st.allowMoves,
     };
   }
   if (game === "uno") {
@@ -583,10 +814,15 @@ function serializeState(game, st, room) {
   }
   return {
     running: st.running,
+    mode: st.mode || "2",
     sL: st.sL,
     sR: st.sR,
+    sT: st.sT || 0,
+    sB: st.sB || 0,
     L: { y: st.left.y },
     R: { y: st.right.y },
+    Pt: { x: st.top.x },
+    Pb: { x: st.bot.x },
     B: { x: st.ball.x, y: st.ball.y, vx: st.ball.vx, vy: st.ball.vy, spin: st.ball.spin, r: st.ball.r },
   };
 }
@@ -791,12 +1027,27 @@ setInterval(() => {
       const dt = t - st.lastTick;
       st.lastTick = t;
       tickRoom(st, dt);
-      // broadcast at ~30Hz
-      if ((t / 33) | 0) {
+      room._pongSnap = room._pongSnap || 0;
+      if (t - room._pongSnap >= 33) {
+        room._pongSnap = t;
         broadcast(room, { t: "state", game: "pong", s: serializeState("pong", st) });
-        if (!st.overSent && !st.running && (st.sL >= 7 || st.sR >= 7)) {
+      }
+      if (!st.overSent && !st.running) {
+        let w = null;
+        if ((st.mode || "2") === "2") {
+          if (st.sL >= 7 || st.sR >= 7) w = st.sL > st.sR ? "L" : "R";
+        } else {
+          const m = Math.max(st.sL || 0, st.sR || 0, st.sT || 0, st.sB || 0);
+          if (m >= 7) {
+            if (st.sL >= 7 && st.sL === m) w = "L";
+            else if (st.sR >= 7 && st.sR === m) w = "R";
+            else if (st.sT >= 7 && st.sT === m) w = "T";
+            else if (st.sB >= 7 && st.sB === m) w = "B";
+          }
+        }
+        if (w) {
           st.overSent = true;
-          broadcast(room, { t: "over", game: "pong", w: st.sL > st.sR ? "L" : "R" });
+          broadcast(room, { t: "over", game: "pong", w });
         }
       }
     }

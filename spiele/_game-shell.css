@@ -11,6 +11,7 @@
 @media (pointer: coarse), (max-width: 900px) {
   html.thomasfun-fit {
     height: 100%;
+    touch-action: manipulation;
   }
 
   html.thomasfun-fit,
@@ -108,6 +109,17 @@
 
   html.thomasfun-fit .card > .boardWrap > .hint {
     flex: 0 0 auto;
+  }
+
+  /* BlockBlast u. ä.: Canvas direkt in .boardWrap — Resthöhe nutzen, nicht über Eltern hinaus */
+  html.thomasfun-fit .card > .boardWrap > canvas {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+    max-height: 100% !important;
+    object-fit: contain;
   }
 
   html.thomasfun-fit .card > .boardWrap > .board {

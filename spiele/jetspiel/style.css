@@ -17,6 +17,12 @@
       -webkit-touch-callout: none;
     }
     * { -webkit-tap-highlight-color: transparent; }
+    /* Doppel-Tipp-Zoom der Seite abschwächen (Spiel-Taps) */
+    @media (pointer: coarse), (max-width: 900px) {
+      html {
+        touch-action: manipulation;
+      }
+    }
     html, body {
       margin: 0;
       height: 100%;
@@ -859,24 +865,53 @@
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
     }
-    @media (max-width: 900px) {
-      .touch { display: grid; }
+    /* Touch-Steuerung: schmale Geräte ODER Touch-Gerät (Querformat oft >900px breit) */
+    @media (pointer: coarse), (max-width: 900px) {
+      body.phase-combat:not(.touchbar-hidden) .touch {
+        display: grid;
+      }
+      body:not(.phase-combat) .touch,
+      body.phase-combat.touchbar-hidden .touch {
+        display: none !important;
+      }
+      /* Kampf: Leiste fix am unteren Rand, sonst von overflow/Layout verdrängt */
+      body.phase-combat:not(.touchbar-hidden) .touch {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 120;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+        background: rgba(4, 8, 20, 0.94);
+        border-top: 1px solid rgba(100, 170, 255, 0.35);
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+      /* Zielen per Drag am Canvas: Browser-Gesten nicht dazwischen */
+      #game {
+        touch-action: none;
+      }
     }
 
     /* Querformat (Handy): eine Reihe, kompakter */
-    @media (max-width: 900px) and (orientation: landscape) {
-      .touch {
-        grid-template-columns: repeat(8, 1fr);
-        gap: 6px;
+    @media (pointer: coarse), (max-width: 900px) {
+      @media (orientation: landscape) {
+        .touch {
+          grid-template-columns: repeat(8, 1fr);
+          gap: 6px;
+        }
+        .touch button {
+          padding: 10px 8px;
+          font-size: 0.58rem;
+          min-height: 42px;
+        }
+        .gameRow { border-radius: 14px; }
+        .canvasWrap { aspect-ratio: auto; }
       }
-      .touch button {
-        padding: 10px 8px;
-        font-size: 0.58rem;
-        min-height: 42px;
-      }
-      /* etwas mehr Platz fürs Spielfeld */
-      .gameRow { border-radius: 14px; }
-      .canvasWrap { aspect-ratio: auto; }
     }
     .touch button {
       padding: 14px;

@@ -3757,9 +3757,56 @@
   window.addEventListener("keyup", (e) => keys.delete(e.code));
 
   const touchBar = document.getElementById("touchBar");
+  const btnTouchToggle = document.getElementById("btnTouchToggle");
   const isMobile = () =>
     (window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
     (window.matchMedia && window.matchMedia("(max-width: 900px)").matches);
+
+  function syncTouchUi() {
+    if (!touchBar) return;
+    const mobile = isMobile();
+    const combat = document.body.classList.contains("phase-combat");
+    if (btnTouchToggle) {
+      btnTouchToggle.hidden = !mobile || !combat;
+      if (mobile && combat) {
+        const show = !document.body.classList.contains("touchbar-hidden");
+        btnTouchToggle.setAttribute("aria-pressed", show ? "true" : "false");
+      }
+    }
+    if (!mobile || !combat) {
+      touchBar.setAttribute("aria-hidden", "true");
+    } else {
+      const show = !document.body.classList.contains("touchbar-hidden");
+      touchBar.setAttribute("aria-hidden", show ? "false" : "true");
+    }
+  }
+
+  try {
+    if (localStorage.getItem("jet_touchbar_v1") === "0") {
+      document.body.classList.add("touchbar-hidden");
+    }
+  } catch (_) {}
+
+  if (btnTouchToggle) {
+    btnTouchToggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      document.body.classList.toggle("touchbar-hidden");
+      try {
+        localStorage.setItem(
+          "jet_touchbar_v1",
+          document.body.classList.contains("touchbar-hidden") ? "0" : "1"
+        );
+      } catch (_) {}
+      syncTouchUi();
+    });
+  }
+
+  syncTouchUi();
+  window.addEventListener("resize", syncTouchUi);
+  try {
+    const _touchUiMo = new MutationObserver(syncTouchUi);
+    _touchUiMo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+  } catch (_) {}
 
   let autoFire = false;
   try {

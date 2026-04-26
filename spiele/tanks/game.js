@@ -26,8 +26,9 @@ let H = 624;
 let TW = 24;
 let wallStr = "";
 
-/** @type {{ p: any[], b: any[], u: any[] } | null} */
+/** @type {{ p: any[], b: any[], u: any[], live?: boolean } | null} */
 let lastState = null;
+let imReady = false;
 
 const keys = new Set();
 
@@ -113,6 +114,20 @@ function draw() {
     ctx.stroke();
   }
 
+  if (online && lastState.live === false) {
+    ctx.fillStyle = "rgba(0,0,0,.55)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "800 clamp(14px,2.2vw,20px) system-ui,sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Warte — mindestens 2 Panzer, alle Ready", W / 2, H / 2 - 14);
+    ctx.font = "600 13px system-ui,sans-serif";
+    ctx.fillStyle = "rgba(200,210,230,.92)";
+    ctx.fillText("Steuerung erst aktiv, wenn der Kampf live ist.", W / 2, H / 2 + 14);
+    return;
+  }
+
   (lastState.p || []).forEach((pl, i) => {
     if (!pl) return;
     const col = COLORS[i % COLORS.length];
@@ -182,6 +197,7 @@ requestAnimationFrame(loop);
 
 function sendInput() {
   if (!ws || ws.readyState !== 1) return;
+  if (lastState && lastState.live === false) return;
   ws.send(
     JSON.stringify({
       t: "in",
@@ -195,6 +211,7 @@ function sendInput() {
 
 function sendFire() {
   if (!ws || ws.readyState !== 1) return;
+  if (lastState && lastState.live === false) return;
   ws.send(JSON.stringify({ t: "fire" }));
 }
 
@@ -239,11 +256,17 @@ function connect(code) {
   ws = new WebSocket(url);
   ws.addEventListener("open", () => {
     setNetLabel("Verbunden…", true);
-    ws.send(JSON.stringify({ t: "join", game: "tanks", code: code || "" }));
+    const nm = (document.getElementById("playerName")?.value || "").trim().slice(0, 18);
+    ws.send(JSON.stringify({ t: "join", game: "tanks", code: code || "", name: nm }));
   });
   ws.addEventListener("close", () => {
     setNetLabel("Offline");
     online = false;
+    imReady = false;
+    const br = document.getElementById("btnReady");
+    if (br) br.textContent = "Ready";
+    const lb = document.getElementById("lobbyLine");
+    if (lb) lb.textContent = "";
     btnHost.disabled = false;
     btnJoin.disabled = false;
   });
@@ -258,6 +281,20 @@ function connect(code) {
     if (!msg) return;
     if (msg.t === "err") {
       setNetLabel(msg.m || "Fehler");
+      return;
+    }
+    if (msg.t === "lobby") {
+      const roster = Array.isArray(msg.roster) ? msg.roster : [];
+      const lb = document.getElementById("lobbyLine");
+      if (lb) {
+        lb.textContent = roster.length
+          ? "Raum: " + roster.map((r) => `P${Number(r.side) + 1}${r.name ? " " + r.name : ""}:${r.ready ? "✓" : "…"}`).join(" · ")
+          : `Verbunden: ${msg.peers || 0}`;
+      }
+      const me = roster.find((r) => Number(r.side) === mySlot);
+      if (me) imReady = !!me.ready;
+      const br = document.getElementById("btnReady");
+      if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
       return;
     }
     if (msg.t === "joined") {
@@ -291,6 +328,14 @@ function connect(code) {
 
 btnHost.addEventListener("click", () => connect(""));
 btnJoin.addEventListener("click", () => connect((roomInp.value || "").trim()));
+
+document.getElementById("btnReady")?.addEventListener("click", () => {
+  if (!ws || ws.readyState !== 1) return;
+  imReady = !imReady;
+  ws.send(JSON.stringify({ t: "ready", v: imReady }));
+  const br = document.getElementById("btnReady");
+  if (br) br.textContent = imReady ? "Nicht ready" : "Ready";
+});
 
 btnReset.addEventListener("click", () => {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: "reset" }));

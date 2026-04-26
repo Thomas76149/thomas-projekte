@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Jet-Kampf</title>
   <meta name="description" content="Canvas-Arcade: Bosse alle 5 Wellen, Modi, Shop, Web-Audio, Effekte — 1920×1080." />
   <meta name="theme-color" content="#040814" />
@@ -43,6 +43,7 @@
       <div class="topGameBar">
         <button type="button" class="hdrBtn" id="btnPause">Pause</button>
         <button type="button" class="hdrBtn" id="btnFs">Vollbild</button>
+        <button type="button" class="hdrBtn" id="btnTouchToggle" title="Touch-Leiste ein/aus" aria-pressed="true" hidden>Touch</button>
       </div>
       <canvas id="game" width="1920" height="1080" aria-label="Spielfeld"></canvas>
       <div class="combatFieldHud" id="combatFieldHud" hidden>
