@@ -69,7 +69,8 @@
   html.thomasfun-fit .card > .touch,
   html.thomasfun-fit .card > .loadout,
   html.thomasfun-fit .card > .sub,
-  html.thomasfun-fit .card > .big {
+  html.thomasfun-fit .card > .big,
+  html.thomasfun-fit .card > .tray {
     flex: 0 0 auto;
   }
 
@@ -102,24 +103,36 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 10px;
     overflow: hidden;
+    container-type: size;
+    position: relative;
+    z-index: 0;
   }
 
   html.thomasfun-fit .card > .boardWrap > .hint {
     flex: 0 0 auto;
   }
 
-  /* BlockBlast u. ä.: Canvas direkt in .boardWrap — Resthöhe nutzen, nicht über Eltern hinaus */
+  /* BlockBlast u. ä.: Canvas direkt in .boardWrap — Quadrat, das garantiert in die Restfläche passt */
   html.thomasfun-fit .card > .boardWrap > canvas {
     flex: 0 1 auto;
     min-height: 0;
+    min-width: 0;
     max-width: 100% !important;
+    max-height: 100% !important;
     width: auto !important;
     height: auto !important;
-    max-height: 100% !important;
+    aspect-ratio: 1 / 1;
     object-fit: contain;
+  }
+
+  @supports (width: 1cqw) {
+    html.thomasfun-fit .card > .boardWrap > canvas {
+      width: min(100cqw, 100cqh) !important;
+      height: min(100cqw, 100cqh) !important;
+    }
   }
 
   html.thomasfun-fit .card > .boardWrap > .board {

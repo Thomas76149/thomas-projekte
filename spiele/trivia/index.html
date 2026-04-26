@@ -7,7 +7,7 @@
   <meta name="description" content="Multiplayer-Quiz: A/B/C/D oder Freitext, Kategorien, Sounds & Scoreboard." />
   <meta name="theme-color" content="#060910" />
   <link rel="stylesheet" href="../_game-shell.css" />
-  <link rel="stylesheet" href="style.css?v=3" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <div class="wrap">
@@ -38,7 +38,7 @@
         <div class="playMain">
           <div class="opts" id="optsPanel">
             <h3>Einstellungen (Raum)</h3>
-            <p class="hint">Nichts angehakt = <strong>alle</strong> Themen. <strong>Freitext:</strong> Antwort = exakter Lösungstext (aus der MC-Variante); Tippfehler geben <strong>Teilpunkte</strong> je nach Ähnlichkeit.</p>
+            <p class="hint">Nichts angehakt = <strong>alle</strong> Themen. <strong>Freitext:</strong> Groß-/Kleinschreibung egal; Tippfehler → <strong>Teilpunkte</strong> je nach Ähnlichkeit. <strong>Tempo:</strong> Wer schneller richtig (oder nah dran) antwortet, bekommt mehr Punkte.</p>
 
             <div class="answerModeRow" role="radiogroup" aria-label="Antwortmodus">
               <span class="answerModeRow__label">Modus</span>
@@ -74,7 +74,9 @@
           </div>
 
           <div class="final" id="finalPanel" hidden>
-            <h2>Runde zu Ende</h2>
+            <h2>Spiel zu Ende</h2>
+            <div class="podium" id="podiumSpot" aria-live="polite"></div>
+            <h3 class="final__sub">Alle Plätze</h3>
             <div class="leader" id="leaderBoard"></div>
           </div>
 
@@ -92,6 +94,6 @@
       </div>
     </div>
   </div>
-  <script type="module" src="game.js?v=3"></script>
+  <script type="module" src="game.js?v=4"></script>
 </body>
 </html>

@@ -4,6 +4,8 @@
  * diff: easy | medium | hard
  */
 
+import { TRIVIA_MORE } from "./trivia-more.js";
+
 export const TRIVIA_QUESTIONS = [
   // --- tech (easy) ---
   { id: 1, cat: "tech", diff: "easy", q: "Was bedeutet „HTML“?", choices: ["HyperText Markup Language", "High Transfer Markup Line", "Home Tool Markup Layer", "Hyperlink Text Mode Link"], a: 0 },
@@ -232,6 +234,8 @@ export const TRIVIA_QUESTIONS = [
   // --- economics (Wirtschaft leicht) ---
   { id: 153, cat: "economics", diff: "easy", q: "Inflation bedeutet typischerweise…", choices: ["Preise sinken dauerhaft", "Geldwert sinkt, Preise steigen", "Löhne sind null", "keine Steuern"], a: 1 },
   { id: 154, cat: "economics", diff: "medium", q: "BIP steht für…", choices: ["Bundes-Inlands-Produkt", "Bruttoinlandsprodukt", "Betriebs-Internes Programm", "Budget-Index-Prozent"], a: 1 },
+
+  ...TRIVIA_MORE,
 ];
 
 export const TRIVIA_CATS = [

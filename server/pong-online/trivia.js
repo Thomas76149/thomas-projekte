@@ -43,13 +43,13 @@ export function textSimilarity(userRaw, correctRaw) {
   return Math.max(0, 1 - d / mx);
 }
 
-/** Multiplikator für Basis-Punkte (Zeitbonus wird separat draufgerechnet) */
+/** Multiplikator (nach Normalisierung inkl. Groß/klein); volle Punktzahl ab hoher Ähnlichkeit */
 function textScoreMultiplier(sim) {
-  if (sim >= 0.97) return 1;
-  if (sim >= 0.88) return 0.72;
-  if (sim >= 0.76) return 0.48;
-  if (sim >= 0.62) return 0.28;
-  if (sim >= 0.5) return 0.12;
+  if (sim >= 0.93) return 1;
+  if (sim >= 0.84) return 0.72;
+  if (sim >= 0.72) return 0.48;
+  if (sim >= 0.58) return 0.28;
+  if (sim >= 0.45) return 0.12;
   return 0;
 }
 
@@ -67,9 +67,13 @@ export function makeTriviaState() {
     round: 0,
     totalRounds: 10,
     usedIds: [],
+    /** verhindert dieselbe Frage direkt zweimal hintereinander */
+    lastQuestionId: null,
     current: null,
     /** slot -> number (mcq) oder string (text) */
     answers: {},
+    /** slot -> Date.now() beim ersten Absenden */
+    answerTimes: {},
     scores: {},
     lastReveal: null,
     revealUntil: 0,
@@ -86,13 +90,22 @@ function filterPool(st) {
 }
 
 function pickQuestion(st) {
+  const banId = st.lastQuestionId;
   let pool = filterPool(st).filter((q) => !st.usedIds.includes(q.id));
+  if (banId != null) pool = pool.filter((q) => q.id !== banId);
   if (!pool.length) {
     st.usedIds = [];
+    pool = filterPool(st).filter((q) => q.id !== banId);
+  }
+  if (!pool.length) {
     pool = filterPool(st);
+    if (banId != null && pool.length > 1) pool = pool.filter((q) => q.id !== banId);
   }
   if (!pool.length) return null;
-  return pool[(Math.random() * pool.length) | 0];
+  const raw = pool[(Math.random() * pool.length) | 0];
+  st.usedIds.push(raw.id);
+  st.lastQuestionId = raw.id;
+  return raw;
 }
 
 export function triviaTryStartMatch(room) {
@@ -114,13 +127,16 @@ export function triviaBeginMatch(room) {
   st.totalRounds = Math.max(1, Math.min(50, Number(st.opts.rounds) || 10));
   st.round = 0;
   st.usedIds = [];
+  st.lastQuestionId = null;
   st.lastReveal = null;
   st.current = null;
   st.phase = "lobby";
+  st.answerTimes = {};
 
-  for (const [, meta] of room.clients) {
-    const s = String(meta.side);
-    if (st.scores[s] == null) st.scores[s] = 0;
+  st.scores = {};
+  for (const [ws, meta] of room.clients) {
+    if (ws.readyState !== ws.OPEN) continue;
+    st.scores[String(meta.side)] = 0;
   }
 
   return triviaStartRound(room);
@@ -139,6 +155,7 @@ export function triviaStartRound(room) {
   st.round++;
   st.phase = "question";
   st.answers = {};
+  st.answerTimes = {};
   st.lastReveal = null;
   const endsAt = Date.now() + QUESTION_MS;
   st.current = {
@@ -165,6 +182,7 @@ export function triviaApplyAnswer(st, slotStr, idx) {
   if (Date.now() > st.current.endsAt) return false;
   const i = Number(idx);
   if (!Number.isFinite(i) || i < 0 || i > 3) return false;
+  if (st.answerTimes[slotStr] == null) st.answerTimes[slotStr] = Date.now();
   st.answers[slotStr] = i;
   return true;
 }
@@ -175,6 +193,7 @@ export function triviaApplyTextAnswer(st, slotStr, text) {
   if (Date.now() > st.current.endsAt) return false;
   let t = String(text || "").trim().slice(0, MAX_TEXT_ANSWER_LEN);
   if (!t) return false;
+  if (st.answerTimes[slotStr] == null) st.answerTimes[slotStr] = Date.now();
   st.answers[slotStr] = t;
   return true;
 }
@@ -187,10 +206,15 @@ export function triviaFinalizeQuestion(room) {
   const correctIdx = cur.a;
   const correctText = cur.correctText || cur.choices[correctIdx] || "";
   const breakdown = [];
-  const now = Date.now();
-  const left = Math.max(0, cur.endsAt - now);
-  const timeBonus = Math.round((left / QUESTION_MS) * 400);
-  const base = 100 + timeBonus;
+
+  /** Punkte-Basis ab verbleibender Zeit beim Absenden (schnell = bis ~500, knapp vor Ende ≈ 40) */
+  function basePointsForSlot(slot) {
+    const tAns = st.answerTimes[slot];
+    if (tAns == null) return 0;
+    const leftAtSubmit = Math.max(0, cur.endsAt - tAns);
+    const speed = Math.min(1, leftAtSubmit / QUESTION_MS);
+    return Math.round(40 + 460 * speed);
+  }
 
   for (const [ws, meta] of room.clients) {
     if (ws.readyState !== ws.OPEN) continue;
@@ -206,7 +230,7 @@ export function triviaFinalizeQuestion(room) {
     if (mode === "mcq") {
       pick = rawPick === undefined ? null : rawPick;
       if (pick === correctIdx) {
-        pts = base;
+        pts = basePointsForSlot(slot);
         ok = true;
       }
       breakdown.push({
@@ -224,6 +248,7 @@ export function triviaFinalizeQuestion(room) {
       if (pickText) {
         similarity = textSimilarity(pickText, correctText);
         const mult = textScoreMultiplier(similarity);
+        const base = basePointsForSlot(slot);
         pts = Math.round(base * mult);
         ok = mult >= 1;
         near = mult > 0 && mult < 1;
@@ -284,8 +309,10 @@ export function triviaResetRoom(room) {
   st.round = 0;
   st.totalRounds = 10;
   st.usedIds = [];
+  st.lastQuestionId = null;
   st.current = null;
   st.answers = {};
+  st.answerTimes = {};
   st.lastReveal = null;
   st.revealUntil = 0;
   for (const k of Object.keys(st.scores)) st.scores[k] = 0;

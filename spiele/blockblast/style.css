@@ -77,10 +77,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
   flex:1 1 auto;
   min-height:0;
   min-width:0;
-  display:grid;
-  place-items:center;
-  padding-bottom: 6px; /* optischer Abstand zur Tray */
-  overflow:hidden; /* Canvas darf visuell nicht unter Tray „laufen“ */
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding-bottom:0;
+  overflow:hidden;
+  container-type:size;
+  container-name:blockblast-board;
 }
 canvas{
   width:min(640px, 92vw);
@@ -94,9 +97,17 @@ canvas{
     linear-gradient(180deg, rgba(8,12,26,.95), rgba(0,0,0,.35));
   touch-action:none;
   box-shadow: 0 18px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
-  /* In flex/grid-Resthöhe: Seitenverhältnis beibehalten, aber nicht über Eltern hinaus */
   max-width:100%;
+  max-height:100%;
+  min-width:0;
+  min-height:0;
   object-fit:contain;
+}
+@supports (width:1cqw){
+  .boardWrap canvas{
+    width:min(100cqw,100cqh);
+    height:min(100cqw,100cqh);
+  }
 }
 
 .tray{
@@ -105,6 +116,7 @@ canvas{
   gap:10px;
   align-items:stretch;
   flex:0 0 auto;
+  flex-shrink:0;
 }
 .slot{
   border-radius:18px;
@@ -120,22 +132,8 @@ canvas{
 }
 .hint{color:rgba(180,200,230,.78);font-size:.92rem;text-align:center;font-weight:800}
 
-/* Handy / Touch: Tray kompakt, Board nutzt restliche Card-Höhe (nicht von riesigen Slots verdrängt) */
+/* Handy / Touch: Tray kompakt */
 @media (pointer: coarse), (max-width: 900px) {
-  .boardWrap{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-  }
-  .boardWrap canvas{
-    flex:0 1 auto;
-    min-height:0;
-    width:auto !important;
-    max-width:100% !important;
-    height:auto !important;
-    max-height:100%;
-  }
   .tray{
     grid-template-columns:repeat(3, minmax(0, 1fr));
     gap:6px;
@@ -147,18 +145,28 @@ canvas{
     padding:4px 6px;
     overflow:hidden;
   }
+  @supports not (width: 1cqw) {
+    .boardWrap canvas {
+      width: auto !important;
+      max-width: 100% !important;
+      max-height: min(52dvh, calc(100dvh - 290px)) !important;
+    }
+  }
 }
 
-/* Damit das Board NIE in die Tray "reinwächst": Canvas bekommt eine Max-Höhe aus Viewport */
 @media (max-height: 860px){
-  canvas{
-    max-height: calc(100dvh - 330px); /* header+buttons+tray+hint */
-    width: auto;
+  @supports not (width: 1cqw) {
+    .boardWrap canvas{
+      max-height: min(52dvh, calc(100dvh - 300px));
+      width: auto;
+    }
   }
 }
 @media (max-width: 560px){
-  canvas{
-    max-height: calc(100dvh - 340px);
+  @supports not (width: 1cqw) {
+    .boardWrap canvas{
+      max-height: min(50dvh, calc(100dvh - 300px));
+    }
   }
 }
 

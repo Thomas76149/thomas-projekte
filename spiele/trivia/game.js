@@ -35,6 +35,8 @@ let catLabels = new Map();
 let timerId = 0;
 let prevPhase = "";
 let prevQKey = "";
+let prevSessionOver = false;
+let lastBuiltAnswersQKey = "";
 
 const AC = window.AudioContext || window.webkitAudioContext;
 let actx = null;
@@ -223,12 +225,12 @@ function syncUiFromState(s) {
   quizPanel.hidden = !inQuiz;
   finalPanel.hidden = !s.sessionOver;
 
-  const qKey = s.q ? `${s.q.id}-${s.q.round}` : "";
-  if (s.phase === "question" && s.q && qKey !== prevQKey) {
+  const questionKey = s.phase === "question" && s.q ? `${s.q.id}-${s.q.round}` : "";
+  if (s.phase === "question" && s.q && questionKey !== prevQKey) {
     playSfx("whoosh");
     flashQuiz();
   }
-  prevQKey = s.phase === "question" && s.q ? qKey : "";
+  prevQKey = questionKey;
 
   if (s.phase === "reveal" && prevPhase === "question" && s.reveal) {
     const me = s.reveal.breakdown?.find((b) => String(b.side) === String(mySlot));
@@ -242,95 +244,149 @@ function syncUiFromState(s) {
   }
   prevPhase = s.phase;
 
+  const podiumEl = document.getElementById("podiumSpot");
   if (s.sessionOver && s.roster) {
     const sorted = [...s.roster].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const n = sorted.length;
+    const myIdx = sorted.findIndex((r) => String(r.side) === String(mySlot));
+    const myRank = myIdx >= 0 ? myIdx + 1 : n;
+    const justEnded = !prevSessionOver;
+    prevSessionOver = true;
+    const medals = ["🥇", "🥈", "🥉"];
+    if (podiumEl) {
+      const top3 = sorted
+        .slice(0, 3)
+        .map((r, i) => {
+          const place = i + 1;
+          const isMe = String(r.side) === String(mySlot);
+          return `<div class="podium__card podium__card--${place} ${isMe ? "podium__card--me" : ""}"><span class="podium__medal" aria-hidden="true">${medals[i]}</span><span class="podium__name">${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span class="podium__pts">${r.score ?? 0} Pkt</span></div>`;
+        })
+        .join("");
+      podiumEl.innerHTML = `<p class="podium__you">Dein Platz: <strong class="podium__rankNum">${myRank}</strong> <span class="podium__of">von ${n}</span></p><div class="podium__row">${top3}</div>`;
+      if (justEnded) {
+        podiumEl.classList.remove("podium--in");
+        void podiumEl.offsetWidth;
+        requestAnimationFrame(() => podiumEl.classList.add("podium--in"));
+      }
+    }
     leaderBoard.innerHTML = sorted
       .map(
         (r, i) =>
-          `<div><span>${i + 1}. ${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span>${r.score ?? 0} Pkt</span></div>`,
+          `<div class="${String(r.side) === String(mySlot) ? "leader__me" : ""}"><span>${i + 1}. ${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span>${r.score ?? 0} Pkt</span></div>`,
       )
       .join("");
+  } else {
+    prevSessionOver = false;
+    if (podiumEl) {
+      podiumEl.classList.remove("podium--in");
+      podiumEl.innerHTML = "";
+    }
   }
 
-  if (s.q) {
+  if (s.phase === "question" && s.q) {
     const mode = s.q.mode || "mcq";
-    const modePill = mode === "text" ? "Freitext" : "A·B·C·D";
-    qmeta.innerHTML = `<span class="pill">${escapeHtml(modePill)}</span><span class="pill">Runde ${s.q.round}/${s.q.totalRounds}</span><span class="pill">${escapeHtml(catLabel(s.q.cat))}</span><span class="pill">${escapeHtml(diffLabel(s.q.diff))}</span><span class="pill timer" id="qTimer">⏱ …</span>`;
-    qtext.textContent = s.q.q;
-    answersEl.innerHTML = "";
+    const needFullBuild = questionKey !== lastBuiltAnswersQKey;
 
-    if (mode === "text") {
-      const wrap = document.createElement("div");
-      wrap.className = "textAns";
-      const inp = document.createElement("input");
-      inp.type = "text";
-      inp.maxLength = 140;
-      inp.placeholder = "Antwort eingeben…";
-      inp.autocomplete = "off";
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "sendText";
-      btn.textContent = "Antwort senden";
-      const answered = typeof s.myAnswer === "string" && s.myAnswer.length > 0;
-      if (answered) {
-        inp.value = s.myAnswer;
-        inp.disabled = true;
-        btn.disabled = true;
-      } else {
-        btn.addEventListener("click", () => {
-          if (!ws || ws.readyState !== 1) return;
-          const t = inp.value.trim();
-          if (!t) return;
-          ws.send(JSON.stringify({ t: "trivia_answer_text", text: t }));
-        });
-        inp.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") btn.click();
+    if (needFullBuild) {
+      lastBuiltAnswersQKey = questionKey;
+      const modePill = mode === "text" ? "Freitext" : "A·B·C·D";
+      qmeta.innerHTML = `<span class="pill">${escapeHtml(modePill)}</span><span class="pill">Runde ${s.q.round}/${s.q.totalRounds}</span><span class="pill">${escapeHtml(catLabel(s.q.cat))}</span><span class="pill">${escapeHtml(diffLabel(s.q.diff))}</span><span class="pill timer" id="qTimer">⏱ …</span>`;
+      qtext.textContent = s.q.q;
+      answersEl.innerHTML = "";
+
+      if (mode === "text") {
+        const wrap = document.createElement("div");
+        wrap.className = "textAns";
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.maxLength = 140;
+        inp.placeholder = "Antwort eingeben…";
+        inp.autocomplete = "off";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "sendText";
+        btn.textContent = "Antwort senden";
+        const answered = typeof s.myAnswer === "string" && s.myAnswer.length > 0;
+        if (answered) {
+          inp.value = s.myAnswer;
+          inp.disabled = true;
+          btn.disabled = true;
+        } else {
+          btn.addEventListener("click", () => {
+            if (!ws || ws.readyState !== 1) return;
+            const t = inp.value.trim();
+            if (!t) return;
+            ws.send(JSON.stringify({ t: "trivia_answer_text", text: t }));
+          });
+          inp.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") btn.click();
+          });
+        }
+        wrap.appendChild(inp);
+        wrap.appendChild(btn);
+        answersEl.appendChild(wrap);
+      } else if (s.q.choices) {
+        s.q.choices.forEach((txt, i) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "ans";
+          b.textContent = `${String.fromCharCode(65 + i)}) ${txt}`;
+          b.dataset.i = String(i);
+          const answered = s.myAnswer !== null && s.myAnswer !== undefined;
+          if (answered && Number(s.myAnswer) === i) b.classList.add("picked");
+          b.disabled = answered;
+          b.addEventListener("click", () => {
+            if (!ws || ws.readyState !== 1) return;
+            ws.send(JSON.stringify({ t: "trivia_answer", i }));
+          });
+          answersEl.appendChild(b);
         });
       }
-      wrap.appendChild(inp);
-      wrap.appendChild(btn);
-      answersEl.appendChild(wrap);
-    } else if (s.q.choices) {
-      s.q.choices.forEach((txt, i) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "ans";
-        b.textContent = `${String.fromCharCode(65 + i)}) ${txt}`;
-        b.dataset.i = String(i);
+
+      if (timerId) clearInterval(timerId);
+      const endsAt = s.q.endsAt;
+      let tickedWarn = false;
+      const tick = () => {
+        const el = document.getElementById("qTimer");
+        if (!el) return;
+        const left = Math.max(0, endsAt - Date.now());
+        el.textContent = `⏱ ${(left / 1000).toFixed(1)}s`;
+        if (left < 3200) el.classList.add("timer--warn");
+        else el.classList.remove("timer--warn");
+        if (left < 3100 && left > 2900 && !tickedWarn) {
+          tickedWarn = true;
+          playSfx("tick");
+        }
+      };
+      tick();
+      timerId = setInterval(tick, 100);
+      revealPanel.hidden = true;
+      revealPanel.innerHTML = "";
+    } else {
+      if (mode === "text") {
+        const inp = answersEl.querySelector(".textAns input[type=text]");
+        const btn = answersEl.querySelector(".textAns .sendText");
+        if (inp && btn) {
+          const answered = typeof s.myAnswer === "string" && s.myAnswer.length > 0;
+          inp.disabled = answered;
+          btn.disabled = answered;
+          if (answered) inp.value = s.myAnswer;
+        }
+      } else if (s.q.choices) {
         const answered = s.myAnswer !== null && s.myAnswer !== undefined;
-        if (answered && s.myAnswer === i) b.classList.add("picked");
-        b.disabled = answered;
-        b.addEventListener("click", () => {
-          if (!ws || ws.readyState !== 1) return;
-          ws.send(JSON.stringify({ t: "trivia_answer", i }));
+        answersEl.querySelectorAll("button.ans").forEach((b) => {
+          const i = Number(b.dataset.i);
+          if (!Number.isFinite(i)) return;
+          b.disabled = answered;
+          b.classList.toggle("picked", answered && Number(s.myAnswer) === i);
         });
-        answersEl.appendChild(b);
-      });
-    }
-
-    if (timerId) clearInterval(timerId);
-    const endsAt = s.q.endsAt;
-    let tickedWarn = false;
-    const tick = () => {
-      const el = document.getElementById("qTimer");
-      if (!el) return;
-      const left = Math.max(0, endsAt - Date.now());
-      el.textContent = `⏱ ${(left / 1000).toFixed(1)}s`;
-      if (left < 3200) el.classList.add("timer--warn");
-      else el.classList.remove("timer--warn");
-      if (left < 3100 && left > 2900 && !tickedWarn) {
-        tickedWarn = true;
-        playSfx("tick");
       }
-    };
-    tick();
-    timerId = setInterval(tick, 100);
-    revealPanel.hidden = true;
-    revealPanel.innerHTML = "";
+    }
   } else {
     if (timerId) clearInterval(timerId);
     timerId = 0;
     if (!inQuiz) {
+      lastBuiltAnswersQKey = "";
       answersEl.innerHTML = "";
       qtext.textContent = "";
       qmeta.innerHTML = "";
@@ -386,7 +442,7 @@ function syncUiFromState(s) {
       buttons.forEach((btn, i) => {
         btn.disabled = true;
         if (i === r.correct) btn.classList.add("correct");
-        else if (s.myAnswer === i && i !== r.correct) btn.classList.add("wrong");
+        else if (Number(s.myAnswer) === i && i !== r.correct) btn.classList.add("wrong");
       });
     }
   }
@@ -429,6 +485,8 @@ function connect(code) {
     lastState = null;
     prevPhase = "";
     prevQKey = "";
+    prevSessionOver = false;
+    lastBuiltAnswersQKey = "";
     if (timerId) clearInterval(timerId);
     renderScoreboard(null);
   });
@@ -473,6 +531,8 @@ function connect(code) {
       optsPanel.hidden = false;
       prevPhase = "";
       prevQKey = "";
+      prevSessionOver = false;
+      lastBuiltAnswersQKey = "";
     }
   });
 }
