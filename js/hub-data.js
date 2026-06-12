@@ -68,6 +68,12 @@ window.THOMASFUN_ITEMS = [
   { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui"], section:"tests" },
   { title:"To‑Do Liste", href:"spiele/todo/index.html", emoji:"✅", label:"App", desc:"Filter, erledigt löschen — localStorage.", tags:["tool","mobile"], section:"tests" },
   { title:"Satelliten‑Ping", href:"spiele/spielchen/index.html", emoji:"🛰️", label:"Reflex", desc:"Kurz reagieren, wenn das Signal da ist.", tags:["game","reflex","mobile"], section:"tests" },
-  { title:"Wirtschafts‑Race", href:"spiele/wirtschafts-race/index.html", emoji:"📊", label:"Daten · Zeitraffer", desc:"Länder‑Battle 1900–2026: Balken überholen sich, Flaggen, historische Events — mit Synthwave‑Musik. Umschaltbar PPP/Dollar.", tags:["tool","data","mobile"], section:"tests" },
+  { title:"Wirtschafts‑Race", href:"spiele/wirtschafts-race/index.html", emoji:"📊", label:"Daten · Zeitraffer", desc:"Länder‑Battle 1900–2026: Balken überholen sich, Flaggen, historische Events — mit Synthwave‑Musik. Umschaltbar PPP/Dollar.", tags:["tool","test","data","mobile"], section:"tests" },
+
+  // Daten-Races & Simulationen
+  { title:"Gaming‑Race", href:"spiele/gaming-race/index.html", emoji:"🎮", label:"Daten · Zeitraffer", desc:"Welche Plattform hat die meisten Spieler? Steam, Xbox, Roblox, Minecraft & Co. von 2000 bis heute — inkl. dem irren Among‑Us‑Spike 2020.", tags:["tool","test","data","mobile"], section:"tests" },
+  { title:"YouTube‑Race", href:"spiele/youtube-race/index.html", emoji:"📺", label:"Daten · Zeitraffer", desc:"Die größten YouTube‑Kanäle 2010–2026: von Smosh über PewDiePie und T‑Series bis zum MrBeast‑Rekord. Schau, wer wen überholt.", tags:["tool","test","data","mobile"], section:"tests" },
+  { title:"Epidemie‑Simulator", href:"spiele/epidemie/index.html", emoji:"🦠", label:"Simulation · Sandbox", desc:"Jeder Punkt ein Mensch: stell Ansteckung, Tödlichkeit, Impfquote & Lockdown ein und sieh live, wie sich eine Krankheit ausbreitet — oder stoppt.", tags:["tool","test","sim","mobile"], section:"tests" },
+  { title:"Sonnensystem", href:"spiele/sonnensystem/index.html", emoji:"🪐", label:"Simulation · Weltraum", desc:"Die acht Planeten mit ihren echten relativen Umlaufzeiten. Zeitraffer aufdrehen, Datum mitlaufen lassen, Planeten anklicken.", tags:["tool","test","sim","space","mobile"], section:"tests" },
 ];
 

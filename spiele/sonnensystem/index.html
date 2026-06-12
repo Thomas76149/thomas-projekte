@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#05060c">
+<title>Sonnensystem-Zeitraffer — die Planeten in Bewegung</title>
+<meta name="description" content="Die acht Planeten umkreisen die Sonne mit ihren echten relativen Umlaufzeiten. Zeitraffer-Regler, Datum, Planeten zum Anklicken.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='12' fill='%23ffcc33'/%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23445' stroke-width='2'/%3E%3Ccircle cx='54' cy='32' r='4' fill='%234a90d9'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05060c;
+  --panel:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.09);
+  --text:#eef1f7;
+  --muted:#99a2b3;
+  --accent:#ffcc33;
+  --accent2:#4a90d9;
+  --accentA:rgba(255,204,51,.3);
+  --font-head:'Archivo Black','Arial Black',Impact,sans-serif;
+  --font-body:'Inter',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:radial-gradient(60% 50% at 50% 40%, rgba(40,40,80,.18), transparent 70%), var(--bg);
+  color:var(--text); font-family:var(--font-body);
+  min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; align-items:center;
+  padding:clamp(12px,2.4vw,26px); -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1120px,100%)}
+.back{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color:var(--muted); text-decoration:none; border:1px solid var(--stroke); border-radius:99px; padding:6px 13px;
+  background:rgba(255,255,255,.04); margin-bottom:clamp(10px,1.6vh,16px); transition:color .25s, border-color .25s, box-shadow .25s}
+.back:hover{color:var(--text); border-color:var(--accent); box-shadow:0 0 14px var(--accentA)}
+header{margin-bottom:clamp(10px,1.8vh,16px)}
+.kicker{font-family:var(--font-mono); font-size:clamp(10px,1.2vw,12px); letter-spacing:.26em; color:var(--accent); text-transform:uppercase; margin-bottom:7px}
+.kicker::before{content:"☉ "}
+h1{font-family:var(--font-head); font-weight:400; font-size:clamp(20px,3.6vw,36px); line-height:1.1}
+h1 .hl{background:linear-gradient(92deg, var(--accent), #ff9a3c); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+.sub{color:var(--muted); font-size:clamp(12px,1.5vw,14px); margin-top:5px; line-height:1.5; max-width:74ch}
+
+.panel{position:relative; background:var(--panel); border:1px solid var(--stroke); border-radius:18px;
+  backdrop-filter:blur(9px); box-shadow:0 22px 56px -30px rgba(0,0,0,.9)}
+.skywrap{padding:0; overflow:hidden; aspect-ratio:16/10; background:#03030a}
+@media (max-width:760px){ .skywrap{aspect-ratio:1/1} }
+#sky{display:block; width:100%; height:100%; cursor:crosshair}
+
+/* HUD oben links */
+.hud{position:absolute; top:12px; left:14px; pointer-events:none}
+.hud .date{font-family:var(--font-head); font-size:clamp(16px,2.4vw,24px); letter-spacing:.02em; text-shadow:0 2px 10px #000}
+.hud .rate{font-family:var(--font-mono); font-size:11px; color:var(--accent); margin-top:2px}
+
+/* Info-Karte */
+.info{position:absolute; right:12px; bottom:12px; max-width:min(290px,70%);
+  background:rgba(10,12,22,.82); border:1px solid var(--stroke); border-radius:14px; padding:13px 15px;
+  backdrop-filter:blur(6px); opacity:0; transform:translateY(8px); transition:opacity .3s, transform .3s; pointer-events:none}
+.info.on{opacity:1; transform:none}
+.info h3{font-family:var(--font-head); font-weight:400; font-size:16px; display:flex; align-items:center; gap:8px; margin-bottom:7px}
+.info .swatch{width:14px; height:14px; border-radius:50%; box-shadow:0 0 10px currentColor}
+.info dl{display:grid; grid-template-columns:auto 1fr; gap:3px 10px; font-size:12px}
+.info dt{color:var(--muted); font-family:var(--font-mono); font-size:10.5px}
+.info dd{text-align:right; font-weight:600}
+.info .fact{margin-top:8px; font-size:11.5px; color:var(--muted); line-height:1.5; font-style:italic}
+
+.controls{display:flex; align-items:center; gap:clamp(8px,1.4vw,13px); margin-top:14px; flex-wrap:wrap}
+button{font-family:var(--font-body); font-weight:800; font-size:13px; color:var(--text); cursor:pointer;
+  background:rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius:11px; padding:10px 15px;
+  transition:border-color .2s, box-shadow .2s, background .2s, transform .12s; -webkit-tap-highlight-color:transparent}
+button:hover{border-color:var(--accent); box-shadow:0 0 15px var(--accentA); background:rgba(255,255,255,.08)}
+button:active{transform:scale(.96)}
+button.toggle.on{border-color:var(--accent); color:var(--accent); box-shadow:0 0 12px var(--accentA)}
+#playBtn{background:linear-gradient(135deg, var(--accent), #e0a91f); border-color:transparent; color:#1a1405; min-width:104px; box-shadow:0 6px 20px -8px var(--accentA)}
+.speedwrap{flex:1; min-width:180px; display:flex; align-items:center; gap:10px}
+.speedwrap label{font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:nowrap}
+#speed{flex:1; accent-color:var(--accent); height:6px; cursor:pointer}
+.foot{margin-top:clamp(12px,2vh,16px); font-family:var(--font-mono); font-size:10.5px; color:rgba(153,162,179,.7); line-height:1.6; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../index.html">← thomas.fun</a>
+  <header>
+    <div class="kicker">Zeitraffer · echte Umlaufzeiten</div>
+    <h1>Das <span class="hl">Sonnensystem</span> in Bewegung</h1>
+    <div class="sub">Die acht Planeten umkreisen die Sonne — jeder mit seiner echten Umlaufzeit relativ zueinander. Merkur rast, Neptun braucht 165 Jahre für eine Runde. Dreh die Zeit auf und schau zu. Tipp: Planet anklicken für Infos.</div>
+  </header>
+
+  <div class="panel skywrap">
+    <canvas id="sky"></canvas>
+    <div class="hud">
+      <div class="date" id="dateLab">—</div>
+      <div class="rate" id="rateLab">—</div>
+    </div>
+    <div class="info" id="info">
+      <h3><span class="swatch" id="iSw"></span><span id="iName"></span></h3>
+      <dl>
+        <dt>Abstand zur Sonne</dt><dd id="iDist"></dd>
+        <dt>Ein Jahr dauert</dt><dd id="iYear"></dd>
+        <dt>Durchmesser</dt><dd id="iDia"></dd>
+        <dt>Monde</dt><dd id="iMoons"></dd>
+      </dl>
+      <div class="fact" id="iFact"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn">❚❚ Pause</button>
+    <div class="speedwrap">
+      <label>Tempo</label>
+      <input type="range" id="speed" min="0" max="100" value="42">
+    </div>
+    <button class="toggle on" id="orbitsBtn">Bahnen</button>
+    <button class="toggle on" id="labelsBtn">Namen</button>
+    <button id="todayBtn">⌖ Heute</button>
+  </div>
+  <div class="foot">
+    Umlaufzeiten &amp; Abstände sind echt (relativ) — Planetengrößen &amp; Bahn­abstände sind fürs Bild komprimiert, sonst wäre Merkur unsichtbar und Neptun außerhalb des Bildschirms.<br>
+    Bahnen hier vereinfacht als Kreise (in echt leicht elliptisch) und in einer Ebene.
+  </div>
+</div>
+
+<script>
+'use strict';
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const cv=document.getElementById('sky'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1), CXp=0, CYp=0, maxR=0;
+function fit(){
+  const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CXp=W/2; CYp=H/2;
+  maxR=Math.min(W,H)/2 - Math.max(14, Math.min(W,H)*0.04);
+  buildStars();
+}
+
+/* ---------- Planetendaten ---------- */
+/* au = Abstand (AE), periodY = Umlaufzeit (Jahre), dia = Durchmesser km,
+   rad = Zeichenradius (px-Basis), col = Farbe, moons, fact = Spruch */
+const SUN = {rad:24, col:'#ffcc33'};
+const PLANETS = [
+  {name:'Merkur',  au:0.39, periodY:0.241, dia:4879,   rad:3.0, col:'#9c8a7a', moons:'0',  fact:'Sonnennächster Planet — tagsüber 430 °C heiß, nachts −180 °C kalt.'},
+  {name:'Venus',   au:0.72, periodY:0.615, dia:12104,  rad:5.2, col:'#e6c88a', moons:'0',  fact:'Heißester Planet (~465 °C) wegen extremem Treibhauseffekt. Dreht sich rückwärts.'},
+  {name:'Erde',    au:1.00, periodY:1.000, dia:12742,  rad:5.4, col:'#4a90d9', moons:'1',  fact:'Der einzige bekannte Planet mit Leben. Dein Zuhause.'},
+  {name:'Mars',    au:1.52, periodY:1.881, dia:6779,   rad:4.2, col:'#d05a3a', moons:'2',  fact:'Der „Rote Planet" — rostiger Staub. Hat den größten Vulkan im Sonnensystem.'},
+  {name:'Jupiter', au:5.20, periodY:11.86, dia:139820, rad:14,  col:'#d6a878', moons:'95+', fact:'Der Riese — schwerer als alle anderen Planeten zusammen. Der Große Rote Fleck ist ein Sturm.'},
+  {name:'Saturn',  au:9.58, periodY:29.46, dia:116460, rad:12,  col:'#e0c79a', moons:'140+', fact:'Berühmt für seine Ringe aus Eis und Gestein. So leicht, dass er auf Wasser schwimmen würde.', ring:true},
+  {name:'Uranus',  au:19.2, periodY:84.01, dia:50724,  rad:8.5, col:'#a8e4e4', moons:'27', fact:'Liegt auf der Seite und „rollt" um die Sonne. Eisig blau durch Methan.'},
+  {name:'Neptun',  au:30.05,periodY:164.8, dia:49244,  rad:8.2, col:'#3f63d9', moons:'14', fact:'Fernster Planet — braucht 165 Jahre für eine Runde. Schnellste Winde: über 2000 km/h.'}
+];
+/* Bahnradius (px) per Wurzel-Skalierung, damit alle aufs Bild passen */
+function orbitPx(au){
+  const inner = SUN.rad+12, outer = maxR;
+  return inner + (Math.sqrt(au)/Math.sqrt(30.05))*(outer-inner);
+}
+/* Startwinkel leicht verteilt, damit nicht alle auf einer Linie stehen */
+PLANETS.forEach((p,i)=>{ p.ang0 = i*0.8; });
+
+/* ---------- Zeit ---------- */
+const DAY_MS = 86400000;
+const startEpoch = Date.now();
+let simDays = 0;          /* Tage seit Start */
+let playing = !REDUCED;
+let daysPerSec = 0;
+function sliderToRate(v){ return Math.pow(10, (v/100)*3.7 - 0.3); } /* ~0.5 .. ~2500 Tage/s */
+function setRate(v){ daysPerSec = sliderToRate(v); updateRateLab(); }
+
+/* ---------- Sterne ---------- */
+let stars=[];
+function buildStars(){
+  stars=[];
+  const n=Math.round(W*H/5500);
+  for(let i=0;i<n;i++) stars.push({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.1+0.2, a:Math.random()*0.5+0.2, tw:Math.random()*6.28});
+}
+
+let showOrbits=true, showLabels=true, selected=null, twPhase=0;
+
+function planetPos(p){
+  const R=orbitPx(p.au);
+  const ang = p.ang0 + (simDays/(p.periodY*365.25))*6.28318;
+  return {x:CXp+Math.cos(ang)*R, y:CYp+Math.sin(ang)*R, R, ang};
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  /* Sterne */
+  twPhase+=0.02;
+  for(const s of stars){
+    const a=s.a*(0.6+0.4*Math.sin(twPhase+s.tw));
+    ctx.globalAlpha=a; ctx.fillStyle='#cfe0ff';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.2832); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  /* Bahnen */
+  if(showOrbits){
+    for(const p of PLANETS){
+      ctx.beginPath(); ctx.arc(CXp,CYp,orbitPx(p.au),0,6.2832);
+      ctx.strokeStyle = (selected===p)?'rgba(255,204,51,.5)':'rgba(255,255,255,.07)';
+      ctx.lineWidth = (selected===p)?1.4:1; ctx.stroke();
+    }
+  }
+
+  /* Sonne mit Glow */
+  const g=ctx.createRadialGradient(CXp,CYp,0,CXp,CYp,SUN.rad*3.4);
+  g.addColorStop(0,'rgba(255,221,120,.9)'); g.addColorStop(.4,'rgba(255,180,50,.35)'); g.addColorStop(1,'rgba(255,150,30,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(CXp,CYp,SUN.rad*3.4,0,6.2832); ctx.fill();
+  ctx.fillStyle='#ffd34d'; ctx.beginPath(); ctx.arc(CXp,CYp,SUN.rad,0,6.2832); ctx.fill();
+  ctx.fillStyle='#fff3c4'; ctx.beginPath(); ctx.arc(CXp,CYp,SUN.rad*0.6,0,6.2832); ctx.fill();
+
+  /* Planeten */
+  for(const p of PLANETS){
+    const pos=planetPos(p); p._pos=pos;
+    /* Saturnringe */
+    if(p.ring){
+      ctx.save(); ctx.translate(pos.x,pos.y); ctx.scale(1,0.38); ctx.rotate(0.3);
+      ctx.beginPath(); ctx.arc(0,0,p.rad*2.0,0,6.2832);
+      ctx.strokeStyle='rgba(224,199,154,.55)'; ctx.lineWidth=p.rad*0.8; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0,0,p.rad*1.55,0,6.2832);
+      ctx.strokeStyle='rgba(224,199,154,.3)'; ctx.lineWidth=p.rad*0.45; ctx.stroke();
+      ctx.restore();
+    }
+    /* leichter Schatten/Glow */
+    ctx.save();
+    if(selected===p){ ctx.shadowColor=p.col; ctx.shadowBlur=14; }
+    ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(pos.x,pos.y,p.rad,0,6.2832); ctx.fill();
+    /* kleines Highlight */
+    ctx.fillStyle='rgba(255,255,255,.18)'; ctx.beginPath(); ctx.arc(pos.x-p.rad*0.3,pos.y-p.rad*0.3,p.rad*0.45,0,6.2832); ctx.fill();
+    ctx.restore();
+
+    /* Erdmond */
+    if(p.name==='Erde'){
+      const ma=p.ang0*3 + (simDays/27.3)*6.28318;
+      const mx=pos.x+Math.cos(ma)*(p.rad+6), my=pos.y+Math.sin(ma)*(p.rad+6);
+      ctx.fillStyle='#cfd3da'; ctx.beginPath(); ctx.arc(mx,my,1.8,0,6.2832); ctx.fill();
+    }
+    /* Label */
+    if(showLabels){
+      ctx.fillStyle='rgba(220,228,245,.75)'; ctx.font='600 11px Inter, sans-serif'; ctx.textAlign='center';
+      ctx.fillText(p.name, pos.x, pos.y - p.rad - 6);
+    }
+  }
+}
+
+/* ---------- Datum / Tempo ---------- */
+const dateLab=document.getElementById('dateLab'), rateLab=document.getElementById('rateLab');
+const MONTHS=['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+function updateDate(){
+  const d=new Date(startEpoch + simDays*DAY_MS);
+  dateLab.textContent = d.getDate()+'. '+MONTHS[d.getMonth()]+' '+d.getFullYear();
+}
+function updateRateLab(){
+  let txt;
+  if(daysPerSec<2) txt = daysPerSec.toFixed(1)+' Tage / Sek.';
+  else if(daysPerSec<120) txt = Math.round(daysPerSec)+' Tage / Sek.';
+  else txt = (daysPerSec/365.25).toFixed(daysPerSec<730?2:1)+' Jahre / Sek.';
+  rateLab.textContent = '⏩ '+txt;
+}
+
+/* ---------- Loop ---------- */
+let last=0;
+function frame(t){
+  const dt = last? Math.min(60,t-last)/1000 : 0; last=t;
+  if(playing) simDays += dt*daysPerSec;
+  draw(); updateDate();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Interaktion ---------- */
+const info=document.getElementById('info');
+function selectPlanet(p){
+  selected=p;
+  if(!p){ info.classList.remove('on'); return; }
+  document.getElementById('iSw').style.color=p.col;
+  document.getElementById('iName').textContent=p.name;
+  document.getElementById('iDist').textContent=p.au.toLocaleString('de-DE')+' AE';
+  const y=p.periodY;
+  document.getElementById('iYear').textContent = y<1 ? Math.round(y*365.25)+' Tage' : (y<2? y.toFixed(2)+' Jahre' : y.toFixed(y<100?1:0)+' Jahre');
+  document.getElementById('iDia').textContent=p.dia.toLocaleString('de-DE')+' km';
+  document.getElementById('iMoons').textContent=p.moons;
+  document.getElementById('iFact').textContent=p.fact;
+  info.classList.add('on');
+}
+cv.addEventListener('pointerdown', e=>{
+  const r=cv.getBoundingClientRect(); const mx=e.clientX-r.left, my=e.clientY-r.top;
+  let best=null, bd=1e9;
+  for(const p of PLANETS){ if(!p._pos) continue; const dx=mx-p._pos.x, dy=my-p._pos.y; const d=Math.hypot(dx,dy); if(d<Math.max(p.rad+8,14) && d<bd){ bd=d; best=p; } }
+  /* Sonne? */
+  if(!best){ const d=Math.hypot(mx-CXp,my-CYp); if(d<SUN.rad+8){ selectSun(); return; } }
+  selectPlanet(best);
+});
+function selectSun(){
+  selected=null;
+  document.getElementById('iSw').style.color=SUN.col;
+  document.getElementById('iName').textContent='Sonne';
+  document.getElementById('iDist').textContent='— (Zentrum)';
+  document.getElementById('iYear').textContent='dreht sich in ~25 Tagen';
+  document.getElementById('iDia').textContent=(1391000).toLocaleString('de-DE')+' km';
+  document.getElementById('iMoons').textContent='8 Planeten';
+  document.getElementById('iFact').textContent='Ein riesiger Ball aus glühendem Gas — 99,8 % der Masse des ganzen Sonnensystems. In ihr würden über eine Million Erden passen.';
+  info.classList.add('on');
+}
+
+const playBtn=document.getElementById('playBtn');
+playBtn.addEventListener('click', ()=>{ playing=!playing; playBtn.textContent=playing?'❚❚ Pause':'▶ Weiter'; });
+document.getElementById('speed').addEventListener('input', e=>setRate(+e.target.value));
+document.getElementById('orbitsBtn').addEventListener('click', e=>{ showOrbits=!showOrbits; e.currentTarget.classList.toggle('on',showOrbits); });
+document.getElementById('labelsBtn').addEventListener('click', e=>{ showLabels=!showLabels; e.currentTarget.classList.toggle('on',showLabels); });
+document.getElementById('todayBtn').addEventListener('click', ()=>{ simDays=0; });
+window.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); playBtn.click(); } });
+window.addEventListener('resize', ()=>{ DPR=Math.min(2,window.devicePixelRatio||1); fit(); });
+
+/* ---------- Start ---------- */
+fit(); setRate(42); updateDate();
+requestAnimationFrame(frame);
+
+window.__solar = { get days(){return simDays}, PLANETS };
+</script>
+</body>
+</html>

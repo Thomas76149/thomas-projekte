@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0c0f">
+<title>Gaming-Plattform-Race — 2000 bis 2026</title>
+<meta name="description" content="Zeitraffer: die größten Gaming-Plattformen nach monatlich aktiven Spielern, 2000 bis 2026 — mit Events, Scrubber und Chiptune-Musik.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='34' width='14' height='24' rx='3' fill='%23a259ff'/%3E%3Crect x='25' y='20' width='14' height='38' rx='3' fill='%23ff4fd1'/%3E%3Crect x='44' y='8' width='14' height='50' rx='3' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BAR CHART RACE — Gaming-Plattform-Race 2000–2026
+   Geschätzte monatlich aktive Spieler (MAU) in Millionen.
+   Eine Datei, kein Build, keine Bibliothek.
+   Engine 1:1 übernommen aus spiele/wirtschafts-race.
+   ============================================================ */
+:root{
+  --bg:#0c0c0f;
+  --panel:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.09);
+  --text:#f1eefa;
+  --muted:#9d99b3;
+  --acc:#a259ff;
+  --acc2:#ff4fd1;
+  --accSoft:#c89bff;
+  --accA:rgba(162,89,255,.35);
+  --font-head:'Outfit','Arial Black',Impact,sans-serif;
+  --font-body:'Space Grotesk',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'Space Grotesk',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(50% 42% at 22% 18%, rgba(162,89,255,.12), transparent 62%),
+    radial-gradient(46% 44% at 82% 86%, rgba(255,79,209,.07), transparent 62%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:clamp(12px,2.5vw,28px);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1080px,100%)}
+
+.back{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color:var(--muted); text-decoration:none;
+  border:1px solid var(--stroke); border-radius:99px;
+  padding:6px 13px; background:rgba(255,255,255,.04);
+  margin-bottom:clamp(10px,1.6vh,16px);
+  transition:color .25s, border-color .25s, box-shadow .25s;
+}
+.back:hover{color:var(--text); border-color:var(--acc); box-shadow:0 0 14px var(--accA)}
+
+header{margin-bottom:clamp(12px,2vh,20px)}
+.kicker{
+  font-family:var(--font-mono); font-size:clamp(10px,1.2vw,12px);
+  letter-spacing:.28em; color:var(--accSoft); text-transform:uppercase;
+  margin-bottom:8px;
+}
+.kicker::before{content:"▸ "; color:var(--acc2)}
+h1{
+  font-family:var(--font-head); font-weight:900;
+  font-size:clamp(22px,4vw,40px); line-height:1.1; letter-spacing:.01em;
+}
+h1 .hl{
+  background:linear-gradient(92deg, var(--acc) 10%, var(--acc2) 100%);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+.sub{color:var(--muted); font-size:clamp(12px,1.5vw,14.5px); margin-top:6px; line-height:1.5}
+
+/* ---------- Chart-Panel ---------- */
+.panel{
+  position:relative;
+  background:var(--panel);
+  border:1px solid var(--stroke);
+  border-radius:20px;
+  padding:clamp(14px,2.2vw,26px);
+  backdrop-filter:blur(9px);
+  box-shadow:0 24px 60px -28px rgba(0,0,0,.8);
+  overflow:hidden;
+}
+#race{
+  position:relative;
+  height:calc(var(--rows)*var(--rowh));
+  --rowh:clamp(44px,7.2vh,58px);
+}
+.gridlines{position:absolute; inset:0; pointer-events:none}
+.gridlines span{
+  position:absolute; top:0; bottom:0; width:1px;
+  background:rgba(255,255,255,.05);
+}
+
+/* ---------- Zeilen ---------- */
+.row{
+  position:absolute; left:0; right:0; height:var(--rowh);
+  display:grid;
+  grid-template-columns:clamp(124px,17vw,196px) 1fr;
+  gap:clamp(8px,1.4vw,16px);
+  align-items:center;
+  padding:4px 0;
+  will-change:transform;
+  transition:transform .55s cubic-bezier(.25,.8,.3,1), opacity .45s ease;
+}
+.row.gone{opacity:0; pointer-events:none}
+.who{
+  display:flex; align-items:center; gap:9px; min-width:0;
+  justify-content:flex-end; text-align:right;
+}
+.rank{
+  font-family:var(--font-mono); font-size:11px; color:var(--muted);
+  width:18px; flex:0 0 auto; text-align:right;
+}
+.cname{
+  font-weight:700; font-size:clamp(11.5px,1.5vw,14.5px);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.icon{flex:0 0 auto; display:block; width:clamp(22px,2.8vw,28px); height:auto;
+  border-radius:8px; box-shadow:0 0 0 1px rgba(255,255,255,.16), 0 2px 8px rgba(0,0,0,.5)}
+.track{position:relative; height:calc(100% - 8px); min-width:0}
+.bar{
+  position:absolute; left:0; top:0; bottom:0;
+  border-radius:8px;
+  min-width:6px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 4px 14px -6px rgba(0,0,0,.6);
+  display:flex; align-items:center; justify-content:flex-end;
+}
+.val{
+  position:absolute; left:calc(100% + 9px); top:50%;
+  transform:translateY(-50%);
+  font-family:var(--font-mono); font-weight:500;
+  font-variant-numeric:tabular-nums;
+  font-size:clamp(10px,1.25vw,12.5px);
+  color:var(--text); white-space:nowrap;
+  text-shadow:0 1px 4px rgba(0,0,0,.7);
+}
+.val small{color:var(--muted); font-size:.85em}
+
+/* ---------- Jahr + Event ---------- */
+.year-box{
+  position:absolute; right:clamp(14px,2.5vw,30px); bottom:clamp(10px,2vh,20px);
+  text-align:right; pointer-events:none;
+}
+#bigYear{
+  font-family:var(--font-head); font-weight:900;
+  font-variant-numeric:tabular-nums;
+  font-size:clamp(44px,8.5vw,96px); line-height:1;
+  color:rgba(255,255,255,.9);
+  text-shadow:0 0 34px rgba(162,89,255,.3), 0 0 8px rgba(0,0,0,.6);
+  letter-spacing:.02em;
+}
+#eventBadge{
+  display:inline-block; margin-top:6px;
+  font-family:var(--font-mono); font-size:clamp(10px,1.3vw,12.5px);
+  letter-spacing:.06em; color:#ff9be2;
+  background:rgba(255,79,209,.08);
+  border:1px solid rgba(255,79,209,.4);
+  border-radius:99px; padding:5px 13px;
+  opacity:0; transform:translateY(5px);
+  transition:opacity .45s ease, transform .45s ease;
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
+}
+#eventBadge.on{opacity:1; transform:none}
+
+/* ---------- Steuerung ---------- */
+.controls{
+  display:flex; align-items:center; gap:clamp(8px,1.4vw,14px);
+  margin-top:clamp(12px,2vh,18px); flex-wrap:wrap;
+}
+button{
+  font-family:var(--font-body); font-weight:700; font-size:13px;
+  color:var(--text); cursor:pointer;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--stroke); border-radius:12px;
+  padding:10px 16px;
+  transition:border-color .25s, box-shadow .25s, background .25s, transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+button:hover{border-color:var(--acc); box-shadow:0 0 16px var(--accA); background:rgba(255,255,255,.08)}
+button:active{transform:scale(.96)}
+#playBtn{
+  background:linear-gradient(135deg, var(--acc), #d93fb4);
+  border-color:transparent; min-width:110px;
+  box-shadow:0 6px 22px -8px var(--accA);
+}
+#playBtn:hover{box-shadow:0 0 24px var(--accA)}
+.speeds{display:flex; gap:6px}
+.speeds button{padding:10px 13px; font-family:var(--font-mono); font-weight:700}
+.speeds button.on{border-color:var(--acc); color:var(--accSoft); box-shadow:0 0 14px var(--accA)}
+#yearRange{
+  flex:1; min-width:150px; accent-color:var(--acc);
+  height:6px; cursor:pointer;
+}
+.foot{
+  margin-top:clamp(10px,1.6vh,14px);
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em;
+  color:rgba(157,153,179,.7); line-height:1.6;
+}
+
+@media (max-width:640px){
+  .row{grid-template-columns:clamp(100px,30vw,130px) 1fr; gap:7px}
+  .rank{display:none}
+  .val{font-size:9.5px; left:calc(100% + 6px)}
+  #race{--rowh:clamp(38px,6vh,46px)}
+  .year-box{bottom:6px}
+}
+@media (prefers-reduced-motion: reduce){
+  .row{transition:transform .01s, opacity .01s}
+  #eventBadge{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../index.html">← thomas.fun</a>
+  <header>
+    <div class="kicker">Zeitraffer · 2000 → 2026 · Spieler in Millionen</div>
+    <h1>Das <span class="hl">Gaming-Plattform-Race</span></h1>
+    <div class="sub">Welche Plattform hat die meisten Spieler? Geschätzte <b style="color:var(--text)">monatlich aktive Spieler (MAU)</b> in Millionen — drück Play und schau, wer das Rennen macht.</div>
+  </header>
+
+  <div class="panel">
+    <div id="race" style="--rows:8">
+      <div class="gridlines" id="gridlines"></div>
+    </div>
+    <div class="year-box">
+      <div id="bigYear">2000</div>
+      <div><span id="eventBadge"></span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" aria-label="Abspielen oder pausieren">▶ &nbsp;Play</button>
+    <div class="speeds" role="group" aria-label="Geschwindigkeit">
+      <button data-speed="0.5">0,5×</button>
+      <button data-speed="1" class="on">1×</button>
+      <button data-speed="2">2×</button>
+    </div>
+    <button id="resetBtn">⟲ Neustart</button>
+    <button id="musicBtn" title="Musik an/aus">♪ Musik: an</button>
+    <input type="range" id="yearRange" min="2000" max="2026" step="0.1" value="2000" aria-label="Jahr wählen">
+  </div>
+  <div class="foot">
+    GESCHÄTZTE ZAHLEN aus öffentlichen Quellen — Plattformen zählen unterschiedlich (MAU, Abos, aktive Accounts) und nicht jede Firma veröffentlicht echte Zahlen. Für den Vergleich gerundet &amp; interpoliert.<br>
+    HINWEIS: Der Among-Us-Berg 2020 ist kein Fehler — der Lockdown-Hype war wirklich so krass (rund eine halbe Milliarde Spieler in einem Monat).
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   LOGOS — handgezeichnete Mini-SVGs, stilisierte Icon-Formen
+   (KEINE echten Markenlogos kopiert). viewBox 28x28, Badges.
+   ============================================================ */
+const LOGOS = {
+  steam:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#1b2838"/><circle cx="16.5" cy="10.5" r="5" fill="#cfe3ff"/><circle cx="16.5" cy="10.5" r="2" fill="#1b2838"/><path d="M10.2 17.6 13.6 13.6" stroke="#cfe3ff" stroke-width="2.6" stroke-linecap="round"/><circle cx="9" cy="19" r="3.2" fill="#cfe3ff"/></svg>`,
+  xbox:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#128a12"/><circle cx="14" cy="14" r="8.2" fill="none" stroke="#eaffe9" stroke-width="1.6"/><path d="M9 8.8c3.3 1.8 6.7 5 9.6 9.8M19 8.8c-3.3 1.8-6.7 5-9.6 9.8" stroke="#eaffe9" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
+  psn:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#2456c8"/><g stroke="#e3ecff" stroke-width="1.5" fill="none"><path d="M9 5.6l3 5H6z"/><circle cx="19" cy="8.1" r="2.6"/><path d="M6.6 16.4l4.8 4.8M11.4 16.4l-4.8 4.8"/><rect x="16.4" y="16.4" width="5.2" height="5.2"/></g></svg>`,
+  wow:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#143a6b"/><path d="M5.5 8l3.4 12 4.1-9.5 4.1 9.5L22.5 8" stroke="#f2c14e" stroke-width="2.4" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>`,
+  rbx:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#cf4540"/><g transform="rotate(-12 14 14)"><path d="M9 9h10v10H9z M12.6 12.6h2.8v2.8h-2.8z" fill="#fff" fill-rule="evenodd"/></g></svg>`,
+  mc:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#5d3f26"/><path d="M0 6a6 6 0 0 1 6-6h16a6 6 0 0 1 6 6v5H0z" fill="#67a73e"/><rect x="4" y="11" width="4" height="3" fill="#67a73e"/><rect x="14" y="11" width="5" height="2" fill="#67a73e"/><rect x="9" y="3" width="3" height="3" fill="#559032"/><rect x="19" y="6" width="3" height="3" fill="#7cbf4a"/><rect x="8" y="17" width="3" height="3" fill="#7a5435"/><rect x="18" y="15" width="3" height="3" fill="#4a3018"/><rect x="6" y="20" width="3" height="3" fill="#4a3018"/></svg>`,
+  lol:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#0d2440"/><rect x="6" y="6" width="16" height="16" rx="2" fill="none" stroke="#c8a45c" stroke-width="1.6"/><path d="M11 10v8h7" stroke="#c8a45c" stroke-width="2.4" fill="none"/></svg>`,
+  fn:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#7b3ff2"/><path d="M16.8 3.5 8.5 15.5h4.6L10.6 24.5l8.9-13h-4.6z" fill="#fff"/></svg>`,
+  nso:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#d6362e"/><rect x="6.5" y="5.5" width="6.4" height="17" rx="3.2" fill="#fff"/><circle cx="9.7" cy="10.5" r="1.7" fill="#d6362e"/><rect x="15.1" y="5.5" width="6.4" height="17" rx="3.2" fill="#ffd9d6"/><circle cx="18.3" cy="17.5" r="1.7" fill="#d6362e"/></svg>`,
+  gta:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#151913"/><path d="M14 5.5 16.1 11.1 22.1 11.4 17.4 15.1 19 20.9 14 17.6 9 20.9 10.6 15.1 5.9 11.4 11.9 11.1Z" fill="#86c14a"/></svg>`,
+  cs:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#4a4f55"/><circle cx="14" cy="14" r="6.3" fill="none" stroke="#e8893a" stroke-width="2"/><path d="M14 3.6v4.4M14 20v4.4M3.6 14H8M20 14h4.4" stroke="#e8893a" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="14" r="1.4" fill="#e8893a"/></svg>`,
+  au:`<svg class="icon" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#e3c79e"/><rect x="7" y="11" width="3.4" height="8" rx="1.6" fill="#a32f29"/><path d="M10.6 10c0-3.2 2-5.2 4.6-5.2 2.9 0 5 2.2 5 5.4v10.2c0 1.6-1 2.6-2.4 2.6h-.6c-.9 0-1.4-.6-1.4-1.5v-1.9h-1.4v1.9c0 .9-.5 1.5-1.4 1.5h-.6c-1.4 0-2.4-1-2.4-2.6z" fill="#c63b34"/><rect x="12.8" y="8.6" width="7" height="4.6" rx="2.3" fill="#cfe9f4"/><rect x="14" y="9.5" width="3" height="1.4" rx=".7" fill="#fff" opacity=".7"/></svg>`
+};
+
+/* ============================================================
+   DATEN — geschätzte monatlich aktive Spieler in Millionen.
+   Stützpunkte [Jahr, Wert]; dazwischen wird linear gerechnet.
+   Plattformen ohne Wert in einem Jahr existieren dort (noch) nicht.
+   Among Us nutzt Zwischenjahre (2020.8 = Nov 2020 Peak).
+   ============================================================ */
+const PLATFORMS = [
+  {id:'steam', name:'Steam',             logo:'steam', color:'#3f6db5',
+   d:[[2003,0.6],[2005,4],[2008,15],[2011,35],[2014,55],[2017,67],[2019,90],[2020,120],[2021,132],[2023,132],[2026,140]]},
+  {id:'xbox',  name:'Xbox Live',         logo:'xbox', color:'#27b357',
+   d:[[2002,0.3],[2004,1.5],[2006,4],[2008,12],[2010,20],[2013,30],[2015,39],[2017,53],[2019,65],[2020,100],[2022,115],[2024,120],[2026,120]]},
+  {id:'psn',   name:'PlayStation',       logo:'psn', color:'#3f7ad9',
+   d:[[2006,0.8],[2008,10],[2010,25],[2012,40],[2014,55],[2016,70],[2018,90],[2019,103],[2020,114],[2021,104],[2023,123],[2025,124],[2026,126]]},
+  {id:'wow',   name:'World of Warcraft', logo:'wow', color:'#e0b34a',
+   d:[[2004,1.2],[2005,5.5],[2007,9.5],[2008,11],[2010,12],[2012,9.5],[2014,7.5],[2016,5.5],[2019,8],[2021,5],[2023,7],[2026,7]]},
+  {id:'rbx',   name:'Roblox',            logo:'rbx', color:'#cf423c',
+   d:[[2006,0.2],[2008,0.8],[2010,4],[2012,9],[2014,18],[2016,44],[2018,76],[2019,100],[2020,140],[2021,150],[2022,155],[2023,165],[2024,310],[2025,365],[2026,390]]},
+  {id:'mc',    name:'Minecraft',         logo:'mc', color:'#5e9c3c',
+   d:[[2011,4],[2013,25],[2015,55],[2017,74],[2018,91],[2019,112],[2020,126],[2021,141],[2022,160],[2023,165],[2026,170]]},
+  {id:'lol',   name:'League of Legends', logo:'lol', color:'#54689e',
+   d:[[2009,0.4],[2011,15],[2012,32],[2014,67],[2016,100],[2019,105],[2021,125],[2023,132],[2026,130]]},
+  {id:'fn',    name:'Fortnite',          logo:'fn', color:'#9b59f5',
+   d:[[2017,1],[2018,80],[2019,85],[2020,80],[2021,72],[2022,65],[2023,100],[2024,80],[2026,75]]},
+  {id:'nso',   name:'Switch Online',     logo:'nso', color:'#f4584e',
+   d:[[2017,0.5],[2018,8],[2019,15],[2020,26],[2021,32],[2022,36],[2023,38],[2025,34],[2026,42]]},
+  {id:'gta',   name:'GTA Online',        logo:'gta', color:'#9bcf5a',
+   d:[[2013,10],[2014,16],[2016,20],[2018,23],[2020,33],[2021,30],[2023,26],[2025,24],[2026,28]]},
+  {id:'cs',    name:'Counter-Strike',    logo:'cs', color:'#e8893a',
+   d:[[2012,1.5],[2014,8],[2016,12],[2018,15],[2020,26],[2022,22],[2023,32],[2025,34],[2026,35]]},
+  {id:'au',    name:'Among Us',          logo:'au', color:'#d9b58c',
+   d:[[2018,0.4],[2020.2,8],[2020.8,440],[2021.3,150],[2021.8,55],[2022.5,25],[2023.5,10],[2026,5]]}
+];
+
+/* Historische Ereignisse fürs Badge */
+const EVENTS = [
+  [2000,2001,'Online-Gaming steckt noch in den Kinderschuhen'],
+  [2002,2003,'Xbox Live startet'],
+  [2004,2005,'WoW erscheint — MMO-Fieber'],
+  [2008,2009,'App Store startet — Mobile-Gaming beginnt'],
+  [2011,2012,'Minecraft Release'],
+  [2013,2014,'GTA Online startet'],
+  [2017,2018,'Fortnite Battle Royale'],
+  [2020,2021,'Lockdown-Gaming-Boom'],
+  [2024,2025,'Roblox überholt alle']
+];
+
+/* ============================================================
+   ENGINE (1:1 aus wirtschafts-race)
+   ============================================================ */
+const REDUCED  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Y_START=2000, Y_END=2026, TOP_N=8;
+const YEARS_PER_SEC = 1.6;
+let year   = Y_START;
+let speed  = 1;
+let playing= false;
+let lastT  = 0, rafId = 0;
+
+const raceEl  = document.getElementById('race');
+const bigYear = document.getElementById('bigYear');
+const badge   = document.getElementById('eventBadge');
+const playBtn = document.getElementById('playBtn');
+const range   = document.getElementById('yearRange');
+
+/* dezente vertikale Gitterlinien */
+const glBox = document.getElementById('gridlines');
+for(let i=1;i<=5;i++){
+  const s=document.createElement('span');
+  s.style.left=(i*20)+'%';
+  glBox.appendChild(s);
+}
+
+/* Wert einer Plattform im Jahr y (linear interpoliert), null = existiert (noch) nicht */
+function valueAt(c, y){
+  const p = c.d;
+  if(!p || y < p[0][0] || y > p[p.length-1][0]) return null;
+  for(let i=0;i<p.length-1;i++){
+    const [y0,v0]=p[i], [y1,v1]=p[i+1];
+    if(y>=y0 && y<=y1){
+      const t=(y-y0)/(y1-y0||1);
+      return v0+(v1-v0)*t;
+    }
+  }
+  return p[p.length-1][1];
+}
+
+/* Eine wiederverwendbare Zeile pro Plattform */
+const rows = new Map();
+PLATFORMS.forEach(c=>{
+  const el=document.createElement('div');
+  el.className='row gone';
+  el.innerHTML =
+    '<div class="who"><span class="rank"></span><span class="cname">'+c.name+'</span>'+LOGOS[c.logo]+'</div>'+
+    '<div class="track"><div class="bar" style="background:linear-gradient(90deg,'+c.color+'cc,'+c.color+')">'+
+    '<span class="val"></span></div></div>';
+  el.style.transform='translateY('+(TOP_N*1.1*100)+'%)';
+  raceEl.appendChild(el);
+  rows.set(c.id,{el, bar:el.querySelector('.bar'), val:el.querySelector('.val'), rank:el.querySelector('.rank'), visible:false});
+});
+
+const fmt1=v=> v>=9.95
+  ? Math.round(v).toLocaleString('de-DE')
+  : v.toLocaleString('de-DE',{minimumFractionDigits:1, maximumFractionDigits:1});
+
+function render(){
+  const live = PLATFORMS
+    .map(c=>({c, v:valueAt(c,year)}))
+    .filter(x=>x.v!==null)
+    .sort((a,b)=>b.v-a.v);
+  const top = live.slice(0,TOP_N);
+  const maxV = top.length ? top[0].v : 1;
+  const maxW = window.innerWidth < 640 ? 70 : 86; /* schmale Screens: Platz fürs Wert-Label lassen */
+  const shown = new Set();
+
+  top.forEach((x,i)=>{
+    shown.add(x.c.id);
+    const r = rows.get(x.c.id);
+    r.el.style.transform = 'translateY('+(i*100)+'%)';
+    if(!r.visible){ r.el.classList.remove('gone'); r.visible=true; }
+    r.bar.style.width = Math.max(2,(x.v/maxV)*maxW) + '%';
+    r.val.innerHTML = fmt1(x.v) + ' <small>Mio.</small>';
+    r.rank.textContent = (i+1)+'.';
+  });
+  rows.forEach((r,id)=>{
+    if(!shown.has(id) && r.visible){
+      r.visible=false;
+      r.el.classList.add('gone');
+      r.el.style.transform='translateY('+(TOP_N*115)+'%)';
+    }
+  });
+
+  bigYear.textContent = Math.floor(year);
+  range.value = year;
+
+  const ev = EVENTS.find(e=>year>=e[0] && year<=e[1]+0.99);
+  if(ev){ badge.textContent = ev[2]; badge.classList.add('on'); }
+  else badge.classList.remove('on');
+
+  /* Klang öffnet sich mit den Jahren: 2000 ≈ 300 Hz → 2026 ≈ 7,3 kHz */
+  if(AC && tone) tone.frequency.setTargetAtTime(
+    300*Math.pow(2,(year-2000)/26*4.6), AC.currentTime, .12);
+}
+
+function tick(t){
+  const dt = lastT ? (t-lastT)/1000 : 0;
+  lastT = t;
+  if(playing){
+    year += dt*speed*YEARS_PER_SEC;
+    if(year >= Y_END){ year = Y_END; setPlaying(false); playBtn.innerHTML='⟲ &nbsp;Replay'; }
+    render();
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function setPlaying(p){
+  if(p && year>=Y_END) year=Y_START;
+  playing = p;
+  playBtn.innerHTML = p ? '❚❚ &nbsp;Pause' : '▶ &nbsp;Play';
+  /* Musik mit dem Race koppeln — aber NUR, wenn der Nutzer schon
+     selbst interagiert hat (sonst startet in Browsern mit laxer
+     Autoplay-Policy ungewollt Sound von allein) */
+  if(p && userTouched){
+    initAudio();
+    if(AC.state==='suspended') AC.resume();
+    nextT = Math.max(nextT, AC.currentTime + 0.06);
+  } else if(!p && AC && AC.state==='running'){
+    AC.suspend();
+  }
+}
+
+playBtn.addEventListener('click', ()=>setPlaying(!playing));
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  year=Y_START; render(); setPlaying(true);
+});
+document.querySelectorAll('.speeds button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    speed = parseFloat(b.dataset.speed);
+    document.querySelectorAll('.speeds button').forEach(x=>x.classList.toggle('on', x===b));
+  });
+});
+range.addEventListener('input', ()=>{
+  setPlaying(false);
+  year = parseFloat(range.value);
+  render();
+});
+window.addEventListener('keydown', e=>{
+  if(e.key===' '){ e.preventDefault(); setPlaying(!playing); }
+});
+
+/* ============================================================
+   MUSIK — prozeduraler Loop (Web Audio, keine Datei), hier
+   etwas verspielter/chiptune-iger als in der Referenz:
+   square-Lead, schnellere Arpeggios mit Oktavsprüngen.
+   Startet/pausiert mit dem Race. Der Klang öffnet sich mit
+   den Jahren: 2000 dumpf → 2026 hell. Ab ~2006 Hi-Hats,
+   ab ~2010 das Arpeggio, ab ~2017 hohe Sparkle-Blips.
+   ============================================================ */
+let AC=null, master=null, tone=null, noiseBuf=null;
+let musicOn=true, step=0, nextT=0, seqTimer=0;
+const BPM=120, STEP=60/BPM/4;
+const CHORDS=[                                  /* Am · F · C · G */
+  {root:55.00, pad:[220.00,261.63,329.63]},
+  {root:43.65, pad:[174.61,220.00,261.63]},
+  {root:65.41, pad:[196.00,261.63,329.63]},
+  {root:49.00, pad:[196.00,246.94,293.66]}
+];
+const ARPSEQ=[0,1,2,1,0,2,1,2];
+
+function initAudio(){
+  if(AC) return;
+  AC = new (window.AudioContext||window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value = musicOn ? .45 : 0;
+  tone = AC.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=600; tone.Q.value=.6;
+  const delay = AC.createDelay(.6); delay.delayTime.value = STEP*3;
+  const fb  = AC.createGain(); fb.gain.value=.22;
+  const wet = AC.createGain(); wet.gain.value=.16;
+  delay.connect(fb); fb.connect(delay);
+  tone.connect(master);
+  tone.connect(delay); delay.connect(wet); wet.connect(master);
+  master.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate*0.1, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  nextT = AC.currentTime + 0.1;
+  seqTimer = setInterval(schedule, 25);
+}
+function env(t,a,peak,dec){
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(peak,t+a);
+  g.gain.exponentialRampToValueAtTime(.0008,t+a+dec);
+  return g;
+}
+function kick(t){
+  const o=AC.createOscillator(); o.type='sine';
+  o.frequency.setValueAtTime(150,t);
+  o.frequency.exponentialRampToValueAtTime(44,t+.11);
+  const g=env(t,.004,.85,.2);
+  o.connect(g); g.connect(tone); o.start(t); o.stop(t+.26);
+}
+function hat(t,open){
+  const s=AC.createBufferSource(); s.buffer=noiseBuf;
+  const f=AC.createBiquadFilter(); f.type='highpass'; f.frequency.value=7200;
+  const g=env(t,.002,open?.18:.12,open?.12:.035);
+  s.connect(f); f.connect(g); g.connect(tone);
+  s.start(t); s.stop(t+.15);
+}
+function bass(t,freq){
+  const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=freq;
+  const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=520; f.Q.value=1.1;
+  const g=env(t,.006,.5,.21);
+  o.connect(f); f.connect(g); g.connect(tone);
+  o.start(t); o.stop(t+.3);
+}
+function arp(t,freq){
+  /* Chiptune-Lead: square statt triangle, kurz & knackig */
+  const o=AC.createOscillator(); o.type='square'; o.frequency.value=freq;
+  const g=env(t,.003,.065,.09);
+  o.connect(g); g.connect(tone);
+  o.start(t); o.stop(t+.14);
+}
+function pad(t,freqs,len){
+  freqs.forEach(fr=>{
+    [-6,6].forEach(det=>{
+      const o=AC.createOscillator(); o.type='sawtooth';
+      o.frequency.value=fr; o.detune.value=det;
+      const g=AC.createGain();
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(.045,t+len*.3);
+      g.gain.linearRampToValueAtTime(.0001,t+len);
+      o.connect(g); g.connect(tone);
+      o.start(t); o.stop(t+len+.05);
+    });
+  });
+}
+function playStep(s,t){
+  const c = CHORDS[Math.floor(s/16)%4];
+  const i = s%16;
+  if(i%4===0) kick(t);
+  if(year>2006 && i%4===2) hat(t, i===14);
+  if(i%2===0) bass(t, (i%8===6) ? c.root*2 : c.root);
+  if(i===0) pad(t, c.pad, STEP*16);
+  if(year>2010) arp(t, c.pad[ARPSEQ[i%8]]*(i%2?4:2));    /* 16tel-Arpeggio mit Oktavsprüngen */
+  if(year>2017 && i%4===3) arp(t, c.pad[(i>>2)%3]*8);    /* hohe Sparkle-Blips obendrauf */
+}
+function schedule(){
+  if(!AC || AC.state!=='running') return;
+  while(nextT < AC.currentTime + 0.12){
+    playStep(step%64, nextT);
+    step++; nextT += STEP;
+  }
+}
+/* Browser-Autoplay-Schutz: Audio existiert erst ab der ersten echten Nutzer-Geste */
+let userTouched = false;
+const gestureKick = ()=>{
+  userTouched = true;
+  if(playing && !AC) initAudio();
+  if(AC && AC.state==='suspended' && playing){
+    AC.resume();
+    nextT = Math.max(nextT, AC.currentTime + 0.06);
+  }
+};
+window.addEventListener('pointerdown', gestureKick);
+window.addEventListener('keydown', gestureKick);
+document.getElementById('musicBtn').addEventListener('click', e=>{
+  musicOn = !musicOn;
+  e.currentTarget.textContent = musicOn ? '♪ Musik: an' : '♪ Musik: aus';
+  if(AC) master.gain.setTargetAtTime(musicOn ? .45 : 0, AC.currentTime, .05);
+});
+
+/* Start */
+render();
+rafId = requestAnimationFrame(tick);
+if(!REDUCED) setTimeout(()=>setPlaying(true), 700);
+
+/* Debug-Hooks für Tests */
+window.__race = {get year(){return year}, set year(v){year=v; render();}, valueAt, PLATFORMS, get audio(){return AC ? AC.state : 'nicht initialisiert'}};
+</script>
+</body>
+</html>

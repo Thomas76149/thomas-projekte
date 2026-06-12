@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0b10">
+<title>Epidemie-Simulator — wie sich Krankheiten ausbreiten</title>
+<meta name="description" content="Interaktive Partikel-Sandbox: stell Ansteckung, Tödlichkeit, Impfquote und Lockdown ein und sieh live, wie sich eine Krankheit ausbreitet.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='16' fill='%23ff4d4d'/%3E%3Cg stroke='%23ff4d4d' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b10;
+  --panel:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.09);
+  --text:#eef1f7;
+  --muted:#99a2b3;
+  --s:#5b8cff;   /* gesund / anfällig */
+  --i:#ff4d4d;   /* infiziert */
+  --r:#3ad17a;   /* genesen / immun */
+  --d:#7b8290;   /* gestorben */
+  --accent:#ff4d4d;
+  --accentA:rgba(255,77,77,.35);
+  --font-head:'Archivo Black','Arial Black',Impact,sans-serif;
+  --font-body:'Inter',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(46% 40% at 18% 12%, rgba(255,77,77,.10), transparent 60%),
+    radial-gradient(44% 44% at 86% 90%, rgba(91,140,255,.08), transparent 62%),
+    var(--bg);
+  color:var(--text); font-family:var(--font-body);
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column; align-items:center;
+  padding:clamp(12px,2.4vw,26px); -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1120px,100%)}
+.back{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color:var(--muted); text-decoration:none; border:1px solid var(--stroke); border-radius:99px; padding:6px 13px;
+  background:rgba(255,255,255,.04); margin-bottom:clamp(10px,1.6vh,16px); transition:color .25s, border-color .25s, box-shadow .25s}
+.back:hover{color:var(--text); border-color:var(--accent); box-shadow:0 0 14px var(--accentA)}
+header{margin-bottom:clamp(10px,1.8vh,16px)}
+.kicker{font-family:var(--font-mono); font-size:clamp(10px,1.2vw,12px); letter-spacing:.26em; color:var(--i); text-transform:uppercase; margin-bottom:7px}
+.kicker::before{content:"▸ "}
+h1{font-family:var(--font-head); font-weight:400; font-size:clamp(20px,3.6vw,36px); line-height:1.1}
+h1 .hl{background:linear-gradient(92deg, var(--i), #ff9a6b); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+.sub{color:var(--muted); font-size:clamp(12px,1.5vw,14px); margin-top:5px; line-height:1.5; max-width:74ch}
+
+.layout{display:grid; gap:clamp(12px,1.8vw,18px); grid-template-columns:1fr; align-items:start}
+@media (min-width:900px){ .layout{grid-template-columns:1.35fr 1fr} }
+
+.panel{position:relative; background:var(--panel); border:1px solid var(--stroke); border-radius:18px;
+  padding:clamp(12px,1.8vw,18px); backdrop-filter:blur(9px); box-shadow:0 22px 56px -30px rgba(0,0,0,.8)}
+.simwrap{padding:0; overflow:hidden; aspect-ratio:1/1; background:#070810}
+#sim{display:block; width:100%; height:100%}
+
+.side{display:flex; flex-direction:column; gap:clamp(12px,1.8vw,16px)}
+
+/* Statistik */
+.stats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+.stat{background:rgba(255,255,255,.03); border:1px solid var(--stroke); border-radius:12px; padding:9px 11px}
+.stat .lab{font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:6px}
+.stat .num{font-family:var(--font-head); font-size:clamp(18px,2.6vw,24px); line-height:1.15; margin-top:2px}
+.dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto}
+.stat.s .num{color:var(--s)} .stat.i .num{color:var(--i)} .stat.r .num{color:var(--r)} .stat.d .num{color:var(--d)}
+.dot.s{background:var(--s)} .dot.i{background:var(--i)} .dot.r{background:var(--r)} .dot.d{background:var(--d)}
+
+/* Verlaufskurve */
+.curvebox{position:relative}
+.curvebox h3{font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between}
+#curve{display:block; width:100%; height:96px; border-radius:10px; background:rgba(255,255,255,.02); border:1px solid var(--stroke)}
+.peak{font-family:var(--font-mono); color:var(--i)}
+
+/* Regler */
+.sliders{display:flex; flex-direction:column; gap:13px}
+.ctrl label{display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; font-weight:600; margin-bottom:6px}
+.ctrl label .v{font-family:var(--font-mono); color:var(--text); background:rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius:7px; padding:2px 8px; font-size:11.5px}
+.ctrl label .hint{font-weight:400; color:var(--muted); font-size:10.5px; font-family:var(--font-mono)}
+input[type=range]{width:100%; accent-color:var(--accent); height:6px; cursor:pointer}
+
+.btns{display:flex; gap:9px; flex-wrap:wrap}
+button{font-family:var(--font-body); font-weight:800; font-size:13px; color:var(--text); cursor:pointer;
+  background:rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius:11px; padding:11px 15px;
+  transition:border-color .2s, box-shadow .2s, background .2s, transform .12s; -webkit-tap-highlight-color:transparent; flex:1; min-width:96px}
+button:hover{border-color:var(--accent); box-shadow:0 0 15px var(--accentA); background:rgba(255,255,255,.08)}
+button:active{transform:scale(.96)}
+#playBtn{background:linear-gradient(135deg, var(--accent), #d83333); border-color:transparent; box-shadow:0 6px 20px -8px var(--accentA)}
+.legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:2px; font-size:11.5px; color:var(--muted)}
+.legend span{display:flex; align-items:center; gap:6px}
+.foot{margin-top:clamp(12px,2vh,18px); font-family:var(--font-mono); font-size:10.5px; color:rgba(153,162,179,.7); line-height:1.6; text-align:center}
+@media (max-width:900px){ .simwrap{aspect-ratio:4/3} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../index.html">← thomas.fun</a>
+  <header>
+    <div class="kicker">Partikel-Sandbox · SIR-Modell</div>
+    <h1>Epidemie-<span class="hl">Simulator</span></h1>
+    <div class="sub">Jeder Punkt ist ein Mensch. Rote stecken an, grüne sind genesen &amp; immun, graue sind leider gestorben. Dreh an den Reglern und sieh live, wie sich eine Krankheit ausbreitet — oder wie Impfen und Lockdown sie stoppen.</div>
+  </header>
+
+  <div class="layout">
+    <div class="panel simwrap">
+      <canvas id="sim"></canvas>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <div class="stats">
+          <div class="stat s"><div class="lab"><span class="dot s"></span>Gesund</div><div class="num" id="nS">0</div></div>
+          <div class="stat i"><div class="lab"><span class="dot i"></span>Infiziert</div><div class="num" id="nI">0</div></div>
+          <div class="stat r"><div class="lab"><span class="dot r"></span>Genesen</div><div class="num" id="nR">0</div></div>
+          <div class="stat d"><div class="lab"><span class="dot d"></span>Gestorben</div><div class="num" id="nD">0</div></div>
+        </div>
+        <div class="curvebox" style="margin-top:14px">
+          <h3><span>Verlauf <span id="dayLab" class="peak" style="color:var(--muted)">· Tag 0</span></span><span class="peak" id="peakLab">Höhepunkt: –</span></h3>
+          <canvas id="curve"></canvas>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sliders">
+          <div class="ctrl"><label>Ansteckungsrate <span class="v" id="vInf">60 %</span></label><input type="range" id="sInf" min="0" max="100" value="60"></div>
+          <div class="ctrl"><label>Krankheitsdauer <span class="v" id="vDur">14 Tage</span></label><input type="range" id="sDur" min="4" max="40" value="14"></div>
+          <div class="ctrl"><label>Tödlichkeit <span class="v" id="vLet">8 %</span></label><input type="range" id="sLet" min="0" max="60" value="8"></div>
+          <div class="ctrl"><label>Impfquote <span class="hint">wirkt ab Neustart</span> <span class="v" id="vVac">0 %</span></label><input type="range" id="sVac" min="0" max="95" value="0"></div>
+          <div class="ctrl"><label>Lockdown (Kontaktsperre) <span class="v" id="vLock">0 %</span></label><input type="range" id="sLock" min="0" max="95" value="0"></div>
+        </div>
+        <div class="btns" style="margin-top:14px">
+          <button id="playBtn">❚❚ Pause</button>
+          <button id="infectBtn">☣ Ausbruch</button>
+          <button id="resetBtn">⟲ Neustart</button>
+        </div>
+        <div class="legend">
+          <span><span class="dot s"></span>anfällig</span>
+          <span><span class="dot i"></span>infiziert</span>
+          <span><span class="dot r"></span>immun</span>
+          <span><span class="dot d"></span>gestorben</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    Vereinfachtes Agenten-Modell (SIR + Todesfälle) — zum Verstehen &amp; Ausprobieren, keine echte Vorhersage.<br>
+    Tipp: Schieb „Impfquote" hoch und starte neu — ab einer gewissen Quote bricht die Welle gar nicht erst aus (Herdenimmunität).
+  </div>
+</div>
+
+<script>
+'use strict';
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Canvas-Setup mit Retina-Schärfe ---------- */
+const cv = document.getElementById('sim'), ctx = cv.getContext('2d');
+let W=0, H=0, DPR=Math.min(2, window.devicePixelRatio||1);
+function fit(){
+  const r = cv.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+/* ---------- Modell ---------- */
+const N = 380;                 /* Bevölkerung */
+const RAD = 3.0;               /* Punktradius (px) */
+const INF_BASE = 7, INF_RANGE = 18; /* Reichweite (px) = BASE + Ansteckungsrate·RANGE */
+const TICKS_PER_DAY = 5;       /* Sim-Schritte pro „Tag" */
+const STEP_MS = 26;            /* Echtzeit pro Sim-Schritt (kleiner = schneller) */
+const S=0, I=1, R=2, D=3;
+
+let people = [];
+let tick = 0, day = 0;
+let playing = !REDUCED;
+let peak = 0;
+let history = [];              /* [{s,i,r,d}] pro Tag */
+
+/* Parameter (live) */
+const P = { inf:0.60, durDays:14, let:0.08, vac:0.0, lock:0.0 };
+
+function rand(a,b){ return a + Math.random()*(b-a); }
+
+function makePerson(){
+  const ang = rand(0, Math.PI*2), sp = rand(.6,1.4);
+  return {
+    x:rand(RAD,W-RAD), y:rand(RAD,H-RAD),
+    vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp,
+    state:S, sick:0,
+    mob:Math.random()       /* persönlicher „Mobilitäts-Würfel" für Lockdown */
+  };
+}
+
+function reset(){
+  fit();
+  people = [];
+  for(let k=0;k<N;k++) people.push(makePerson());
+  /* Impfquote: dieser Anteil startet immun */
+  const vac = Math.round(N*P.vac);
+  for(let k=0;k<vac;k++) people[k].state = R;
+  /* Patient Zero: ein paar Anfällige infizieren */
+  let seeded=0;
+  for(let k=people.length-1;k>=0 && seeded<5;k--){
+    if(people[k].state===S){ people[k].state=I; people[k].sick=0; seeded++; }
+  }
+  tick=0; day=0; peak=0; history=[];
+  snapshot();
+  draw(); drawCurve(); updateStats();
+}
+
+/* räumliches Gitter für schnelle Nachbarsuche */
+function step(){
+  const reach = INF_BASE + P.inf*INF_RANGE;   /* Reichweite hängt an der Ansteckungsrate */
+  const cell = reach;
+  const cols = Math.max(1, Math.ceil(W/cell));
+  const grid = new Map();
+  const key=(cx,cy)=>cx+cy*cols;
+
+  /* bewegen + einsortieren */
+  for(const p of people){
+    if(p.state!==D && p.mob >= P.lock){
+      p.x += p.vx; p.y += p.vy;
+      if(p.x<RAD){ p.x=RAD; p.vx*=-1; } else if(p.x>W-RAD){ p.x=W-RAD; p.vx*=-1; }
+      if(p.y<RAD){ p.y=RAD; p.vy*=-1; } else if(p.y>H-RAD){ p.y=H-RAD; p.vy*=-1; }
+    }
+    if(p.state===D) continue;
+    const cx=Math.floor(p.x/cell), cy=Math.floor(p.y/cell), k=key(cx,cy);
+    let arr=grid.get(k); if(!arr){ arr=[]; grid.set(k,arr); } arr.push(p);
+  }
+
+  /* Ansteckung: infizierte stecken Anfällige in Reichweite an */
+  const r2 = reach*reach;
+  const pPerTick = 0.34; /* bei Kontakt steckt es zuverlässig an — die „Stärke" steckt in der Reichweite */
+  for(const p of people){
+    if(p.state!==I) continue;
+    const cx=Math.floor(p.x/cell), cy=Math.floor(p.y/cell);
+    for(let gx=cx-1;gx<=cx+1;gx++) for(let gy=cy-1;gy<=cy+1;gy++){
+      const arr=grid.get(key(gx,gy)); if(!arr) continue;
+      for(const q of arr){
+        if(q.state!==S) continue;
+        const dx=q.x-p.x, dy=q.y-p.y;
+        if(dx*dx+dy*dy < r2 && Math.random() < pPerTick){ q.state=I; q.sick=0; }
+      }
+    }
+  }
+
+  /* Krankheitsverlauf: nach Dauer genesen oder sterben */
+  const durTicks = P.durDays * TICKS_PER_DAY;
+  for(const p of people){
+    if(p.state!==I) continue;
+    p.sick++;
+    if(p.sick >= durTicks){
+      p.state = (Math.random() < P.let) ? D : R;
+    }
+  }
+
+  tick++;
+  if(tick % TICKS_PER_DAY === 0){ day++; snapshot(); drawCurve(); }
+}
+
+function counts(){
+  let s=0,i=0,r=0,d=0;
+  for(const p of people){ if(p.state===S)s++; else if(p.state===I)i++; else if(p.state===R)r++; else d++; }
+  return {s,i,r,d};
+}
+function snapshot(){
+  const c = counts();
+  history.push(c);
+  if(c.i>peak) peak=c.i;
+  if(history.length>600) history.shift();
+}
+
+/* ---------- Zeichnen ---------- */
+const COL = {[S]:'#5b8cff',[I]:'#ff4d4d',[R]:'#3ad17a',[D]:'#6b7280'};
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  /* gestorbene zuerst (dezent), dann gesund, dann immun, infizierte oben mit Glow */
+  for(const p of people) if(p.state===D){ ctx.fillStyle='rgba(123,130,144,.4)'; dotAt(p.x,p.y,RAD*0.8); }
+  for(const p of people) if(p.state===S){ ctx.fillStyle=COL[S]; dotAt(p.x,p.y,RAD); }
+  for(const p of people) if(p.state===R){ ctx.fillStyle=COL[R]; dotAt(p.x,p.y,RAD); }
+  ctx.save(); ctx.shadowColor='#ff4d4d'; ctx.shadowBlur=7;
+  for(const p of people) if(p.state===I){ ctx.fillStyle=COL[I]; dotAt(p.x,p.y,RAD*1.05); }
+  ctx.restore();
+}
+function dotAt(x,y,r){ ctx.beginPath(); ctx.arc(x,y,r,0,6.2832); ctx.fill(); }
+
+/* Verlaufskurve: gestapelte Fläche S/I/R/D über die Tage */
+const cc = document.getElementById('curve'), cx2 = cc.getContext('2d');
+let CW=0, CH=0;
+function fitCurve(){
+  const r=cc.getBoundingClientRect(); CW=r.width; CH=r.height;
+  cc.width=Math.round(CW*DPR); cc.height=Math.round(CH*DPR);
+  cx2.setTransform(DPR,0,0,DPR,0,0);
+}
+function drawCurve(){
+  if(!CW) fitCurve();
+  cx2.clearRect(0,0,CW,CH);
+  const n=history.length; if(n<2) return;
+  const stepX = CW/Math.max(1,n-1);
+  /* gestapelte Reihenfolge von unten: D, R, I, S */
+  const layers=[['d','rgba(123,130,144,.45)'],['r','rgba(58,209,122,.7)'],['i','rgba(255,77,77,.85)'],['s','rgba(91,140,255,.5)']];
+  let baseY=new Array(n).fill(CH);
+  for(const [key,fill] of layers){
+    cx2.beginPath();
+    cx2.moveTo(0, baseY[0]);
+    const newTop=[];
+    for(let x=0;x<n;x++){
+      const h=(history[x][key]/N)*CH;
+      const y=baseY[x]-h; newTop.push(y);
+      cx2.lineTo(x*stepX, y);
+    }
+    for(let x=n-1;x>=0;x--) cx2.lineTo(x*stepX, baseY[x]);
+    cx2.closePath(); cx2.fillStyle=fill; cx2.fill();
+    for(let x=0;x<n;x++) baseY[x]=newTop[x];
+  }
+}
+
+function updateStats(){
+  const c=counts();
+  document.getElementById('nS').textContent=c.s;
+  document.getElementById('nI').textContent=c.i;
+  document.getElementById('nR').textContent=c.r;
+  document.getElementById('nD').textContent=c.d;
+  document.getElementById('dayLab').textContent='· Tag '+day;
+  document.getElementById('peakLab').textContent='Höhepunkt: '+peak+' krank';
+}
+
+/* ---------- Loop ---------- */
+let acc=0, last=0;
+function frame(t){
+  const dt = last? Math.min(50, t-last):16; last=t;
+  if(playing){
+    acc+=dt;
+    while(acc>=STEP_MS){ step(); acc-=STEP_MS; }
+    draw(); updateStats();
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Steuerung ---------- */
+const playBtn=document.getElementById('playBtn');
+function setPlaying(p){ playing=p; playBtn.textContent = p? '❚❚ Pause':'▶ Weiter'; }
+playBtn.addEventListener('click', ()=>setPlaying(!playing));
+document.getElementById('resetBtn').addEventListener('click', ()=>{ reset(); setPlaying(true); });
+document.getElementById('infectBtn').addEventListener('click', ()=>{
+  let seeded=0;
+  const order=[...people].sort(()=>Math.random()-0.5);
+  for(const p of order){ if(p.state===S){ p.state=I; p.sick=0; if(++seeded>=5) break; } }
+  setPlaying(true);
+});
+
+function bind(id, valId, fmt, set){
+  const el=document.getElementById(id), v=document.getElementById(valId);
+  const upd=()=>{ const n=+el.value; set(n); v.textContent=fmt(n); };
+  el.addEventListener('input', upd); upd();
+}
+bind('sInf','vInf', n=>n+' %',  n=>P.inf=n/100);
+bind('sDur','vDur', n=>n+' Tage', n=>P.durDays=n);
+bind('sLet','vLet', n=>n+' %',  n=>P.let=n/100);
+bind('sVac','vVac', n=>n+' %',  n=>P.vac=n/100);
+bind('sLock','vLock',n=>n+' %', n=>P.lock=n/100);
+
+window.addEventListener('resize', ()=>{ DPR=Math.min(2,window.devicePixelRatio||1); fit(); fitCurve(); draw(); drawCurve(); });
+window.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); setPlaying(!playing); } });
+
+/* ---------- Start ---------- */
+fit(); fitCurve(); reset(); setPlaying(!REDUCED);
+requestAnimationFrame(frame);
+
+window.__epi = { get day(){return day}, get peak(){return peak}, get history(){return history}, counts, P, reset, step };
+</script>
+</body>
+</html>

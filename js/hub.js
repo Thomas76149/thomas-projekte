@@ -16,9 +16,27 @@
   let filter = "all";
   const FILTER_LS_KEY = "hub_filter_v1";
 
+  /* Kuratierte Akzent-Palette: bunt, aber abgestimmt (kein Neon-Chaos).
+     Jede Kachel bekommt stabil eine Farbe anhand ihres Titels. */
+  const PALETTE = [
+    ["#ff7a1a", "rgba(255,122,26,.38)"],
+    ["#ff5d73", "rgba(255,93,115,.38)"],
+    ["#c46bff", "rgba(196,107,255,.38)"],
+    ["#5b8cff", "rgba(91,140,255,.38)"],
+    ["#22d3ee", "rgba(34,211,238,.38)"],
+    ["#2dd4a7", "rgba(45,212,167,.38)"],
+    ["#f5c542", "rgba(245,197,66,.38)"],
+    ["#ff6a52", "rgba(255,106,82,.38)"],
+  ];
+  function colorFor(str) {
+    let h = 0;
+    const s = String(str || "");
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return PALETTE[h % PALETTE.length];
+  }
+
   function isMobileLike() {
     try {
-      // iPadOS meldet sich teils als Mac; pointer+touch ist hier zuverlässiger.
       const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       const small = Math.min(window.innerWidth || 9999, window.innerHeight || 9999) <= 900;
       const touch = (navigator.maxTouchPoints || 0) > 1;
@@ -36,18 +54,15 @@
   }
 
   function initialFilter() {
-    // 1) URL override: ?filter=mobile
     try {
       const p = new URLSearchParams(location.search);
       const f = (p.get("filter") || "").toLowerCase().trim();
       if (f) return f;
     } catch {}
-    // 2) last chosen
     try {
       const last = (localStorage.getItem(FILTER_LS_KEY) || "").toLowerCase().trim();
       if (last) return last;
     } catch {}
-    // 3) auto on mobile-like devices
     return isMobileLike() ? "mobile" : "all";
   }
 
@@ -66,6 +81,10 @@
     return (tags || []).map((t) => String(t).toLowerCase()).filter(Boolean);
   }
 
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
   function render() {
     if (!gridGames || !gridTests || !gridOnline) return;
     gridGames.innerHTML = "";
@@ -82,18 +101,20 @@
       return String(a.title || "").localeCompare(String(b.title || ""), "de");
     });
 
-    for (const it of sorted) {
+    sorted.forEach((it, idx) => {
       const tags = normalizeTags(it.tags);
+      const [c, cg] = colorFor(it.title);
       const a = el("a", {
         class: `tile${it.big ? " big" : ""}`,
         href: it.href || "#",
         "data-tags": tags.join(" "),
+        style: `--c:${c};--cg:${cg};--i:${idx}`,
       });
       a.innerHTML = `
-        <div class="tile__emoji" aria-hidden="true">${it.emoji || "🎲"}</div>
-        <div class="tile__label">${it.label || ""}</div>
-        <h2 class="tile__title">${it.title || "Untitled"}</h2>
-        <p class="tile__desc">${it.desc || ""}</p>
+        <div class="tile__emoji" aria-hidden="true">${esc(it.emoji) || "🎲"}</div>
+        <div class="tile__label">${esc(it.label)}</div>
+        <h2 class="tile__title">${esc(it.title) || "Untitled"}</h2>
+        <p class="tile__desc">${esc(it.desc)}</p>
         <div class="tile__go">${tags.includes("test") || tags.includes("tool") ? "Öffnen →" : "Spielen →"}</div>
       `;
 
@@ -101,7 +122,7 @@
       if (sec === "tests") gridTests.appendChild(a);
       else if (sec === "online") gridOnline.appendChild(a);
       else gridGames.appendChild(a);
-    }
+    });
   }
 
   function apply() {
@@ -131,7 +152,7 @@
     secGames?.classList.toggle("hidden", shownGames === 0);
     secOnline?.classList.toggle("hidden", shownOnline === 0);
     secTests?.classList.toggle("hidden", shownTests === 0);
-    if (countLine) countLine.textContent = shown ? `${shown} Treffer` : "Keine Treffer.";
+    if (countLine) countLine.textContent = shown ? `${shown} ${shown === 1 ? "Treffer" : "Treffer"}` : "Keine Treffer.";
   }
 
   chips.forEach((c) => {
@@ -149,5 +170,61 @@
 
   render();
   applyFilter(initialFilter());
-})();
 
+  /* ============================================================
+     Hintergrund-Animation — ruhige „Constellation": driftende
+     Punkte mit Linien zu nahen Nachbarn. Bewusst sparsam &
+     performant; bei reduced-motion ganz aus.
+     ============================================================ */
+  (function bgfx() {
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const cv = document.getElementById("bgfx");
+    if (!cv) return;
+    const ctx = cv.getContext("2d");
+    let W = 0, H = 0, DPR = Math.min(2, window.devicePixelRatio || 1), nodes = [];
+
+    function build() {
+      W = window.innerWidth; H = window.innerHeight;
+      cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      const n = Math.min(64, Math.round((W * H) / 26000));
+      nodes = [];
+      for (let i = 0; i < n; i++) {
+        nodes.push({
+          x: Math.random() * W, y: Math.random() * H,
+          vx: (Math.random() - 0.5) * 0.16, vy: (Math.random() - 0.5) * 0.16,
+          r: Math.random() * 1.4 + 0.6,
+        });
+      }
+    }
+    const MAXD = 132, MAXD2 = MAXD * MAXD;
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of nodes) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        const a = nodes[i];
+        for (let j = i + 1; j < nodes.length; j++) {
+          const b = nodes[j];
+          const dx = a.x - b.x, dy = a.y - b.y, d2 = dx * dx + dy * dy;
+          if (d2 < MAXD2) {
+            const al = (1 - d2 / MAXD2) * 0.16;
+            ctx.strokeStyle = `rgba(255,160,90,${al})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+          }
+        }
+      }
+      ctx.fillStyle = "rgba(255,180,120,0.35)";
+      for (const p of nodes) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill(); }
+      requestAnimationFrame(frame);
+    }
+    let rt;
+    window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { DPR = Math.min(2, window.devicePixelRatio || 1); build(); }, 180); });
+    build();
+    requestAnimationFrame(frame);
+  })();
+})();

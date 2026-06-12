@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0d12">
+<title>YouTube-Abo-Race — die größten Kanäle 2010 bis heute</title>
+<meta name="description" content="Zeitraffer der größten YouTube-Kanäle nach Abonnenten, 2010 bis 2026 — Smosh, PewDiePie, T-Series, MrBeast. Mit Synthwave.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='14' width='52' height='36' rx='9' fill='%23ff0033'/%3E%3Cpath d='M27 24 43 32 27 40z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   YOUTUBE-ABO-RACE — größte Kanäle nach Abonnenten 2010–2026
+   Abonnenten in Millionen, geschätzt. Eine Datei, kein Build.
+   ============================================================ */
+:root{
+  --bg:#0b0d12;
+  --panel:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.09);
+  --text:#eef1f7;
+  --muted:#99a2b3;
+  --accent:#ff0033;
+  --accent2:#ff6f8d;
+  --accentA:rgba(255,0,51,.35);
+  --font-head:'Archivo Black','Arial Black',Impact,sans-serif;
+  --font-body:'Inter',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(50% 42% at 22% 18%, rgba(255,0,51,.10), transparent 62%),
+    radial-gradient(46% 44% at 82% 86%, rgba(120,134,160,.07), transparent 62%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:clamp(12px,2.5vw,28px);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1080px,100%)}
+.back{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color:var(--muted); text-decoration:none; border:1px solid var(--stroke); border-radius:99px; padding:6px 13px;
+  background:rgba(255,255,255,.04); margin-bottom:clamp(10px,1.6vh,16px); transition:color .25s, border-color .25s, box-shadow .25s}
+.back:hover{color:var(--text); border-color:var(--accent); box-shadow:0 0 14px var(--accentA)}
+header{margin-bottom:clamp(12px,2vh,20px)}
+.kicker{
+  font-family:var(--font-mono); font-size:clamp(10px,1.2vw,12px);
+  letter-spacing:.28em; color:var(--accent2); text-transform:uppercase; margin-bottom:8px;
+}
+.kicker::before{content:"▸ "; color:var(--accent)}
+h1{font-family:var(--font-head); font-weight:400; font-size:clamp(22px,4vw,40px); line-height:1.1; letter-spacing:.01em}
+h1 .hl{
+  background:linear-gradient(92deg, var(--accent) 10%, var(--accent2) 100%);
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+}
+.sub{color:var(--muted); font-size:clamp(12px,1.5vw,14.5px); margin-top:6px; line-height:1.5}
+.panel{
+  position:relative; background:var(--panel); border:1px solid var(--stroke);
+  border-radius:20px; padding:clamp(14px,2.2vw,26px);
+  backdrop-filter:blur(9px); box-shadow:0 24px 60px -28px rgba(0,0,0,.8); overflow:hidden;
+}
+#race{position:relative; height:calc(var(--rows)*var(--rowh)); --rowh:clamp(44px,7.2vh,58px)}
+.gridlines{position:absolute; inset:0; pointer-events:none}
+.gridlines span{position:absolute; top:0; bottom:0; width:1px; background:rgba(255,255,255,.05)}
+.row{
+  position:absolute; left:0; right:0; height:var(--rowh);
+  display:grid; grid-template-columns:clamp(120px,17vw,184px) 1fr;
+  gap:clamp(8px,1.4vw,16px); align-items:center; padding:4px 0;
+  will-change:transform; transition:transform .55s cubic-bezier(.25,.8,.3,1), opacity .45s ease;
+}
+.row.gone{opacity:0; pointer-events:none}
+.who{display:flex; align-items:center; gap:9px; min-width:0; justify-content:flex-end; text-align:right}
+.rank{font-family:var(--font-mono); font-size:11px; color:var(--muted); width:18px; flex:0 0 auto; text-align:right}
+.cname{font-weight:800; font-size:clamp(11px,1.45vw,14px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.flag{flex:0 0 auto; display:block; width:clamp(26px,3.2vw,32px); height:auto; border-radius:50%;
+  box-shadow:0 0 0 1px rgba(255,255,255,.18), 0 2px 8px rgba(0,0,0,.5)}
+.track{position:relative; height:calc(100% - 8px); min-width:0}
+.bar{
+  position:absolute; left:0; top:0; bottom:0; border-radius:8px; min-width:6px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 4px 14px -6px rgba(0,0,0,.6);
+  display:flex; align-items:center; justify-content:flex-end;
+}
+.val{
+  position:absolute; left:calc(100% + 9px); top:50%; transform:translateY(-50%);
+  font-family:var(--font-mono); font-size:clamp(10px,1.25vw,12.5px);
+  color:var(--text); white-space:nowrap; text-shadow:0 1px 4px rgba(0,0,0,.7);
+}
+.val small{color:var(--muted); font-size:.85em}
+.year-box{position:absolute; right:clamp(14px,2.5vw,30px); bottom:clamp(10px,2vh,20px); text-align:right; pointer-events:none}
+#bigYear{
+  font-family:var(--font-head); font-size:clamp(44px,8.5vw,96px); line-height:1;
+  color:rgba(255,255,255,.9); text-shadow:0 0 34px rgba(255,0,51,.28), 0 0 8px rgba(0,0,0,.6); letter-spacing:.02em;
+}
+#eventBadge{
+  display:inline-block; margin-top:6px; font-family:var(--font-mono); font-size:clamp(10px,1.3vw,12.5px);
+  letter-spacing:.06em; color:var(--accent2); background:rgba(255,0,51,.08); border:1px solid rgba(255,0,51,.4);
+  border-radius:99px; padding:5px 13px; opacity:0; transform:translateY(5px);
+  transition:opacity .45s ease, transform .45s ease; text-shadow:0 1px 4px rgba(0,0,0,.6);
+}
+#eventBadge.on{opacity:1; transform:none}
+.controls{display:flex; align-items:center; gap:clamp(8px,1.4vw,14px); margin-top:clamp(12px,2vh,18px); flex-wrap:wrap}
+button{
+  font-family:var(--font-body); font-weight:800; font-size:13px; color:var(--text); cursor:pointer;
+  background:rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius:12px; padding:10px 16px;
+  transition:border-color .25s, box-shadow .25s, background .25s, transform .15s; -webkit-tap-highlight-color:transparent;
+}
+button:hover{border-color:var(--accent); box-shadow:0 0 16px var(--accentA); background:rgba(255,255,255,.08)}
+button:active{transform:scale(.96)}
+#playBtn{background:linear-gradient(135deg, var(--accent), #c10028); border-color:transparent; min-width:110px; box-shadow:0 6px 22px -8px var(--accentA)}
+#playBtn:hover{box-shadow:0 0 24px var(--accentA)}
+.speeds{display:flex; gap:6px}
+.speeds button{padding:10px 13px; font-family:var(--font-mono); font-weight:700}
+.speeds button.on{border-color:var(--accent); color:var(--accent2); box-shadow:0 0 14px var(--accentA)}
+#yearRange{flex:1; min-width:150px; accent-color:var(--accent); height:6px; cursor:pointer}
+.foot{margin-top:clamp(10px,1.6vh,14px); font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em; color:rgba(153,162,179,.7); line-height:1.6}
+@media (max-width:640px){
+  .row{grid-template-columns:clamp(102px,32vw,132px) 1fr; gap:7px}
+  .rank{display:none}
+  .val{font-size:9.5px; left:calc(100% + 6px)}
+  #race{--rowh:clamp(38px,6vh,46px)}
+  .year-box{bottom:6px}
+}
+@media (prefers-reduced-motion: reduce){ .row{transition:transform .01s, opacity .01s} #eventBadge{transition:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../index.html">← thomas.fun</a>
+  <header>
+    <div class="kicker">Zeitraffer · 2010 → 2026</div>
+    <h1>Die größten <span class="hl">YouTube-Kanäle</span> im Zeitraffer</h1>
+    <div class="sub" id="subText">Abonnenten in Millionen — von Smosh und nigahiga über PewDiePie und T-Series bis zum MrBeast-Rekord. Schau, wer wen überholt.</div>
+  </header>
+
+  <div class="panel">
+    <div id="race" style="--rows:8">
+      <div class="gridlines" id="gridlines"></div>
+    </div>
+    <div class="year-box">
+      <div id="bigYear">2010</div>
+      <div><span id="eventBadge"></span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" aria-label="Abspielen oder pausieren">▶ &nbsp;Play</button>
+    <div class="speeds" role="group" aria-label="Geschwindigkeit">
+      <button data-speed="0.5">0,5×</button>
+      <button data-speed="1" class="on">1×</button>
+      <button data-speed="2">2×</button>
+    </div>
+    <button id="resetBtn">⟲ Neustart</button>
+    <button id="musicBtn" title="Musik an/aus">♪ Musik: an</button>
+    <input type="range" id="yearRange" min="2010" max="2026" step="0.1" value="2010" aria-label="Jahr wählen">
+  </div>
+  <div class="foot">
+    VEREINFACHTE SCHÄTZWERTE — Abonnenten in Millionen, gerundet &amp; interpoliert aus öffentlichen Angaben (Social Blade u.a.).<br>
+    HINWEIS: Frühe Jahre sind Annäherungen — der genaue Verlauf der Abozahlen ist nicht überall lückenlos dokumentiert.
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   AVATARE — runde Mini-SVGs der Kanäle (viewBox 30x30).
+   ============================================================ */
+function av(bg, txt, fg, fs){
+  return `<svg class="flag" viewBox="0 0 30 30"><circle cx="15" cy="15" r="15" fill="${bg}"/><text x="15" y="${15+(fs||10)/2.7}" font-family="Arial Black,Arial" font-weight="900" font-size="${fs||11}" fill="${fg||'#fff'}" text-anchor="middle">${txt}</text></svg>`;
+}
+const FLAGS = {
+  pewdiepie: av('#ff4d4d','P'),
+  tseries:   av('#c0392b','T'),
+  mrbeast:   av('#1f8fd6','MB',null,9),
+  cocomelon: av('#5fb83a','C'),
+  setindia:  av('#6a3fb0','SET',null,8),
+  diana:     av('#ff6fae','D'),
+  nastya:    av('#f0a627','N'),
+  vladniki:  av('#26b6b6','V'),
+  wwe:       av('#1a1a1f','W','#ff2a3a'),
+  crafts:    av('#ff8c1a','5'),
+  smosh:     av('#2b6fd6','S'),
+  nigahiga:  av('#3aa53a','H')
+};
+
+/* ============================================================
+   DATEN — Abonnenten in Millionen (geschätzt, interpoliert).
+   Stützpunkte [Jahr, Wert]; Kanäle ohne Wert existieren dort
+   noch nicht / waren zu klein für die Top-Liste.
+   ============================================================ */
+const COUNTRIES = [
+  {id:'smosh', name:'Smosh', flag:'smosh', color:'#2b6fd6',
+   data:[[2010,2.5],[2012,8],[2013,11],[2015,21],[2017,22.5],[2019,25],[2021,25.5]]},
+  {id:'nigahiga', name:'nigahiga', flag:'nigahiga', color:'#3aa53a',
+   data:[[2010,3.5],[2012,7],[2014,14],[2016,20],[2018,21],[2020,21.5]]},
+  {id:'pewdiepie', name:'PewDiePie', flag:'pewdiepie', color:'#ff4d4d',
+   data:[[2011,0.1],[2012,3],[2013,19],[2014,33],[2016,50],[2018,72],[2019,102],[2021,110],[2023,111],[2026,111]]},
+  {id:'tseries', name:'T-Series', flag:'tseries', color:'#c0392b',
+   data:[[2010,0.1],[2013,1],[2015,8],[2017,30],[2018,52],[2019,115],[2020,160],[2022,228],[2024,265],[2026,290]]},
+  {id:'mrbeast', name:'MrBeast', flag:'mrbeast', color:'#1f8fd6',
+   data:[[2016,2],[2017,10],[2018,16],[2019,30],[2020,48],[2021,90],[2022,130],[2023,235],[2024,330],[2026,425]]},
+  {id:'cocomelon', name:'Cocomelon', flag:'cocomelon', color:'#5fb83a',
+   data:[[2018,30],[2019,65],[2020,100],[2021,120],[2022,140],[2024,170],[2026,188]]},
+  {id:'setindia', name:'SET India', flag:'setindia', color:'#7a4fc0',
+   data:[[2017,20],[2018,30],[2019,50],[2020,70],[2022,135],[2024,168],[2026,182]]},
+  {id:'diana', name:'Kids Diana Show', flag:'diana', color:'#ff6fae',
+   data:[[2019,30],[2020,55],[2021,80],[2023,113],[2026,128]]},
+  {id:'nastya', name:'Like Nastya', flag:'nastya', color:'#f0a627',
+   data:[[2019,30],[2020,55],[2021,75],[2023,106],[2026,120]]},
+  {id:'vladniki', name:'Vlad and Niki', flag:'vladniki', color:'#26b6b6',
+   data:[[2020,30],[2021,55],[2022,75],[2024,110],[2026,124]]},
+  {id:'wwe', name:'WWE', flag:'wwe', color:'#c0202a',
+   data:[[2013,3],[2016,18],[2019,45],[2022,90],[2024,100],[2026,108]]},
+  {id:'crafts', name:'5-Minute Crafts', flag:'crafts', color:'#ff8c1a',
+   data:[[2017,5],[2018,30],[2019,60],[2021,75],[2023,80],[2026,82]]}
+];
+
+const EVENTS = [
+  [2010,2012,'Smosh & nigahiga an der Spitze'],
+  [2013,2014,'PewDiePie wird die Nummer 1'],
+  [2018,2018,'PewDiePie vs T-Series'],
+  [2019,2019,'T-Series überholt PewDiePie'],
+  [2020,2021,'Corona: YouTube-Boom'],
+  [2024,2026,'MrBeast wird der Größte']
+];
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+const REDUCED  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Y_START=2010, Y_END=2026, TOP_N=8;
+const YEARS_PER_SEC = 1.6;
+let year=Y_START, speed=1, playing=false, lastT=0, rafId=0;
+
+const raceEl  = document.getElementById('race');
+const bigYear = document.getElementById('bigYear');
+const badge   = document.getElementById('eventBadge');
+const playBtn = document.getElementById('playBtn');
+const range   = document.getElementById('yearRange');
+
+const glBox = document.getElementById('gridlines');
+for(let i=1;i<=5;i++){ const s=document.createElement('span'); s.style.left=(i*20)+'%'; glBox.appendChild(s); }
+
+function valueAt(c, y){
+  const p = c.data;
+  if(!p || y < p[0][0] || y > p[p.length-1][0]) return null;
+  for(let i=0;i<p.length-1;i++){
+    const [y0,v0]=p[i], [y1,v1]=p[i+1];
+    if(y>=y0 && y<=y1){ const t=(y-y0)/(y1-y0||1); return v0+(v1-v0)*t; }
+  }
+  return p[p.length-1][1];
+}
+
+const rows = new Map();
+COUNTRIES.forEach(c=>{
+  const el=document.createElement('div');
+  el.className='row gone';
+  el.innerHTML =
+    '<div class="who"><span class="rank"></span><span class="cname">'+c.name+'</span>'+FLAGS[c.flag]+'</div>'+
+    '<div class="track"><div class="bar" style="background:linear-gradient(90deg,'+c.color+'cc,'+c.color+')">'+
+    '<span class="val"></span></div></div>';
+  el.style.transform='translateY('+(TOP_N*1.1*100)+'%)';
+  raceEl.appendChild(el);
+  rows.set(c.id,{el, bar:el.querySelector('.bar'), val:el.querySelector('.val'), rank:el.querySelector('.rank'), visible:false});
+});
+
+const fmt1=v=>v.toLocaleString('de-DE',{minimumFractionDigits:v<10?1:0, maximumFractionDigits:v<10?1:0});
+
+function render(){
+  const live = COUNTRIES.map(c=>({c, v:valueAt(c,year)})).filter(x=>x.v!==null).sort((a,b)=>b.v-a.v);
+  const top = live.slice(0,TOP_N);
+  const maxV = top.length ? top[0].v : 1;
+  const maxW = window.innerWidth < 640 ? 66 : 83;
+  const shown = new Set();
+
+  top.forEach((x,i)=>{
+    shown.add(x.c.id);
+    const r = rows.get(x.c.id);
+    r.el.style.transform = 'translateY('+(i*100)+'%)';
+    if(!r.visible){ r.el.classList.remove('gone'); r.visible=true; }
+    r.bar.style.width = Math.max(2,(x.v/maxV)*maxW) + '%';
+    r.val.innerHTML = fmt1(x.v) + ' <small>Mio.</small>';
+    r.rank.textContent = (i+1)+'.';
+  });
+  rows.forEach((r,id)=>{
+    if(!shown.has(id) && r.visible){
+      r.visible=false; r.el.classList.add('gone');
+      r.el.style.transform='translateY('+(TOP_N*115)+'%)';
+    }
+  });
+
+  bigYear.textContent = Math.floor(year);
+  range.value = year;
+
+  const ev = EVENTS.find(e=>year>=e[0] && year<=e[1]+0.99);
+  if(ev){ badge.textContent = ev[2]; badge.classList.add('on'); }
+  else badge.classList.remove('on');
+
+  if(AC && tone) tone.frequency.setTargetAtTime(600*Math.pow(2,(year-2010)/16*3.4), AC.currentTime, .12);
+}
+
+function tick(t){
+  const dt = lastT ? (t-lastT)/1000 : 0; lastT = t;
+  if(playing){
+    year += dt*speed*YEARS_PER_SEC;
+    if(year >= Y_END){ year = Y_END; setPlaying(false); playBtn.innerHTML='⟲ &nbsp;Replay'; }
+    render();
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function setPlaying(p){
+  if(p && year>=Y_END) year=Y_START;
+  playing = p;
+  playBtn.innerHTML = p ? '❚❚ &nbsp;Pause' : '▶ &nbsp;Play';
+  if(p && userTouched){
+    initAudio();
+    if(AC.state==='suspended') AC.resume();
+    nextT = Math.max(nextT, AC.currentTime + 0.06);
+  } else if(!p && AC && AC.state==='running'){ AC.suspend(); }
+}
+
+playBtn.addEventListener('click', ()=>setPlaying(!playing));
+document.getElementById('resetBtn').addEventListener('click', ()=>{ year=Y_START; render(); setPlaying(true); });
+document.querySelectorAll('.speeds button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    speed = parseFloat(b.dataset.speed);
+    document.querySelectorAll('.speeds button').forEach(x=>x.classList.toggle('on', x===b));
+  });
+});
+range.addEventListener('input', ()=>{ setPlaying(false); year = parseFloat(range.value); render(); });
+window.addEventListener('keydown', e=>{ if(e.key===' '){ e.preventDefault(); setPlaying(!playing); } });
+
+/* ============================================================
+   MUSIK — prozeduraler Synthwave-Loop (Web Audio, keine Datei).
+   ============================================================ */
+let AC=null, master=null, tone=null, noiseBuf=null;
+let musicOn=true, step=0, nextT=0, seqTimer=0;
+const BPM=118, STEP=60/BPM/4;
+const CHORDS=[
+  {root:55.00, pad:[220.00,261.63,329.63]},
+  {root:43.65, pad:[174.61,220.00,261.63]},
+  {root:65.41, pad:[196.00,261.63,329.63]},
+  {root:49.00, pad:[196.00,246.94,293.66]}
+];
+function initAudio(){
+  if(AC) return;
+  AC = new (window.AudioContext||window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value = musicOn ? .5 : 0;
+  tone = AC.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=800; tone.Q.value=.6;
+  const delay = AC.createDelay(.6); delay.delayTime.value = STEP*3;
+  const fb  = AC.createGain(); fb.gain.value=.22;
+  const wet = AC.createGain(); wet.gain.value=.16;
+  delay.connect(fb); fb.connect(delay);
+  tone.connect(master);
+  tone.connect(delay); delay.connect(wet); wet.connect(master);
+  master.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate*0.1, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  nextT = AC.currentTime + 0.1;
+  seqTimer = setInterval(schedule, 25);
+}
+function env(t,a,peak,dec){
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(peak,t+a);
+  g.gain.exponentialRampToValueAtTime(.0008,t+a+dec);
+  return g;
+}
+function kick(t){ const o=AC.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(44,t+.11); const g=env(t,.004,.85,.2); o.connect(g); g.connect(tone); o.start(t); o.stop(t+.26); }
+function hat(t,open){ const s=AC.createBufferSource(); s.buffer=noiseBuf; const f=AC.createBiquadFilter(); f.type='highpass'; f.frequency.value=7200; const g=env(t,.002,open?.18:.12,open?.12:.035); s.connect(f); f.connect(g); g.connect(tone); s.start(t); s.stop(t+.15); }
+function bass(t,freq){ const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=freq; const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=560; f.Q.value=1.1; const g=env(t,.006,.5,.21); o.connect(f); f.connect(g); g.connect(tone); o.start(t); o.stop(t+.3); }
+function arp(t,freq){ const o=AC.createOscillator(); o.type='triangle'; o.frequency.value=freq; const g=env(t,.004,.13,.13); o.connect(g); g.connect(tone); o.start(t); o.stop(t+.2); }
+function pad(t,freqs,len){
+  freqs.forEach(fr=>{ [-6,6].forEach(det=>{
+    const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=fr; o.detune.value=det;
+    const g=AC.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.045,t+len*.3); g.gain.linearRampToValueAtTime(.0001,t+len);
+    o.connect(g); g.connect(tone); o.start(t); o.stop(t+len+.05);
+  }); });
+}
+function playStep(s,t){
+  const c = CHORDS[Math.floor(s/16)%4]; const i = s%16;
+  if(i%4===0) kick(t);
+  if(year>2013 && i%4===2) hat(t, i===14);
+  if(i%2===0) bass(t, (i%8===6) ? c.root*2 : c.root);
+  if(i===0) pad(t, c.pad, STEP*16);
+  if(year>2017) arp(t, c.pad[[0,1,2,1][i%4]]*2);
+}
+function schedule(){ if(!AC || AC.state!=='running') return; while(nextT < AC.currentTime + 0.12){ playStep(step%64, nextT); step++; nextT += STEP; } }
+let userTouched = false;
+const gestureKick = ()=>{
+  userTouched = true;
+  if(playing && !AC) initAudio();
+  if(AC && AC.state==='suspended' && playing){ AC.resume(); nextT = Math.max(nextT, AC.currentTime + 0.06); }
+};
+window.addEventListener('pointerdown', gestureKick);
+window.addEventListener('keydown', gestureKick);
+document.getElementById('musicBtn').addEventListener('click', e=>{
+  musicOn = !musicOn;
+  e.currentTarget.textContent = musicOn ? '♪ Musik: an' : '♪ Musik: aus';
+  if(AC) master.gain.setTargetAtTime(musicOn ? .5 : 0, AC.currentTime, .05);
+});
+
+/* Start */
+render();
+rafId = requestAnimationFrame(tick);
+if(!REDUCED) setTimeout(()=>setPlaying(true), 700);
+
+window.__race = {get year(){return year}, set year(v){year=v; render();}, valueAt, COUNTRIES, get audio(){return AC ? AC.state : 'nicht initialisiert'}};
+</script>
+</body>
+</html>
