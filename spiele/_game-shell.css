@@ -288,3 +288,22 @@ button.btn-ready-online:not(.is-ready):not(:disabled) {
       0 0 52px rgba(120, 255, 200, 0.55);
   }
 }
+
+/* ——— Barrierefreiheit: „Animationen reduzieren“ respektieren ———
+   Greift NUR, wenn der Nutzer im System „reduce motion“ aktiviert hat.
+   Da diese Datei in allen Spielen geladen wird, zähmt das alle dauerhaften
+   CSS-Animationen (pulsierende Buttons/Overlays, Glow, Spin) zentral.
+   Die eigentliche Spiel-Logik (Canvas) läuft normal weiter. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  button.btn-ready-online:not(.is-ready):not(:disabled) {
+    animation: none !important;
+  }
+}
