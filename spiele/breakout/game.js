@@ -545,6 +545,7 @@ const c = document.getElementById("c");
             if (score > bb) saveBest(score);
             syncUI();
             running=false;
+            ovAgain.textContent = "Nochmal";
             showOverlay("Game Over", `Score: ${score} · Best: ${loadBest()}`);
           } else {
             resetRound();
@@ -565,6 +566,7 @@ const c = document.getElementById("c");
         setTimeout(()=>tone(1100,0.08,"triangle",0.06), 80);
         vibr(18);
         level++;
+        ovAgain.textContent = "Weiter ▶";
         showOverlay("Level Clear!", `Level ${level-1} geschafft · Score: ${score}`);
       }
     }

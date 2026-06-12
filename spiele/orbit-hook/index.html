@@ -463,9 +463,9 @@
       ctx.save();
       ctx.fillStyle = "rgba(255,255,255,0.06)";
       for (let i=0;i<70;i++){
-        const x = ((i*173) % 960) + ((camX*0.08) % 120);
+        const x = (((i*173 - camX*0.08) % 960) + 960) % 960;   // gleichmäßiges Parallax-Scrollen (eine Periode)
         const y = ((i*97) % 540);
-        ctx.fillRect((x%960+960)%960, y, 2, 2);
+        ctx.fillRect(x, y, 2, 2);
       }
       ctx.restore();
 
