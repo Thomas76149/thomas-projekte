@@ -790,7 +790,7 @@ const c = document.getElementById("c");
         resetGame();
       }
     });
-    ovClose.addEventListener("click", () => { hideOverlay(); });
+    ovClose.addEventListener("click", () => { if (lives <= 0) { resetGame(); } else { hideOverlay(); } });
     ov.addEventListener("click", (e)=> { if (e.target === ov) hideOverlay(); });
 
     resetGame();

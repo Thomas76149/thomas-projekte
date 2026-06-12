@@ -76,6 +76,8 @@ function reset(){
   fx = [];
   shots = [];
   state = "idle";
+  targetX = 0;   // sonst rast der Spieler nach Neustart von allein zur alten Position
+  touch = null;
   player = {
     x: 0,
     vx: 0,
@@ -798,9 +800,9 @@ function updateSteer(){
 setInterval(()=>{ if (running) updateSteer(); }, 16);
 
 addEventListener("keydown", (e)=>{
-  if (e.code === "ArrowLeft" || e.code === "KeyA") setTarget(-5.5);
-  if (e.code === "ArrowRight" || e.code === "KeyD") setTarget(5.5);
-  if (e.code === "Space") start();
+  if (e.code === "ArrowLeft" || e.code === "KeyA"){ e.preventDefault(); setTarget(-5.5); }
+  if (e.code === "ArrowRight" || e.code === "KeyD"){ e.preventDefault(); setTarget(5.5); }
+  if (e.code === "Space"){ e.preventDefault(); start(); }
 });
 
 // touch swipe

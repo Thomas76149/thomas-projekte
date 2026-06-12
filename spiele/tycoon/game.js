@@ -297,7 +297,7 @@ function onTap(clientX, clientY) {
   const g = clickGain();
   money += g;
   totalClicks += 1;
-  save();
+  schedulePassiveSave();   // gedrosselt statt bei JEDEM Klick synchron zu speichern (Input-Lag)
 
   sfxTap(combo);
   floatText(clientX, clientY - 8, `+${fmt(g)}`);

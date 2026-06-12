@@ -405,6 +405,7 @@ const c = document.getElementById("c");
     const LOADOUT_KEY = "td_loadout_v1";
     /** @type {(null|string)[]} */
     let loadout = ["pistol", null, null, null, null];
+    let loadoutBackup = null;  // echtes Loadout während des Tutorials zwischenparken
     try{
       const raw = JSON.parse(localStorage.getItem(LOADOUT_KEY) || "null");
       if (raw && Array.isArray(raw) && raw.length === 5){
@@ -413,7 +414,10 @@ const c = document.getElementById("c");
       }
     } catch {}
     function saveLoadout(){
-      try{ localStorage.setItem(LOADOUT_KEY, JSON.stringify(loadout)); } catch {}
+      // Im Tutorial ist `loadout` nur temporär (nur Pistole) — immer das ECHTE Loadout sichern,
+      // auch wenn z.B. beforeunload mitten im Tutorial speichert.
+      const data = loadoutBackup || loadout;
+      try{ localStorage.setItem(LOADOUT_KEY, JSON.stringify(data)); } catch {}
     }
 
     function towerCardData(id){
@@ -1183,6 +1187,7 @@ const c = document.getElementById("c");
     }
 
     function showMenu(){
+      if (loadoutBackup){ loadout = loadoutBackup; loadoutBackup = null; }  // echtes Loadout nach Tutorial zurückholen
       if (gameMode !== "menu") lastNonMenuMode = gameMode;
       gameMode = "menu";
       mainMenu.classList.add("show");
@@ -1271,9 +1276,10 @@ const c = document.getElementById("c");
       gameMode = "tutorial";
       tutorialOn = true;
       tutorialStep = 1;
-      // Tutorial loadout: only pistol equipped.
+      // Tutorial loadout: only pistol equipped. Echtes Loadout merken, aber NICHT speichern,
+      // sonst überschreibt das Tutorial dauerhaft das gekaufte Loadout in localStorage.
+      loadoutBackup = loadout.slice();
       loadout = ["pistol", null, null, null, null];
-      saveLoadout();
       reset();
       // override reset state
       tutorialOn = true;

@@ -275,6 +275,8 @@
       el.textContent = String(t.v);
     }
 
+    let _resizeT;
+    addEventListener("resize", () => { clearTimeout(_resizeT); _resizeT = setTimeout(renderAll, 150); });
     function renderAll(){
       scoreEl.textContent = `Score: ${score}`;
       bestEl.textContent = `Best: ${best}`;

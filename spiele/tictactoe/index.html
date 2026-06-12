@@ -369,6 +369,7 @@
       }
       render();
       if (res.w === "draw") showOverlay("draw", "Unentschieden", "GG. Nochmal?");
+      else if (modeSel.value === "pvp") showOverlay(res.w === "x" ? "win" : "lose", res.w.toUpperCase() + " gewinnt!", "Gut gespielt — nochmal?");
       else if (res.w === "x") showOverlay("win", "Sieg", "Du hast gewonnen.");
       else showOverlay("lose", "Niederlage", "Der Bot war diesmal besser.");
     }

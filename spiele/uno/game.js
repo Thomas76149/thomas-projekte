@@ -194,7 +194,7 @@
         + (p.id === meId ? " me" : "")
         + (p.id === state.turnId ? " turn" : "")
         + (p.offline ? " offline" : "");
-      row.innerHTML = `<div class=\"name\">${p.name}${p.offline ? " · offline" : ""}</div><div class=\"cnt\">${p.n} Karten</div>`;
+      row.innerHTML = `<div class=\"name\">${String(p.name||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}${p.offline ? " · offline" : ""}</div><div class=\"cnt\">${p.n} Karten</div>`;
       playersEl.appendChild(row);
     }
 
