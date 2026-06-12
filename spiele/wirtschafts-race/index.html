@@ -440,12 +440,14 @@ function setPlaying(p){
   if(p && year>=Y_END) year=Y_START;
   playing = p;
   playBtn.innerHTML = p ? '❚❚ &nbsp;Pause' : '▶ &nbsp;Play';
-  /* Musik mit dem Race koppeln */
-  if(p){
+  /* Musik mit dem Race koppeln — aber NUR, wenn der Nutzer schon
+     selbst interagiert hat (sonst startet in Browsern mit laxer
+     Autoplay-Policy ungewollt Sound von allein) */
+  if(p && userTouched){
     initAudio();
     if(AC.state==='suspended') AC.resume();
     nextT = Math.max(nextT, AC.currentTime + 0.06);
-  } else if(AC && AC.state==='running'){
+  } else if(!p && AC && AC.state==='running'){
     AC.suspend();
   }
 }
@@ -582,8 +584,16 @@ function schedule(){
     step++; nextT += STEP;
   }
 }
-/* Browser-Autoplay-Schutz: Audio darf erst nach echter Nutzer-Geste loslegen */
-const gestureKick = ()=>{ if(AC && AC.state==='suspended' && playing) AC.resume(); };
+/* Browser-Autoplay-Schutz: Audio existiert erst ab der ersten echten Nutzer-Geste */
+let userTouched = false;
+const gestureKick = ()=>{
+  userTouched = true;
+  if(playing && !AC) initAudio();
+  if(AC && AC.state==='suspended' && playing){
+    AC.resume();
+    nextT = Math.max(nextT, AC.currentTime + 0.06);
+  }
+};
 window.addEventListener('pointerdown', gestureKick);
 window.addEventListener('keydown', gestureKick);
 document.getElementById('musicBtn').addEventListener('click', e=>{
