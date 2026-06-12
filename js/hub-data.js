@@ -68,5 +68,6 @@ window.THOMASFUN_ITEMS = [
   { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui"], section:"tests" },
   { title:"To‑Do Liste", href:"spiele/todo/index.html", emoji:"✅", label:"App", desc:"Filter, erledigt löschen — localStorage.", tags:["tool","mobile"], section:"tests" },
   { title:"Satelliten‑Ping", href:"spiele/spielchen/index.html", emoji:"🛰️", label:"Reflex", desc:"Kurz reagieren, wenn das Signal da ist.", tags:["game","reflex","mobile"], section:"tests" },
+  { title:"Wirtschafts‑Race", href:"spiele/wirtschafts-race/index.html", emoji:"📊", label:"Daten · Zeitraffer", desc:"Länder‑Battle 1900–2026: Balken überholen sich, Flaggen, historische Events — mit Synthwave‑Musik. Umschaltbar PPP/Dollar.", tags:["tool","data","mobile"], section:"tests" },
 ];
 

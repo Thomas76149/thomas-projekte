@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0d12">
+<title>Wirtschafts-Race — 1900 bis heute</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='6' y='34' width='14' height='24' rx='3' fill='%23ff4438'/%3E%3Crect x='25' y='20' width='14' height='38' rx='3' fill='%23ff8b82'/%3E%3Crect x='44' y='8' width='14' height='50' rx='3' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BAR CHART RACE — Wirtschaftsstärke der Länder 1900–2026
+   BIP kaufkraftbereinigt (PPP), vereinfachte Schätzwerte.
+   Eine Datei, kein Build, keine Bibliothek.
+   ============================================================ */
+:root{
+  --bg:#0b0d12;
+  --panel:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.09);
+  --text:#eef1f7;
+  --muted:#99a2b3;
+  --red:#ff4438;
+  --red2:#ff8b82;
+  --redA:rgba(255,68,56,.35);
+  --font-head:'Archivo Black','Arial Black',Impact,sans-serif;
+  --font-body:'Inter',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(50% 42% at 22% 18%, rgba(255,68,56,.10), transparent 62%),
+    radial-gradient(46% 44% at 82% 86%, rgba(120,134,160,.08), transparent 62%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:clamp(12px,2.5vw,28px);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1080px,100%)}
+
+header{margin-bottom:clamp(12px,2vh,20px)}
+.kicker{
+  font-family:var(--font-mono); font-size:clamp(10px,1.2vw,12px);
+  letter-spacing:.28em; color:var(--red2); text-transform:uppercase;
+  margin-bottom:8px;
+}
+.kicker::before{content:"▸ "; color:var(--red)}
+h1{
+  font-family:var(--font-head); font-weight:400;
+  font-size:clamp(22px,4vw,40px); line-height:1.1; letter-spacing:.01em;
+}
+h1 .hl{
+  background:linear-gradient(92deg, var(--red) 15%, var(--red2) 100%);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+.sub{color:var(--muted); font-size:clamp(12px,1.5vw,14.5px); margin-top:6px; line-height:1.5}
+
+/* ---------- Chart-Panel ---------- */
+.panel{
+  position:relative;
+  background:var(--panel);
+  border:1px solid var(--stroke);
+  border-radius:20px;
+  padding:clamp(14px,2.2vw,26px);
+  backdrop-filter:blur(9px);
+  box-shadow:0 24px 60px -28px rgba(0,0,0,.8);
+  overflow:hidden;
+}
+#race{
+  position:relative;
+  height:calc(var(--rows)*var(--rowh));
+  --rowh:clamp(44px,7.2vh,58px);
+}
+.gridlines{position:absolute; inset:0; pointer-events:none}
+.gridlines span{
+  position:absolute; top:0; bottom:0; width:1px;
+  background:rgba(255,255,255,.05);
+}
+
+/* ---------- Zeilen ---------- */
+.row{
+  position:absolute; left:0; right:0; height:var(--rowh);
+  display:grid;
+  grid-template-columns:clamp(118px,16vw,168px) 1fr;
+  gap:clamp(8px,1.4vw,16px);
+  align-items:center;
+  padding:4px 0;
+  will-change:transform;
+  transition:transform .55s cubic-bezier(.25,.8,.3,1), opacity .45s ease;
+}
+.row.gone{opacity:0; pointer-events:none}
+.who{
+  display:flex; align-items:center; gap:9px; min-width:0;
+  justify-content:flex-end; text-align:right;
+}
+.rank{
+  font-family:var(--font-mono); font-size:11px; color:var(--muted);
+  width:18px; flex:0 0 auto; text-align:right;
+}
+.cname{
+  font-weight:800; font-size:clamp(11.5px,1.5vw,14.5px);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.flag{flex:0 0 auto; display:block; width:clamp(24px,3vw,30px); height:auto;
+  border-radius:3px; box-shadow:0 0 0 1px rgba(255,255,255,.18), 0 2px 8px rgba(0,0,0,.5)}
+.track{position:relative; height:calc(100% - 8px); min-width:0}
+.bar{
+  position:absolute; left:0; top:0; bottom:0;
+  border-radius:8px;
+  min-width:6px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 4px 14px -6px rgba(0,0,0,.6);
+  display:flex; align-items:center; justify-content:flex-end;
+}
+.val{
+  position:absolute; left:calc(100% + 9px); top:50%;
+  transform:translateY(-50%);
+  font-family:var(--font-mono); font-size:clamp(10px,1.25vw,12.5px);
+  color:var(--text); white-space:nowrap;
+  text-shadow:0 1px 4px rgba(0,0,0,.7);
+}
+.val small{color:var(--muted); font-size:.85em}
+
+/* ---------- Jahr + Event ---------- */
+.year-box{
+  position:absolute; right:clamp(14px,2.5vw,30px); bottom:clamp(10px,2vh,20px);
+  text-align:right; pointer-events:none;
+}
+#bigYear{
+  font-family:var(--font-head);
+  font-size:clamp(44px,8.5vw,96px); line-height:1;
+  color:rgba(255,255,255,.9);
+  text-shadow:0 0 34px rgba(255,68,56,.25), 0 0 8px rgba(0,0,0,.6);
+  letter-spacing:.02em;
+}
+#eventBadge{
+  display:inline-block; margin-top:6px;
+  font-family:var(--font-mono); font-size:clamp(10px,1.3vw,12.5px);
+  letter-spacing:.06em; color:var(--red2);
+  background:rgba(255,68,56,.08);
+  border:1px solid rgba(255,68,56,.4);
+  border-radius:99px; padding:5px 13px;
+  opacity:0; transform:translateY(5px);
+  transition:opacity .45s ease, transform .45s ease;
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
+}
+#eventBadge.on{opacity:1; transform:none}
+
+/* ---------- Steuerung ---------- */
+.controls{
+  display:flex; align-items:center; gap:clamp(8px,1.4vw,14px);
+  margin-top:clamp(12px,2vh,18px); flex-wrap:wrap;
+}
+button{
+  font-family:var(--font-body); font-weight:800; font-size:13px;
+  color:var(--text); cursor:pointer;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--stroke); border-radius:12px;
+  padding:10px 16px;
+  transition:border-color .25s, box-shadow .25s, background .25s, transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+button:hover{border-color:var(--red); box-shadow:0 0 16px var(--redA); background:rgba(255,255,255,.08)}
+button:active{transform:scale(.96)}
+#playBtn{
+  background:linear-gradient(135deg, var(--red), #d8352b);
+  border-color:transparent; min-width:110px;
+  box-shadow:0 6px 22px -8px var(--redA);
+}
+#playBtn:hover{box-shadow:0 0 24px var(--redA)}
+.speeds,.modes{display:flex; gap:6px}
+.speeds button,.modes button{padding:10px 13px; font-family:var(--font-mono); font-weight:700}
+.speeds button.on,.modes button.on{border-color:var(--red); color:var(--red2); box-shadow:0 0 14px var(--redA)}
+#yearRange{
+  flex:1; min-width:150px; accent-color:var(--red);
+  height:6px; cursor:pointer;
+}
+.foot{
+  margin-top:clamp(10px,1.6vh,14px);
+  font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em;
+  color:rgba(153,162,179,.7); line-height:1.6;
+}
+
+@media (max-width:640px){
+  .row{grid-template-columns:clamp(96px,28vw,120px) 1fr; gap:7px}
+  .rank{display:none}
+  .val{font-size:9.5px; left:calc(100% + 6px)}
+  #race{--rowh:clamp(38px,6vh,46px)}
+  .year-box{bottom:6px}
+}
+@media (prefers-reduced-motion: reduce){
+  .row{transition:transform .01s, opacity .01s}
+  #eventBadge{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">Zeitraffer · 1900 → 2026</div>
+    <h1>Die <span class="hl">Wirtschafts-Giganten</span> im Zeitraffer</h1>
+    <div class="sub" id="subText"></div>
+  </header>
+
+  <div class="panel">
+    <div id="race" style="--rows:8">
+      <div class="gridlines" id="gridlines"></div>
+    </div>
+    <div class="year-box">
+      <div id="bigYear">1900</div>
+      <div><span id="eventBadge"></span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" aria-label="Abspielen oder pausieren">▶ &nbsp;Play</button>
+    <div class="modes" role="group" aria-label="Berechnungsart">
+      <button data-mode="ppp" class="on" title="Kaufkraftbereinigt — was ein Land real produziert (ab 1900)">Kaufkraft (PPP)</button>
+      <button data-mode="nom" title="Zu Dollar-Wechselkursen — die Reihenfolge aus den Nachrichten (ab 1980)">Dollar-Kurse</button>
+    </div>
+    <div class="speeds" role="group" aria-label="Geschwindigkeit">
+      <button data-speed="0.5">0,5×</button>
+      <button data-speed="1" class="on">1×</button>
+      <button data-speed="2">2×</button>
+    </div>
+    <button id="resetBtn">⟲ Neustart</button>
+    <button id="musicBtn" title="Musik an/aus">♪ Musik: an</button>
+    <input type="range" id="yearRange" min="1900" max="2026" step="0.1" value="1900" aria-label="Jahr wählen">
+  </div>
+  <div class="foot">
+    VEREINFACHTE SCHÄTZWERTE — Quellen-Basis: Maddison Project Database (historisch) &amp; IMF World Economic Outlook (aktuell), PPP. Für Schulzwecke gerundet &amp; interpoliert.<br>
+    HINWEIS: Beide Modi sind korrekt — „Kaufkraft (PPP)“ zeigt die reale Produktionsmenge (nur so sind 126 Jahre vergleichbar), „Dollar-Kurse“ die bekannte Nachrichten-Reihenfolge (USA #1, China #2, Deutschland #3 — seriös erst ab 1980).
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   FLAGGEN — handgezeichnete Mini-SVGs (Emoji-Flaggen zeigt
+   Windows nicht an). viewBox 30x20.
+   ============================================================ */
+const FLAGS = {
+  usa:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="20" fill="#c8333d"/><g fill="#fff"><rect y="2.85" width="30" height="2.85"/><rect y="8.55" width="30" height="2.85"/><rect y="14.25" width="30" height="2.85"/></g><rect width="13" height="10" fill="#2b3d6b"/><g fill="#fff"><circle cx="2.6" cy="2.5" r=".75"/><circle cx="6.5" cy="2.5" r=".75"/><circle cx="10.4" cy="2.5" r=".75"/><circle cx="4.55" cy="5" r=".75"/><circle cx="8.45" cy="5" r=".75"/><circle cx="2.6" cy="7.5" r=".75"/><circle cx="6.5" cy="7.5" r=".75"/><circle cx="10.4" cy="7.5" r=".75"/></g></svg>`,
+  chn:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="20" fill="#d6362b"/><path fill="#ffd23f" d="M6 3.2 7.06 6.3l3.27.07-2.6 1.98.94 3.13L6 9.6l-2.67 1.88.94-3.13-2.6-1.98 3.27-.07z"/><g fill="#ffd23f"><circle cx="11.5" cy="2.6" r=".8"/><circle cx="13" cy="5" r=".8"/><circle cx="13" cy="8" r=".8"/><circle cx="11.5" cy="10.4" r=".8"/></g></svg>`,
+  gbr:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="20" fill="#2b3d6b"/><path stroke="#fff" stroke-width="3.4" d="M0 0 30 20M30 0 0 20"/><path stroke="#c8333d" stroke-width="1.4" d="M0 0 30 20M30 0 0 20"/><path stroke="#fff" stroke-width="5.6" d="M15 0v20M0 10h30"/><path stroke="#c8333d" stroke-width="3" d="M15 0v20M0 10h30"/></svg>`,
+  deu:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="6.7" fill="#262626"/><rect y="6.7" width="30" height="6.7" fill="#d6362b"/><rect y="13.4" width="30" height="6.6" fill="#f0bd2e"/></svg>`,
+  fra:`<svg class="flag" viewBox="0 0 30 20"><rect width="10" height="20" fill="#2b4a8b"/><rect x="10" width="10" height="20" fill="#f2f2f2"/><rect x="20" width="10" height="20" fill="#c8333d"/></svg>`,
+  sov:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="20" fill="#c8333d"/><path fill="#ffd23f" d="M7.2 2.2 8 4.5l2.4.05-1.9 1.45.7 2.3-2-1.4-2 1.4.7-2.3-1.9-1.45 2.4-.05z"/><path fill="none" stroke="#ffd23f" stroke-width="1.1" d="M4.6 13.2a4.4 4.4 0 0 0 6.2-4"/><path stroke="#ffd23f" stroke-width="1.1" d="M5.2 8.4l5.4 5.2"/></svg>`,
+  rus:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="6.7" fill="#f2f2f2"/><rect y="6.7" width="30" height="6.7" fill="#2b4a8b"/><rect y="13.4" width="30" height="6.6" fill="#c8333d"/></svg>`,
+  jpn:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="20" fill="#f2f2f2"/><circle cx="15" cy="10" r="5.4" fill="#cf3441"/></svg>`,
+  ind:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="6.7" fill="#e8923c"/><rect y="6.7" width="30" height="6.7" fill="#f2f2f2"/><rect y="13.4" width="30" height="6.6" fill="#3d7a3a"/><circle cx="15" cy="10" r="2.5" fill="none" stroke="#2b4a8b" stroke-width=".9"/><circle cx="15" cy="10" r=".7" fill="#2b4a8b"/></svg>`,
+  ita:`<svg class="flag" viewBox="0 0 30 20"><rect width="10" height="20" fill="#3d7a3a"/><rect x="10" width="10" height="20" fill="#f2f2f2"/><rect x="20" width="10" height="20" fill="#c8333d"/></svg>`,
+  bra:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="20" fill="#3d8a3a"/><path fill="#f0bd2e" d="M15 2.5 27 10 15 17.5 3 10z"/><circle cx="15" cy="10" r="4.2" fill="#2b4a8b"/><path d="M11.2 9.2a8 8 0 0 1 7.6 1.6" stroke="#f2f2f2" stroke-width=".9" fill="none"/></svg>`,
+  auh:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="6.7" fill="#c8333d"/><rect y="6.7" width="30" height="6.7" fill="#f2f2f2"/><rect y="13.4" width="30" height="6.6" fill="#c8333d"/><rect x="12.2" y="7.6" width="5.6" height="4.8" fill="none" stroke="#b09124" stroke-width=".9"/></svg>`,
+  idn:`<svg class="flag" viewBox="0 0 30 20"><rect width="30" height="10" fill="#cf3441"/><rect y="10" width="30" height="10" fill="#f2f2f2"/></svg>`
+};
+
+/* ============================================================
+   DATEN — BIP in Billionen $ (PPP, grob, interpoliert).
+   Stützpunkte [Jahr, Wert]; dazwischen wird linear gerechnet.
+   Länder ohne Wert in einem Jahr existieren dort nicht
+   (z. B. Österreich-Ungarn nach 1918, UdSSR nach 1991).
+   ============================================================ */
+/* ppp = kaufkraftbereinigt (1900–2026) · nom = Markt-Wechselkurse (1980–2026, IMF/Weltbank, UdSSR: CIA-Schätzung) */
+const COUNTRIES = [
+  {id:'usa', name:'USA',            flag:'usa', color:'#5b7ec9',
+   ppp:[[1900,1.0],[1910,1.35],[1916,1.6],[1920,1.65],[1929,2.3],[1933,1.7],[1940,2.4],[1945,3.7],[1950,3.6],[1960,4.9],[1970,7.0],[1980,9.0],[1990,11.7],[2000,15.3],[2008,17.6],[2009,17.0],[2019,21.5],[2020,20.8],[2026,27.5]],
+   nom:[[1980,2.86],[1990,5.96],[2000,10.25],[2008,14.77],[2010,15.05],[2015,18.2],[2020,21.3],[2023,27.7],[2026,30.5]]},
+  {id:'chn', name:'China',          flag:'chn', color:'#e0473a',
+   ppp:[[1900,1.1],[1913,1.15],[1930,1.25],[1940,1.1],[1950,0.9],[1960,1.15],[1970,1.5],[1980,2.1],[1990,3.5],[2000,6.6],[2010,14.8],[2015,20.0],[2020,25.0],[2026,33.0]],
+   nom:[[1980,0.31],[1990,0.36],[2000,1.21],[2005,2.29],[2010,6.09],[2015,11.06],[2020,14.69],[2023,17.8],[2026,19.5]]},
+  {id:'gbr', name:'Großbritannien', flag:'gbr', color:'#7a8aa8',
+   ppp:[[1900,0.85],[1913,1.0],[1920,0.95],[1930,1.1],[1940,1.35],[1945,1.4],[1950,1.4],[1960,1.75],[1970,2.15],[1980,2.45],[1990,3.05],[2000,3.75],[2010,4.1],[2026,4.6]],
+   nom:[[1980,0.6],[1990,1.09],[2000,1.66],[2007,3.09],[2009,2.41],[2015,2.93],[2020,2.7],[2023,3.34],[2026,3.8]]},
+  {id:'deu', name:'Deutschland',    flag:'deu', color:'#d9a832',
+   ppp:[[1900,0.7],[1913,0.95],[1918,0.72],[1929,1.05],[1933,0.95],[1939,1.45],[1944,1.5],[1946,0.6],[1950,0.95],[1960,2.0],[1970,2.9],[1980,3.5],[1990,4.1],[2000,4.7],[2010,5.1],[2026,6.2]],
+   nom:[[1980,0.85],[1990,1.6],[1995,2.59],[2000,1.95],[2005,2.85],[2008,3.75],[2010,3.4],[2015,3.36],[2020,3.89],[2023,4.46],[2026,5.0]]},
+  {id:'fra', name:'Frankreich',     flag:'fra', color:'#6b7fc9',
+   ppp:[[1900,0.55],[1913,0.65],[1918,0.55],[1929,0.85],[1939,0.8],[1944,0.45],[1950,0.85],[1960,1.35],[1970,2.15],[1980,2.75],[1990,3.25],[2000,3.75],[2010,4.0],[2026,4.5]],
+   nom:[[1980,0.7],[1990,1.27],[2000,1.36],[2008,2.92],[2015,2.44],[2020,2.64],[2023,3.03],[2026,3.3]]},
+  {id:'rua', name:'Russland (Zar)', flag:'rus', color:'#8a9bb8',
+   ppp:[[1900,0.75],[1913,0.92],[1917,0.65]]},
+  {id:'sov', name:'Sowjetunion',    flag:'sov', color:'#c94036',
+   ppp:[[1922,0.55],[1929,0.95],[1940,1.75],[1942,1.2],[1945,1.45],[1950,1.95],[1960,3.0],[1970,4.3],[1980,5.3],[1989,5.9],[1991,5.0]],
+   nom:[[1980,1.2],[1988,2.5],[1991,2.2]]},
+  {id:'rus', name:'Russland',       flag:'rus', color:'#8a9bb8',
+   ppp:[[1992,3.1],[1998,2.4],[2008,4.5],[2014,5.1],[2020,5.6],[2026,6.9]],
+   nom:[[1992,0.46],[1998,0.27],[2008,1.66],[2013,2.29],[2016,1.28],[2021,1.84],[2026,2.2]]},
+  {id:'jpn', name:'Japan',          flag:'jpn', color:'#d8606b',
+   ppp:[[1900,0.3],[1913,0.42],[1930,0.72],[1940,1.15],[1945,0.5],[1950,0.8],[1960,1.7],[1970,3.7],[1980,5.1],[1990,6.9],[1995,7.3],[2000,7.1],[2010,6.9],[2026,6.7]],
+   nom:[[1980,1.13],[1985,1.43],[1990,3.13],[1995,5.55],[2000,4.97],[2005,4.83],[2010,5.76],[2012,6.27],[2015,4.45],[2020,5.05],[2023,4.2],[2026,4.3]]},
+  {id:'ind', name:'Indien',         flag:'ind', color:'#dd8a3c',
+   ppp:[[1900,0.85],[1920,0.85],[1940,0.95],[1947,0.9],[1960,1.15],[1970,1.35],[1980,1.65],[1990,2.35],[2000,3.5],[2010,6.3],[2020,9.8],[2026,14.5]],
+   nom:[[1980,0.19],[1990,0.32],[2000,0.47],[2007,1.2],[2010,1.68],[2015,2.1],[2020,2.67],[2023,3.55],[2026,4.5]]},
+  {id:'ita', name:'Italien',        flag:'ita', color:'#5f9a5c',
+   ppp:[[1900,0.35],[1913,0.45],[1930,0.6],[1945,0.35],[1960,1.05],[1970,1.75],[1980,2.35],[1990,2.95],[2000,3.25],[2010,3.3],[2026,3.5]],
+   nom:[[1980,0.48],[1990,1.18],[2000,1.15],[2008,2.42],[2015,1.84],[2020,1.9],[2023,2.25],[2026,2.45]]},
+  {id:'bra', name:'Brasilien',      flag:'bra', color:'#62a85e',
+   ppp:[[1900,0.1],[1930,0.25],[1950,0.5],[1970,1.05],[1980,1.95],[1990,2.25],[2000,2.75],[2010,3.75],[2026,4.9]],
+   nom:[[1980,0.24],[1990,0.46],[1995,0.77],[2002,0.51],[2011,2.62],[2016,1.8],[2020,1.48],[2023,2.17],[2026,2.3]]},
+  {id:'auh', name:'Österreich-Ungarn', flag:'auh', color:'#b85a64',
+   ppp:[[1900,0.5],[1913,0.62],[1918,0.45]]},
+  {id:'idn', name:'Indonesien',     flag:'idn', color:'#c46a5a',
+   ppp:[[1900,0.15],[1930,0.3],[1950,0.35],[1970,0.65],[1990,1.55],[2000,1.9],[2010,2.95],[2026,5.0]],
+   nom:[[1980,0.1],[2000,0.18],[2010,0.76],[2020,1.06],[2026,1.6]]}
+];
+
+/* Historische Ereignisse fürs Badge */
+const EVENTS = [
+  [1914,1918,'Erster Weltkrieg'],
+  [1929,1933,'Weltwirtschaftskrise'],
+  [1939,1945,'Zweiter Weltkrieg'],
+  [1948,1960,'Wiederaufbau & Wirtschaftswunder'],
+  [1973,1975,'Ölkrise'],
+  [1978,1988,'China öffnet seine Wirtschaft'],
+  [1989,1992,'Ende der Sowjetunion'],
+  [2008,2009,'Globale Finanzkrise'],
+  [2020,2021,'Corona-Pandemie']
+];
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+const REDUCED  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Y_END=2026, TOP_N=8;
+const YEARS_PER_SEC = 3.2;
+const MODES = {
+  ppp:{start:1900, sub:'BIP in Billionen Dollar — <b style="color:var(--text)">kaufkraftbereinigt (PPP)</b>: zählt, was ein Land wirklich produziert. Darum liegt China vorn und Deutschland „nur“ auf Platz 6.'},
+  nom:{start:1980, sub:'BIP in Billionen Dollar — <b style="color:var(--text)">zu Dollar-Wechselkursen (nominal)</b>, ab 1980: die Reihenfolge aus den Nachrichten. USA #1, China #2, Deutschland #3.'}
+};
+let MODE   = 'ppp';
+let Y_START= MODES.ppp.start;
+let year   = Y_START;
+let speed  = 1;
+let playing= false;
+let lastT  = 0, rafId = 0;
+
+const raceEl  = document.getElementById('race');
+const bigYear = document.getElementById('bigYear');
+const badge   = document.getElementById('eventBadge');
+const playBtn = document.getElementById('playBtn');
+const range   = document.getElementById('yearRange');
+
+/* dezente vertikale Gitterlinien */
+const glBox = document.getElementById('gridlines');
+for(let i=1;i<=5;i++){
+  const s=document.createElement('span');
+  s.style.left=(i*20)+'%';
+  glBox.appendChild(s);
+}
+
+/* Wert eines Landes im Jahr y (linear interpoliert), null = existiert nicht / keine Daten im Modus */
+function valueAt(c, y){
+  const p = c[MODE];
+  if(!p || y < p[0][0] || y > p[p.length-1][0]) return null;
+  for(let i=0;i<p.length-1;i++){
+    const [y0,v0]=p[i], [y1,v1]=p[i+1];
+    if(y>=y0 && y<=y1){
+      const t=(y-y0)/(y1-y0||1);
+      return v0+(v1-v0)*t;
+    }
+  }
+  return p[p.length-1][1];
+}
+
+/* Eine wiederverwendbare Zeile pro Land */
+const rows = new Map();
+COUNTRIES.forEach(c=>{
+  const el=document.createElement('div');
+  el.className='row gone';
+  el.innerHTML =
+    '<div class="who"><span class="rank"></span><span class="cname">'+c.name+'</span>'+FLAGS[c.flag]+'</div>'+
+    '<div class="track"><div class="bar" style="background:linear-gradient(90deg,'+c.color+'cc,'+c.color+')">'+
+    '<span class="val"></span></div></div>';
+  el.style.transform='translateY('+(TOP_N*1.1*100)+'%)';
+  raceEl.appendChild(el);
+  rows.set(c.id,{el, bar:el.querySelector('.bar'), val:el.querySelector('.val'), rank:el.querySelector('.rank'), visible:false});
+});
+
+const fmt1=v=>v.toLocaleString('de-DE',{minimumFractionDigits:v<10?2:1, maximumFractionDigits:v<10?2:1});
+
+function render(){
+  const live = COUNTRIES
+    .map(c=>({c, v:valueAt(c,year)}))
+    .filter(x=>x.v!==null)
+    .sort((a,b)=>b.v-a.v);
+  const top = live.slice(0,TOP_N);
+  const maxV = top.length ? top[0].v : 1;
+  const maxW = window.innerWidth < 640 ? 70 : 86; /* schmale Screens: Platz fürs Wert-Label lassen */
+  const shown = new Set();
+
+  top.forEach((x,i)=>{
+    shown.add(x.c.id);
+    const r = rows.get(x.c.id);
+    r.el.style.transform = 'translateY('+(i*100)+'%)';
+    if(!r.visible){ r.el.classList.remove('gone'); r.visible=true; }
+    r.bar.style.width = Math.max(2,(x.v/maxV)*maxW) + '%';
+    r.val.innerHTML = fmt1(x.v) + ' <small>Bio. $</small>';
+    r.rank.textContent = (i+1)+'.';
+  });
+  rows.forEach((r,id)=>{
+    if(!shown.has(id) && r.visible){
+      r.visible=false;
+      r.el.classList.add('gone');
+      r.el.style.transform='translateY('+(TOP_N*115)+'%)';
+    }
+  });
+
+  bigYear.textContent = Math.floor(year);
+  range.value = year;
+
+  const ev = EVENTS.find(e=>year>=e[0] && year<=e[1]+0.99);
+  if(ev){ badge.textContent = ev[2]; badge.classList.add('on'); }
+  else badge.classList.remove('on');
+
+  /* Klang öffnet sich mit den Jahren: 1900 ≈ 300 Hz → 2026 ≈ 7,3 kHz */
+  if(AC && tone) tone.frequency.setTargetAtTime(
+    300*Math.pow(2,(year-1900)/126*4.6), AC.currentTime, .12);
+}
+
+function tick(t){
+  const dt = lastT ? (t-lastT)/1000 : 0;
+  lastT = t;
+  if(playing){
+    year += dt*speed*YEARS_PER_SEC;
+    if(year >= Y_END){ year = Y_END; setPlaying(false); playBtn.innerHTML='⟲ &nbsp;Replay'; }
+    render();
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function setPlaying(p){
+  if(p && year>=Y_END) year=Y_START;
+  playing = p;
+  playBtn.innerHTML = p ? '❚❚ &nbsp;Pause' : '▶ &nbsp;Play';
+  /* Musik mit dem Race koppeln */
+  if(p){
+    initAudio();
+    if(AC.state==='suspended') AC.resume();
+    nextT = Math.max(nextT, AC.currentTime + 0.06);
+  } else if(AC && AC.state==='running'){
+    AC.suspend();
+  }
+}
+
+function setMode(m){
+  if(!MODES[m] || m===MODE) return;
+  MODE = m;
+  Y_START = MODES[m].start;
+  range.min = Y_START;
+  if(year < Y_START) year = Y_START;
+  document.getElementById('subText').innerHTML = MODES[m].sub;
+  document.querySelectorAll('.modes button').forEach(b=>b.classList.toggle('on', b.dataset.mode===m));
+  render();
+}
+document.querySelectorAll('.modes button').forEach(b=>{
+  b.addEventListener('click', ()=>setMode(b.dataset.mode));
+});
+document.getElementById('subText').innerHTML = MODES.ppp.sub;
+
+playBtn.addEventListener('click', ()=>setPlaying(!playing));
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  year=Y_START; render(); setPlaying(true);
+});
+document.querySelectorAll('.speeds button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    speed = parseFloat(b.dataset.speed);
+    document.querySelectorAll('.speeds button').forEach(x=>x.classList.toggle('on', x===b));
+  });
+});
+range.addEventListener('input', ()=>{
+  setPlaying(false);
+  year = parseFloat(range.value);
+  render();
+});
+window.addEventListener('keydown', e=>{
+  if(e.key===' '){ e.preventDefault(); setPlaying(!playing); }
+});
+
+/* ============================================================
+   MUSIK — prozeduraler Synthwave-Loop (Web Audio, keine Datei).
+   Startet/pausiert mit dem Race. Der Klang öffnet sich mit den
+   Jahren: 1900 dumpf & düster → 2026 hell & voll. Ab ~1955
+   kommen Hi-Hats dazu, ab ~1985 das Arpeggio.
+   ============================================================ */
+let AC=null, master=null, tone=null, noiseBuf=null;
+let musicOn=true, step=0, nextT=0, seqTimer=0;
+const BPM=112, STEP=60/BPM/4;
+const CHORDS=[                                  /* Am · F · C · G */
+  {root:55.00, pad:[220.00,261.63,329.63]},
+  {root:43.65, pad:[174.61,220.00,261.63]},
+  {root:65.41, pad:[196.00,261.63,329.63]},
+  {root:49.00, pad:[196.00,246.94,293.66]}
+];
+
+function initAudio(){
+  if(AC) return;
+  AC = new (window.AudioContext||window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value = musicOn ? .5 : 0;
+  tone = AC.createBiquadFilter(); tone.type='lowpass'; tone.frequency.value=600; tone.Q.value=.6;
+  const delay = AC.createDelay(.6); delay.delayTime.value = STEP*3;
+  const fb  = AC.createGain(); fb.gain.value=.22;
+  const wet = AC.createGain(); wet.gain.value=.16;
+  delay.connect(fb); fb.connect(delay);
+  tone.connect(master);
+  tone.connect(delay); delay.connect(wet); wet.connect(master);
+  master.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate*0.1, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  nextT = AC.currentTime + 0.1;
+  seqTimer = setInterval(schedule, 25);
+}
+function env(t,a,peak,dec){
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(peak,t+a);
+  g.gain.exponentialRampToValueAtTime(.0008,t+a+dec);
+  return g;
+}
+function kick(t){
+  const o=AC.createOscillator(); o.type='sine';
+  o.frequency.setValueAtTime(150,t);
+  o.frequency.exponentialRampToValueAtTime(44,t+.11);
+  const g=env(t,.004,.85,.2);
+  o.connect(g); g.connect(tone); o.start(t); o.stop(t+.26);
+}
+function hat(t,open){
+  const s=AC.createBufferSource(); s.buffer=noiseBuf;
+  const f=AC.createBiquadFilter(); f.type='highpass'; f.frequency.value=7200;
+  const g=env(t,.002,open?.18:.12,open?.12:.035);
+  s.connect(f); f.connect(g); g.connect(tone);
+  s.start(t); s.stop(t+.15);
+}
+function bass(t,freq){
+  const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=freq;
+  const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=520; f.Q.value=1.1;
+  const g=env(t,.006,.5,.21);
+  o.connect(f); f.connect(g); g.connect(tone);
+  o.start(t); o.stop(t+.3);
+}
+function arp(t,freq){
+  const o=AC.createOscillator(); o.type='triangle'; o.frequency.value=freq;
+  const g=env(t,.004,.13,.13);
+  o.connect(g); g.connect(tone);
+  o.start(t); o.stop(t+.2);
+}
+function pad(t,freqs,len){
+  freqs.forEach(fr=>{
+    [-6,6].forEach(det=>{
+      const o=AC.createOscillator(); o.type='sawtooth';
+      o.frequency.value=fr; o.detune.value=det;
+      const g=AC.createGain();
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(.045,t+len*.3);
+      g.gain.linearRampToValueAtTime(.0001,t+len);
+      o.connect(g); g.connect(tone);
+      o.start(t); o.stop(t+len+.05);
+    });
+  });
+}
+function playStep(s,t){
+  const c = CHORDS[Math.floor(s/16)%4];
+  const i = s%16;
+  if(i%4===0) kick(t);
+  if(year>1955 && i%4===2) hat(t, i===14);
+  if(i%2===0) bass(t, (i%8===6) ? c.root*2 : c.root);
+  if(i===0) pad(t, c.pad, STEP*16);
+  if(year>1985) arp(t, c.pad[[0,1,2,1][i%4]]*2);
+}
+function schedule(){
+  if(!AC || AC.state!=='running') return;
+  while(nextT < AC.currentTime + 0.12){
+    playStep(step%64, nextT);
+    step++; nextT += STEP;
+  }
+}
+/* Browser-Autoplay-Schutz: Audio darf erst nach echter Nutzer-Geste loslegen */
+const gestureKick = ()=>{ if(AC && AC.state==='suspended' && playing) AC.resume(); };
+window.addEventListener('pointerdown', gestureKick);
+window.addEventListener('keydown', gestureKick);
+document.getElementById('musicBtn').addEventListener('click', e=>{
+  musicOn = !musicOn;
+  e.currentTarget.textContent = musicOn ? '♪ Musik: an' : '♪ Musik: aus';
+  if(AC) master.gain.setTargetAtTime(musicOn ? .5 : 0, AC.currentTime, .05);
+});
+
+/* Start */
+render();
+rafId = requestAnimationFrame(tick);
+if(!REDUCED) setTimeout(()=>setPlaying(true), 700);
+
+/* Debug-Hooks für Tests */
+window.__race = {get year(){return year}, set year(v){year=v; render();}, valueAt, COUNTRIES, setMode, get mode(){return MODE}, get audio(){return AC ? AC.state : 'nicht initialisiert'}};
+</script>
+</body>
+</html>
