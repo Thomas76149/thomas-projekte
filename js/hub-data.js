@@ -3,6 +3,7 @@
 
 window.THOMASFUN_ITEMS = [
   // Featured / große Games
+  { title:"Survive the Horde", href:"spiele/survive-the-horde/index.html", emoji:"🧟", label:"Roblox · Survival", desc:"Mein Roblox‑Game: Base bauen, Zombies abknallen, Welle um Welle überleben — allein oder im Co‑op. Promo‑Seite mit direktem Spiel‑Link.", tags:["game","roblox","featured","mobile"], big:true, section:"games" },
   {
     title: "Jet‑Kampf",
     href: "spiele/jetspiel/index.html",
