@@ -53,6 +53,8 @@ body{background:var(--bg); color:var(--text); font-family:var(--font-mono); -web
 .wcard .auto.on{border-color:var(--green); color:#bdfdd6; background:rgba(84,224,138,.15); box-shadow:0 0 14px rgba(84,224,138,.18)}
 .wcard .auto:active{transform:scale(.97)}
 .wcard.cantfire{opacity:.55}
+.wcard.broadside{border-color:var(--green); box-shadow:0 0 0 1px var(--green), 0 0 18px rgba(84,224,138,.45)}
+.wcard.broadside .wname::after{content:' · BREITSEITE'; color:var(--green); font-size:9px; letter-spacing:.05em}
 
 #hint{position:fixed; left:50%; bottom:112px; transform:translateX(-50%); z-index:15; font-size:11px; color:var(--muted);
   text-align:center; pointer-events:none; text-shadow:0 1px 4px #000; background:rgba(10,20,30,.4); padding:4px 10px; border-radius:8px; white-space:nowrap}
@@ -88,7 +90,7 @@ body{background:var(--bg); color:var(--text); font-family:var(--font-mono); -web
 
 <canvas id="mini" width="170" height="121"></canvas>
 
-<div id="hint">Links‑Klick = Kurs setzen · 1/2/3 = feuern · Auto‑Feuer pro Batterie unten · große Karte → Minimap oben rechts</div>
+<div id="hint">Links‑Klick = Kurs · 1/2/3 = feuern · Breitseite zeigen ⇒ alle Türme feuern · Mausrad = Zoom · Minimap oben rechts</div>
 <div id="weapons"></div>
 
 <div class="overlay show" id="ovStart">
@@ -96,10 +98,10 @@ body{background:var(--bg); color:var(--text); font-family:var(--font-mono); -web
     <h1>SEE<span class="hl">SCHLACHT</span></h1>
     <p>Naval Command · weite See — dein <b>Schlachtschiff</b> gegen einen KI‑Gegner. Schwere Batterien, lange Flugzeiten, echtes Vorhalten.</p>
     <div class="keys">
-      <b>Links‑Klick</b> aufs Wasser → Kurs setzen (Schiff dreht behäbig &amp; fährt hin)<br>
-      <b>1</b> Hauptbatterie · <b>2</b> Sekundärbatterie · <b>3</b> Flak/Tertiär<br>
-      <b>AUTO</b> pro Batterie → feuert selbst, sobald der Gegner in Reichweite ist<br>
-      <b>Minimap</b> oben rechts zeigt beide Schiffe · <b>Leertaste</b> = Maschinen stopp
+      <b>Links‑Klick</b> aufs Wasser → Kurs (dreht behäbig &amp; fährt hin) · <b>Mausrad</b> = Zoom<br>
+      <b>1</b> Hauptbatterie (3 Rohre/Salve) · <b>2</b> Sekundär · <b>3</b> Flak<br>
+      <b>Breitseite zeigen!</b> Nur quer zum Gegner feuern alle Türme — dafür bist du dann breiter &amp; leichter zu treffen<br>
+      <b>AUTO</b> pro Batterie an/aus · <b>Leertaste</b> = Stopp
     </div>
     <button class="btn" id="btnStart">Auslaufen ⚓</button>
   </div>
@@ -129,9 +131,9 @@ const mini = document.getElementById('mini'), mctx = mini.getContext('2d');
 let W=0, H=0, DPR=Math.min(2, window.devicePixelRatio||1);
 
 /* Große Welt + Kamera */
-const WORLD_W = 4400, WORLD_H = 3100;
-const cam = { x:0, y:0 };                 // jetzt zentriert (Weltpunkt in Bildschirmmitte)
-const ZOOM = 0.6;                         // <1 = weiter rausgezoomt (mehr Karte sichtbar)
+const WORLD_W = 6200, WORLD_H = 4400;
+const cam = { x:0, y:0 };                 // zentriert (Weltpunkt in Bildschirmmitte)
+let ZOOM = 0.5;                           // <1 = weiter raus; mit Mausrad veränderbar
 function camClamp(){
   const hw=(W/2)/ZOOM, hh=(H/2)/ZOOM;
   cam.x = (WORLD_W<=2*hw)? WORLD_W/2 : clamp(cam.x, hw, WORLD_W-hw);
@@ -181,30 +183,55 @@ function addShake(v){ if(!REDUCED) shake=Math.min(20, shake+v); }
 function makeShip(o){
   return { name:o.name, side:o.side, color:o.color, accent:o.accent, x:o.x, y:o.y, hd:o.hd, vel:0,
     maxSpeed:o.maxSpeed, turn:o.turn, hp:o.hp, maxhp:o.hp, len:o.len, beam:o.beam,
-    wpX:null, wpY:null, throttle:1, alive:true, sinkT:0, wakeT:0, fireSmokeT:0, turretAim:o.hd,
+    wpX:null, wpY:null, throttle:1, alive:true, sinkT:0, wakeT:0, fireSmokeT:0, turretAim:o.hd, trail:[],
     weapons:o.weapons.map(w=>Object.assign({t:0}, w)) };
 }
 let me=null, foe=null, gameOn=false;
 
 function battleshipWeapons(strong){
+  const T=Math.PI;
+  // mount: x=Länge, y=Breite, face=Soll-Richtung relativ zum Bug (0=vorn, T=achtern, ±T/2=Seite), arc=halbe Schwenkbreite
   return [
-    { key:'1', name:'Hauptbatterie', range:1900, reload:8.5, dmg: strong?[17,28]:[14,24], proj:'shell', pspeed:380, spread:0.024, big:true, auto:true,
-      mounts:[{x:0.34,y:0},{x:0.18,y:0},{x:-0.30,y:0}] },
-    { key:'2', name:'Sekundärbatterie', range:820, reload:1.0, dmg:[4,7], proj:'shell', pspeed:520, spread:0.05, auto:true,
-      mounts:[{x:0.05,y:0.8},{x:0.05,y:-0.8},{x:-0.14,y:0.8},{x:-0.14,y:-0.8}] },
-    { key:'3', name:'Flak / Tertiär', range:380, reload:0.26, dmg:[1,2], proj:'tracer', pspeed:760, spread:0.13, salvo:2, auto:true,
-      mounts:[{x:-0.04,y:0.55},{x:-0.04,y:-0.55},{x:-0.2,y:0.4},{x:-0.2,y:-0.4}] }
+    { key:'1', name:'Hauptbatterie', range:2700, reload:12, dmg: strong?[15,25]:[13,22], proj:'shell', pspeed:440, spread:0.018, big:true, barrels:3, auto:true,
+      mounts:[{x:0.34,y:0,face:0,arc:2.62},{x:0.18,y:0,face:0,arc:2.62},{x:-0.30,y:0,face:T,arc:2.62}] },
+    { key:'2', name:'Sekundärbatterie', range:1150, reload:1.0, dmg:[4,7], proj:'shell', pspeed:640, spread:0.05, auto:true,
+      mounts:[{x:0.05,y:0.8,face:T/2,arc:1.4},{x:0.05,y:-0.8,face:-T/2,arc:1.4},{x:-0.14,y:0.8,face:T/2,arc:1.4},{x:-0.14,y:-0.8,face:-T/2,arc:1.4}] },
+    { key:'3', name:'Flak / Tertiär', range:560, reload:0.26, dmg:[1,2], proj:'tracer', pspeed:880, spread:0.13, salvo:2, auto:true,
+      mounts:[{x:-0.04,y:0.55,face:0,arc:T},{x:-0.04,y:-0.55,face:0,arc:T},{x:-0.2,y:0.4,face:0,arc:T},{x:-0.2,y:-0.4,face:0,arc:T}] }
   ];
+}
+/* Kann dieser Mount auf das Ziel feuern? (Feuerwinkel/Breitseite) */
+function canBear(s, mount, target){
+  if(mount.arc>=Math.PI) return true;                 // Volltraverse (Flak)
+  const rel = angDiff(s.hd, angTo(s.x,s.y,target.x,target.y));
+  return Math.abs(angDiff(rel, mount.face)) <= mount.arc;
+}
+function bearCount(s, w, target){ let n=0; for(const m of w.mounts) if(canBear(s,m,target)) n++; return n; }
+/* Auto-Feuer-Entscheidung: Hauptbatterie erst bei guter Breitseite, Rest sobald 1 Turm zielen kann */
+function autoShouldFire(s, w, target){
+  if(w.t>0 || !target.alive) return false;
+  if(dist(s.x,s.y,target.x,target.y) > w.range) return false;
+  const bc = bearCount(s,w,target);
+  if(bc===0) return false;
+  if(w.big) return bc >= Math.ceil(w.mounts.length/2);
+  return true;
+}
+/* Treffer-Check als ausgerichtete Schiffs-Box → breitseits ist die lange Seite leichter zu treffen */
+function shipHit(t, px, py){
+  const dx=px-t.x, dy=py-t.y, c=Math.cos(-t.hd), si=Math.sin(-t.hd);
+  const lx=dx*c-dy*si, ly=dx*si+dy*c;
+  return Math.abs(lx) < t.len*0.5 && Math.abs(ly) < t.beam*0.7;
 }
 function newBattle(){
   fit();
   wakes=[]; smokes=[]; parts=[]; tracers=[]; shells=[]; rings=[]; flashes=[]; columns=[]; gunsmoke=[]; shake=0;
   me = makeShip({ name:'USS MASSACHUSETTS', side:'me', color:'#7b8f9e', accent:'#6fd1ff',
-    x:WORLD_W*0.20, y:WORLD_H*0.74, hd:angTo(WORLD_W*0.20,WORLD_H*0.74, WORLD_W*0.8,WORLD_H*0.3),
-    maxSpeed:38, turn:0.20, hp:520, len:122, beam:30, weapons:battleshipWeapons(true) });
+    x:WORLD_W*0.28, y:WORLD_H*0.66, hd:angTo(WORLD_W*0.28,WORLD_H*0.66, WORLD_W*0.72,WORLD_H*0.34),
+    maxSpeed:38, turn:0.20, hp:560, len:122, beam:30, weapons:battleshipWeapons(true) });
   foe = makeShip({ name:'IJN YAMATO', side:'foe', color:'#8a7b76', accent:'#ff5b5b',
-    x:WORLD_W*0.80, y:WORLD_H*0.24, hd:angTo(WORLD_W*0.8,WORLD_H*0.24, WORLD_W*0.3,WORLD_H*0.7),
-    maxSpeed:35, turn:0.18, hp:540, len:128, beam:32, weapons:battleshipWeapons(false) });
+    x:WORLD_W*0.72, y:WORLD_H*0.34, hd:angTo(WORLD_W*0.72,WORLD_H*0.34, WORLD_W*0.28,WORLD_H*0.66),
+    maxSpeed:35, turn:0.18, hp:500, len:128, beam:32, weapons:battleshipWeapons(false) });
+  foe.weapons.forEach(w=>{ w.auto=true; });   // KI feuert alle Batterien selbst
   cam.x = me.x; cam.y = me.y; camClamp();
   document.getElementById('myName').textContent = me.name;
   buildWeaponUI();
@@ -233,26 +260,24 @@ function shipPointWorld(s, mx, my){   // mx in Längen-, my in Breiten-Einheiten
 }
 function fireWeapon(s, w, target){
   if(w.t>0 || !target.alive) return false;
-  const d = dist(s.x,s.y,target.x,target.y);
-  if(d > w.range) return false;
+  if(dist(s.x,s.y,target.x,target.y) > w.range) return false;
+  const bearing = w.mounts.filter(m=>canBear(s,m,target));
+  if(bearing.length===0) return false;   // kein Turm kann zielen → kein Schuss, kein Nachladen
   w.t = w.reload;
   const tvx=Math.cos(target.hd)*target.vel, tvy=Math.sin(target.hd)*target.vel;
-  for(let k=0;k<w.mounts.length;k++){
-    const m = shipPointWorld(s, w.mounts[k].x, w.mounts[k].y);
+  for(const mt of bearing){
+    const m = shipPointWorld(s, mt.x, mt.y);
     const aim = lead(m.x,m.y, target.x,target.y, tvx,tvy, w.pspeed);
     const da = dist(m.x,m.y,aim.x,aim.y);
     const baseA = angTo(m.x,m.y,aim.x,aim.y);
     muzzle(m.x,m.y, baseA, w.big);
-    if(w.big) gunsmoke.push({x:m.x,y:m.y,r:rnd(7,11),vx:Math.cos(baseA)*14+rnd(-4,4),vy:Math.sin(baseA)*14+rnd(-4,4),life:1,fade:rnd(.18,.3)});
-    const salvo = w.proj==='tracer'? (w.salvo||1) : 1;
-    for(let n=0;n<salvo;n++){
+    if(w.big) gunsmoke.push({x:m.x,y:m.y,r:rnd(9,14),vx:Math.cos(baseA)*16+rnd(-4,4),vy:Math.sin(baseA)*16+rnd(-4,4),life:1,fade:rnd(.15,.24)});
+    const shots = w.big? (w.barrels||3) : (w.proj==='tracer'? (w.salvo||1) : 1);   // Hauptturm: 3 Rohre = 3 Schuss
+    for(let n=0;n<shots;n++){
       const a = baseA + rnd(-w.spread,w.spread);
       const ix=m.x+Math.cos(a)*da, iy=m.y+Math.sin(a)*da, tof=da/w.pspeed;
-      if(w.proj==='shell'){
-        shells.push({ x0:m.x,y0:m.y, x:m.x,y:m.y, ix,iy, t:0, tof, dmg:rnd(w.dmg[0],w.dmg[1]), src:s.side, big:!!w.big, arc:Math.min(120, da*0.16) });
-      } else {
-        tracers.push({ x:m.x,y:m.y, vx:Math.cos(a)*w.pspeed, vy:Math.sin(a)*w.pspeed, life:Math.min(0.6,da/w.pspeed+0.05), dmg:rnd(w.dmg[0],w.dmg[1]), src:s.side });
-      }
+      if(w.proj==='shell') shells.push({ x0:m.x,y0:m.y, x:m.x,y:m.y, ix,iy, t:0, tof, dmg:rnd(w.dmg[0],w.dmg[1]), src:s.side, big:!!w.big, arc:Math.min(150, da*0.16) });
+      else tracers.push({ x:m.x,y:m.y, vx:Math.cos(a)*w.pspeed, vy:Math.sin(a)*w.pspeed, life:Math.min(0.6,da/w.pspeed+0.05), dmg:rnd(w.dmg[0],w.dmg[1]), src:s.side });
     }
   }
   return true;
@@ -267,21 +292,18 @@ function muzzle(x,y,a,big){
   if(big) addShake(2.2);
 }
 function bigSplash(x,y){
-  rings.push({x,y,r:3,max:46,life:1,col:'rgba(200,225,240,'});
   columns.push({x,y,h:8,maxh:rnd(40,70),life:1});
   const n=REDUCED?6:22;
   for(let i=0;i<n;i++){ const a=rnd(-1.2,-1.94)*1, sp=rnd(40,150); // nach oben gefächert
     parts.push({x:x+rnd(-6,6),y,vx:Math.cos(a)*sp*0.5,vy:-Math.abs(Math.sin(a))*sp-rnd(40,120),life:rnd(.5,1),mx:.97,grav:160,col:'rgba(210,232,245,1)',r:rnd(2,4.5),fade:1.2}); }
 }
 function smallSplash(x,y){
-  rings.push({x,y,r:2,max:18,life:1,col:'rgba(190,215,232,'});
   const n=REDUCED?4:9;
   for(let i=0;i<n;i++){ const a=rnd(0,TAU), sp=rnd(15,60);
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-rnd(10,40),life:rnd(.3,.6),mx:.96,grav:80,col:'rgba(200,225,240,1)',r:rnd(1.5,3),fade:1.8}); }
 }
 function explode(x,y,big){
   flashes.push({x,y,a:0,life:1,burst:true,big});
-  rings.push({x,y,r:2,max:big?82:44,life:1,col:'rgba(255,180,90,'});
   const n=REDUCED?9:(big?46:24);
   for(let i=0;i<n;i++){ const a=rnd(0,TAU), sp=rnd(30,big?300:170), fire=Math.random()<.6;
     parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:rnd(.3,1),mx:.93, col: fire?(Math.random()<.5?'#ffd56a':'#ff7a3a'):'#555', r:rnd(2,big?7:4), fade:1.4, smoke:!fire}); }
@@ -295,6 +317,7 @@ cv.addEventListener('pointerdown', e=>{
   const r=cv.getBoundingClientRect();
   me.wpX = (e.clientX-r.left-W/2)/ZOOM+cam.x; me.wpY = (e.clientY-r.top-H/2)/ZOOM+cam.y; me.throttle=1;
 });
+cv.addEventListener('wheel', e=>{ e.preventDefault(); ZOOM = clamp(ZOOM*(e.deltaY<0?1.12:0.89), 0.28, 1.3); camClamp(); }, {passive:false});
 window.addEventListener('keydown', e=>{
   if(e.code==='Space'){ e.preventDefault(); if(me){ me.wpX=null; me.wpY=null; me.throttle=0; } }
   if(!gameOn) return;
@@ -313,7 +336,7 @@ function aiThink(s, target, dt){
   else if(d < desired*0.6) aimAng = toT + Math.PI*0.7; // abdrehen
   s.wpX = clamp(s.x+Math.cos(aimAng)*400,60,WORLD_W-60); s.wpY = clamp(s.y+Math.sin(aimAng)*400,60,WORLD_H-60); s.throttle=1;
   s._orbitT=(s._orbitT||0)+dt; if(s._orbitT>9){ s._orbitT=0; s._orbit=(s._orbit||0)+1; }
-  for(const w of s.weapons) if(w.auto && w.t<=0) fireWeapon(s,w,target);
+  for(const w of s.weapons) if(w.auto && autoShouldFire(s,w,target)) fireWeapon(s,w,target);
 }
 
 /* ---------- Update ---------- */
@@ -332,13 +355,11 @@ function updateShip(s, dt){
   const en=s.side==='me'?foe:me;
   if(en&&en.alive){ const want=angTo(s.x,s.y,en.x,en.y); s.turretAim+=angDiff(s.turretAim,want)*Math.min(1,dt*3); }
   for(const w of s.weapons){ if(w.t>0) w.t=Math.max(0,w.t-dt); }
-  // Kielwasser
-  s.wakeT-=dt;
-  if(s.vel>5 && s.wakeT<=0){ s.wakeT=0.05; const stern=shipPointWorld(s,-0.5,0);
-    const fx=Math.cos(s.hd),fy=Math.sin(s.hd),rx=-fy,ry=fx;
-    for(const sgn of [-1,1]) wakes.push({x:stern.x+rx*sgn*s.beam*0.3,y:stern.y+ry*sgn*s.beam*0.3, vx:-fx*5+rx*sgn*10,vy:-fy*5+ry*sgn*10, life:1,fade:rnd(.35,.55),r:rnd(3,5.5),grow:rnd(10,18)});
-    wakes.push({x:stern.x,y:stern.y, vx:-fx*4,vy:-fy*4, life:1,fade:.6,r:rnd(4,6),grow:12});
-  }
+  // Kielwasser-Spur (Band statt Kreise): Heck-Punkte sammeln
+  for(const p of s.trail) p.t+=dt;
+  while(s.trail.length && s.trail[0].t>2.4) s.trail.shift();
+  if(s.vel>4){ const stern=shipPointWorld(s,-0.5,0), lp=s.trail[s.trail.length-1];
+    if(!lp || dist(lp.x,lp.y,stern.x,stern.y)>7) s.trail.push({x:stern.x,y:stern.y,t:0}); }
   // Schadensrauch/Feuer
   if(s.hp < s.maxhp*0.55){
     s.fireSmokeT-=dt; const rate = s.hp<s.maxhp*0.28?0.07:0.15;
@@ -353,7 +374,7 @@ function update(dt){
   if(me) updateShip(me,dt);
   if(foe) updateShip(foe,dt);
   if(gameOn && foe && foe.alive) aiThink(foe, me, dt);
-  if(gameOn && me && me.alive){ for(const w of me.weapons) if(w.auto && w.t<=0) fireWeapon(me,w,foe); }
+  if(gameOn && me && me.alive){ for(const w of me.weapons) if(w.auto && autoShouldFire(me,w,foe)) fireWeapon(me,w,foe); }
   // Kamera folgt dem Spieler
   if(me){ cam.x += (me.x-cam.x)*Math.min(1,dt*2.5); cam.y += (me.y-cam.y)*Math.min(1,dt*2.5); camClamp(); }
 
@@ -361,13 +382,13 @@ function update(dt){
     sh.t+=dt; const p=Math.min(1,sh.t/sh.tof);
     sh.x=sh.x0+(sh.ix-sh.x0)*p; sh.y=sh.y0+(sh.iy-sh.y0)*p;
     if(p>=1){ sh.dead=true; const tg=sh.src==='me'?foe:me;
-      if(tg&&tg.alive&&dist(sh.ix,sh.iy,tg.x,tg.y)<tg.len*0.45) damage(tg, sh.dmg, sh.ix,sh.iy);
+      if(tg&&tg.alive&&shipHit(tg,sh.ix,sh.iy)) damage(tg, sh.dmg, sh.ix,sh.iy);
       else { sh.big?bigSplash(sh.ix,sh.iy):smallSplash(sh.ix,sh.iy); if(sh.big)addShake(1.5); } }
   }
   shells = shells.filter(s=>!s.dead);
   for(const tr of tracers){ tr.x+=tr.vx*dt; tr.y+=tr.vy*dt; tr.life-=dt;
     const tg=tr.src==='me'?foe:me;
-    if(tg&&tg.alive&&dist(tr.x,tr.y,tg.x,tg.y)<tg.len*0.42){ tg.hp-=tr.dmg; if(!REDUCED)parts.push({x:tr.x,y:tr.y,vx:0,vy:0,life:.2,mx:1,col:'#fff',r:2,fade:3}); if(tg.hp<=0&&tg.alive){tg.hp=0;tg.alive=false;endBattle(tg.side==='me'?'lose':'win');} tr.dead=true; }
+    if(tg&&tg.alive&&shipHit(tg,tr.x,tr.y)){ tg.hp-=tr.dmg; if(!REDUCED)parts.push({x:tr.x,y:tr.y,vx:0,vy:0,life:.2,mx:1,col:'#fff',r:2,fade:3}); if(tg.hp<=0&&tg.alive){tg.hp=0;tg.alive=false;endBattle(tg.side==='me'?'lose':'win');} tr.dead=true; }
     if(tr.life<=0) tr.dead=true;
   }
   tracers = tracers.filter(t=>!t.dead);
@@ -402,6 +423,9 @@ function updateHUD(){
     w._card.classList.toggle('ready', ready);
     const d=foe&&foe.alive?dist(me.x,me.y,foe.x,foe.y):1e9; w._card.classList.toggle('cantfire', d>w.range);
   }
+  const mw=me.weapons[0];   // Breitseite-Anzeige: alle Haupttürme können zielen
+  const full=!!(foe&&foe.alive) && dist(me.x,me.y,foe.x,foe.y)<=mw.range && bearCount(me,mw,foe)>=mw.mounts.length;
+  mw._card.classList.toggle('broadside', full);
 }
 
 /* ---------- Schiff zeichnen ---------- */
@@ -457,6 +481,24 @@ function drawTag(s){
   ctx.restore(); ctx.textAlign='left';
 }
 
+/* Kielwasser als verlaufendes Band (schmal am Heck → breiter & blasser nach hinten) */
+function drawWake(s){
+  const tr=s.trail; if(tr.length<2) return;
+  for(let i=1;i<tr.length;i++){
+    const a=tr[i-1], b=tr[i];
+    const al=(1-((a.t+b.t)/2)/2.4)*0.30; if(al<=0) continue;
+    const wA=2+a.t*7, wB=2+b.t*7;
+    const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1, px=-dy/L, py=dx/L;
+    ctx.fillStyle='rgba(225,239,248,'+al+')';
+    ctx.beginPath();
+    ctx.moveTo(a.x+px*wA,a.y+py*wA); ctx.lineTo(b.x+px*wB,b.y+py*wB);
+    ctx.lineTo(b.x-px*wB,b.y-py*wB); ctx.lineTo(a.x-px*wA,a.y-py*wA);
+    ctx.closePath(); ctx.fill();
+  }
+  const last=tr[tr.length-1];
+  if(last){ ctx.globalAlpha=.5; ctx.fillStyle='#eef6fb'; ctx.beginPath(); ctx.ellipse(last.x,last.y,4,6,s.hd,0,TAU); ctx.fill(); ctx.globalAlpha=1; }
+}
+
 /* ---------- Render ---------- */
 let _now=0;
 function render(){
@@ -471,13 +513,14 @@ function render(){
   // Weltgrenze
   ctx.strokeStyle='rgba(120,150,175,.12)'; ctx.lineWidth=3; ctx.strokeRect(0,0,WORLD_W,WORLD_H);
 
-  // Kielwasser
-  for(const w of wakes){ ctx.globalAlpha=w.life*0.5; ctx.fillStyle='#dfeef7'; ctx.beginPath(); ctx.arc(w.x,w.y,w.r,0,TAU); ctx.fill(); }
+  // Kielwasser-Bänder
+  if(foe) drawWake(foe); if(me) drawWake(me);
   ctx.globalAlpha=1;
 
-  // Reichweiten-Ringe + Wegpunkt
+  // Reichweiten-Ringe (deutlich, farbcodiert) + Wegpunkt
   if(gameOn && me && me.alive){
-    for(const w of me.weapons){ ctx.strokeStyle=w.auto?'rgba(84,224,138,.13)':'rgba(150,180,205,.09)'; ctx.lineWidth=1; ctx.setLineDash([6,9]); ctx.beginPath(); ctx.arc(me.x,me.y,w.range,0,TAU); ctx.stroke(); }
+    const ringCol=['rgba(120,200,255,.40)','rgba(255,210,90,.28)','rgba(120,255,170,.24)'];
+    me.weapons.forEach((wp,i)=>{ ctx.strokeStyle=ringCol[i]||'rgba(160,190,210,.26)'; ctx.lineWidth=2.4/ZOOM; ctx.setLineDash([16/ZOOM,18/ZOOM]); ctx.beginPath(); ctx.arc(me.x,me.y,wp.range,0,TAU); ctx.stroke(); });
     ctx.setLineDash([]);
     if(me.wpX!=null){ ctx.strokeStyle='rgba(111,209,255,.6)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(me.wpX,me.wpY,8,0,TAU); ctx.moveTo(me.wpX-12,me.wpY); ctx.lineTo(me.wpX+12,me.wpY); ctx.moveTo(me.wpX,me.wpY-12); ctx.lineTo(me.wpX,me.wpY+12); ctx.stroke(); }
   }
@@ -493,19 +536,17 @@ function render(){
   // Tracer (Flak)
   for(const tr of tracers){ ctx.strokeStyle='rgba(255,235,150,.9)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(tr.x,tr.y); ctx.lineTo(tr.x-tr.vx*0.02,tr.y-tr.vy*0.02); ctx.stroke(); }
 
-  // Geschützrauch
-  for(const g of gunsmoke){ ctx.globalAlpha=g.life*0.4; ctx.fillStyle='#8a949c'; ctx.beginPath(); ctx.arc(g.x,g.y,g.r,0,TAU); ctx.fill(); }
-  // Rauch
-  for(const s of smokes){ ctx.globalAlpha=s.life*0.5; ctx.fillStyle=s.dark?'#2a2f33':'#9aa6ad'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.fill(); }
+  // Geschützrauch (weicher Verlauf)
+  for(const g of gunsmoke){ const al=Math.max(0,g.life*0.4); const rg=ctx.createRadialGradient(g.x,g.y,0,g.x,g.y,g.r); rg.addColorStop(0,'rgba(150,160,168,'+al+')'); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(g.x,g.y,g.r,0,TAU); ctx.fill(); }
+  // Rauch als weiche Wolken (Verlauf statt harter Scheibe)
+  for(const s of smokes){ const al=Math.max(0,s.life*0.5); const rg=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r); rg.addColorStop(0,(s.dark?'rgba(36,42,48,':'rgba(150,162,172,')+al+')'); rg.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.fill(); }
   ctx.globalAlpha=1;
   // Wasserfontänen (Säulen)
   for(const c of columns){ ctx.globalAlpha=c.life*0.7; ctx.fillStyle='rgba(220,235,247,'+(c.life*0.7)+')'; ctx.beginPath(); ctx.ellipse(c.x,c.y-c.h*0.5, 5, c.h*0.5, 0,0,TAU); ctx.fill(); }
   ctx.globalAlpha=1;
-  // Partikel
-  for(const p of parts){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,TAU); ctx.fill(); }
-  ctx.globalAlpha=1;
-  // Schockwellen-Ringe
-  for(const r of rings){ ctx.globalAlpha=Math.max(0,r.life); ctx.strokeStyle=r.col+r.life+')'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(r.x,r.y,r.r,0,TAU); ctx.stroke(); }
+  // Partikel als kurze Bewegungs-Streifen (statt Kreise)
+  ctx.lineCap='round';
+  for(const p of parts){ ctx.globalAlpha=Math.max(0,Math.min(1,p.life)); ctx.strokeStyle=p.col; ctx.lineWidth=Math.max(0.6,p.r); ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x-p.vx*0.03, p.y-p.vy*0.03); ctx.stroke(); }
   ctx.globalAlpha=1;
   // Mündungsfeuer / Explosionen
   for(const f of flashes){ ctx.globalAlpha=Math.max(0,f.life);
