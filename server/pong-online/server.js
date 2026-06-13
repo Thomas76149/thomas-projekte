@@ -2,6 +2,7 @@ import http from "http";
 import { WebSocketServer } from "ws";
 import * as tanks from "./tanks.js";
 import * as trivia from "./trivia.js";
+import * as frequenz from "./frequenz.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -95,6 +96,7 @@ function makeState(game) {
   if (game === "uno") return makeUnoState();
   if (game === "tanks") return tanks.makeTanksState();
   if (game === "trivia") return trivia.makeTriviaState();
+  if (game === "frequenz") return frequenz.makeFrequenzState();
   return makePongState();
 }
 
@@ -254,6 +256,7 @@ function normalizeGame(g) {
   if (gg === "uno") return "uno";
   if (gg === "tanks") return "tanks";
   if (gg === "trivia") return "trivia";
+  if (gg === "frequenz") return "frequenz";
   return "pong";
 }
 
@@ -310,6 +313,12 @@ function pickSide(room) {
     }
     return null;
   }
+  if (room.game === "frequenz") {
+    for (let i = 0; i < frequenz.MAX_PLAYERS; i++) {
+      if (!used.has(String(i))) return String(i);
+    }
+    return null;
+  }
   return null;
 }
 
@@ -358,6 +367,7 @@ function buildLobbyPayload(room) {
   if (room.game === "ttt" || room.game === "rps") allReady = allReady && roster.length === 2;
   if (room.game === "tanks") allReady = allReady && roster.length >= 2;
   if (room.game === "trivia") allReady = allReady && roster.length >= 2;
+  if (room.game === "frequenz") allReady = allReady && roster.length >= 2;
   return { t: "lobby", game: room.game, code: room.code, peers: roster.length, roster, allReady };
 }
 
@@ -409,6 +419,17 @@ function broadcastTrivia(room) {
   }
 }
 
+function broadcastFrequenz(room) {
+  if (room.game !== "frequenz") return;
+  for (const [ws, meta] of room.clients) {
+    send(ws, {
+      t: "state",
+      game: "frequenz",
+      s: frequenz.serializeFreqStateForClient(room.state, room, String(meta.side)),
+    });
+  }
+}
+
 const server = http.createServer((req, res) => {
   if (req.url === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
@@ -438,11 +459,16 @@ wss.on("connection", (ws) => {
         send(ws, { t: "err", m: "Quiz läuft — bitte warten bis die Runde vorbei ist." });
         return;
       }
+      if (room.game === "frequenz" && room.state.phase !== "lobby") {
+        send(ws, { t: "err", m: "Runde läuft — bitte warten bis sie vorbei ist." });
+        return;
+      }
       let side = pickSide(room);
       if (room.game !== "uno" && !side) {
         let fullMsg = "Room voll (max 2).";
         if (room.game === "tanks" || room.game === "pong") fullMsg = "Room voll (max 4).";
         if (room.game === "trivia") fullMsg = `Room voll (max ${trivia.MAX_PLAYERS}).`;
+        if (room.game === "frequenz") fullMsg = `Room voll (max ${frequenz.MAX_PLAYERS}).`;
         send(ws, { t: "err", m: fullMsg });
         return;
       }
@@ -504,6 +530,9 @@ wss.on("connection", (ws) => {
         if (room.game === "trivia") {
           trivia.triviaTryStartMatch(room);
         }
+        if (room.game === "frequenz") {
+          frequenz.freqTryStartMatch(room);
+        }
       }
       const extra = {};
       if (room.game === "pong") {
@@ -526,6 +555,9 @@ wss.on("connection", (ws) => {
       if (room.game === "trivia") {
         trivia.triviaTryStartMatch(room);
         broadcastTrivia(room);
+      } else if (room.game === "frequenz") {
+        frequenz.freqTryStartMatch(room);
+        broadcastFrequenz(room);
       } else {
         broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       }
@@ -546,6 +578,10 @@ wss.on("connection", (ws) => {
       if (room.game === "trivia") {
         trivia.triviaTryStartMatch(room);
         broadcastTrivia(room);
+      }
+      if (room.game === "frequenz") {
+        frequenz.freqTryStartMatch(room);
+        broadcastFrequenz(room);
       }
       if (room.game === "rps" || room.game === "ttt") {
         broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
@@ -625,8 +661,10 @@ wss.on("connection", (ws) => {
       if (room.game === "ttt") syncTttAllowMoves(room);
       if (room.game === "tanks") tanksTryStartMatch(room);
       if (room.game === "trivia") trivia.triviaTryStartMatch(room);
+      if (room.game === "frequenz") frequenz.freqTryStartMatch(room);
       broadcast(room, { t: "reset" });
       if (room.game === "trivia") broadcastTrivia(room);
+      else if (room.game === "frequenz") broadcastFrequenz(room);
       else broadcast(room, { t: "state", game: room.game, s: serializeState(room.game, room.state) });
       broadcastLobby(room);
       return;
@@ -669,6 +707,23 @@ wss.on("connection", (ws) => {
       if (st.phase !== "question") return;
       const slotStr = String(meta.side);
       if (trivia.triviaApplyTextAnswer(st, slotStr, msg.text)) broadcastTrivia(room);
+      return;
+    }
+
+    if (room.game === "frequenz" && msg.t === "frequenz_start") {
+      if (!room.state.matchLive) { send(ws, { t: "err", m: "Alle müssen Ready sein (mind. 2 Spieler)." }); return; }
+      if (room.state.phase !== "lobby") { send(ws, { t: "err", m: "Schon aktiv." }); return; }
+      if (!frequenz.freqBeginMatch(room)) { send(ws, { t: "err", m: "Start nicht möglich (zu wenige Spieler?)." }); return; }
+      broadcastFrequenz(room);
+      broadcastLobby(room);
+      return;
+    }
+    if (room.game === "frequenz" && msg.t === "frequenz_clue") {
+      if (frequenz.freqApplyClue(room.state, String(meta.side), msg.clue)) broadcastFrequenz(room);
+      return;
+    }
+    if (room.game === "frequenz" && msg.t === "frequenz_guess") {
+      if (frequenz.freqApplyGuess(room.state, String(meta.side), msg.pos)) broadcastFrequenz(room);
       return;
     }
 
@@ -816,6 +871,15 @@ wss.on("connection", (ws) => {
       trivia.triviaTryStartMatch(room);
       broadcast(room, { t: "peers", n: room.clients.size });
       broadcastTrivia(room);
+      broadcastLobby(room);
+      return;
+    }
+    if (room.game === "frequenz") {
+      if (room.state.phase !== "lobby") frequenz.freqResetRoom(room);
+      clearAllReady(room);
+      frequenz.freqTryStartMatch(room);
+      broadcast(room, { t: "peers", n: room.clients.size });
+      broadcastFrequenz(room);
       broadcastLobby(room);
       return;
     }
@@ -1166,6 +1230,20 @@ setInterval(() => {
       } else if (st.phase === "reveal" && t >= st.revealUntil) {
         trivia.triviaTickReveal(room);
         broadcastTrivia(room);
+        broadcastLobby(room);
+      }
+    }
+    if (room.game === "frequenz") {
+      const st = room.state;
+      if (st.phase === "clue" && t >= st.deadline) {
+        frequenz.freqFinalizeRound(room);
+        broadcastFrequenz(room);
+      } else if (st.phase === "guess" && (frequenz.freqAllGuessed(room) || t >= st.deadline)) {
+        frequenz.freqFinalizeRound(room);
+        broadcastFrequenz(room);
+      } else if (st.phase === "reveal" && t >= st.revealUntil) {
+        frequenz.freqTickReveal(room);
+        broadcastFrequenz(room);
         broadcastLobby(room);
       }
     }

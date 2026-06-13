@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0b16">
+<title>Frequenz · Wellenlänge — thomas.fun</title>
+<meta name="description" content="Frequenz: Online-Partyspiel mit Freunden. Ein Hinweisgeber, ein verstecktes Ziel auf einem Spektrum — errate per Regler die Wellenlänge. Room-Code teilen, lospielen.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230c0b16'/%3E%3Cpath d='M6 40 Q18 12 30 40 T54 40' fill='none' stroke='%23a78bfa' stroke-width='4'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0b16; --panel:rgba(255,255,255,.045); --stroke:rgba(180,170,220,.18);
+  --text:#f0eef8; --muted:#9b95b5; --vio:#a78bfa; --cyan:#34e0d0; --gold:#ffce5a; --green:#54e08a; --red:#ff6b8a;
+  --font:'Outfit',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:
+  radial-gradient(60% 50% at 20% 0%, rgba(167,139,250,.16), transparent 60%),
+  radial-gradient(50% 50% at 90% 100%, rgba(52,224,208,.10), transparent 60%), var(--bg);
+  color:var(--text); font-family:var(--font); min-height:100vh; min-height:100dvh; -webkit-font-smoothing:antialiased;
+  display:flex; flex-direction:column; align-items:center; padding:clamp(12px,3vw,26px); overflow-x:hidden}
+.wrap{width:min(680px,100%); display:flex; flex-direction:column; gap:14px}
+a{color:var(--cyan); text-decoration:none}
+.back{align-self:flex-start; font-family:var(--mono); font-size:12px; color:var(--muted); border:1px solid var(--stroke); border-radius:99px; padding:6px 13px; background:rgba(255,255,255,.03)}
+.back:hover{color:var(--text); border-color:var(--vio)}
+header{text-align:center; margin-top:4px}
+h1{font-weight:900; font-size:clamp(28px,7vw,46px); letter-spacing:-.02em; line-height:1}
+h1 .w{background:linear-gradient(92deg,var(--vio),var(--cyan)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+.tag{color:var(--muted); font-size:13.5px; margin-top:6px}
+
+.card{background:var(--panel); border:1px solid var(--stroke); border-radius:18px; padding:clamp(16px,3vw,24px); backdrop-filter:blur(10px); box-shadow:0 20px 50px -30px #000}
+label{display:block; font-size:12px; color:var(--muted); margin:0 0 5px; letter-spacing:.03em}
+input{width:100%; font:inherit; font-size:16px; color:var(--text); background:rgba(0,0,0,.28); border:1px solid var(--stroke); border-radius:12px; padding:12px 14px; outline:none}
+input:focus{border-color:var(--vio); box-shadow:0 0 0 3px rgba(167,139,250,.18)}
+.row{display:flex; gap:10px; flex-wrap:wrap}
+.row>*{flex:1; min-width:120px}
+button{font:inherit; font-weight:800; cursor:pointer; border:1px solid var(--stroke); background:rgba(255,255,255,.05); color:var(--text); border-radius:12px; padding:13px 16px; transition:transform .12s,border-color .2s,box-shadow .2s,background .2s; -webkit-tap-highlight-color:transparent}
+button:hover:not(:disabled){border-color:var(--vio); box-shadow:0 0 16px rgba(167,139,250,.2)}
+button:active:not(:disabled){transform:scale(.97)}
+button:disabled{opacity:.45; cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,var(--vio),#7c5cff); border-color:transparent; color:#0b0716}
+.btn-go{background:linear-gradient(135deg,var(--cyan),#1fb8a8); border-color:transparent; color:#04140f}
+.hidden{display:none!important}
+
+/* Lobby */
+.roomcode{font-family:var(--mono); font-weight:700; font-size:26px; letter-spacing:.22em; color:var(--cyan); text-align:center; background:rgba(0,0,0,.3); border:1px dashed var(--stroke); border-radius:12px; padding:10px}
+.players{display:flex; flex-direction:column; gap:8px; margin:12px 0}
+.pl{display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border:1px solid var(--stroke); border-radius:10px; padding:9px 12px}
+.pl .dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+.pl.ready .dot{background:var(--green); box-shadow:0 0 8px var(--green)}
+.pl .nm{font-weight:700; flex:1}
+.pl .sc{font-family:var(--mono); color:var(--gold); font-size:13px}
+.pl .me{font-size:10px; color:var(--vio); font-weight:700}
+.hintline{font-size:12px; color:var(--muted); text-align:center; margin-top:4px}
+
+/* Spielkopf */
+.ghead{display:flex; align-items:center; justify-content:space-between; gap:10px; font-family:var(--mono); font-size:12px; color:var(--muted)}
+.ghead b{color:var(--text)}
+.role{text-align:center; margin:6px 0 2px; font-size:14px}
+.role .who{color:var(--vio); font-weight:800}
+.clue{text-align:center; font-weight:900; font-size:clamp(24px,6vw,38px); margin:6px 0; letter-spacing:-.01em}
+.clue .q{color:var(--muted); font-weight:500; font-size:14px; display:block; letter-spacing:.04em}
+
+/* Spektrum */
+.spectrum{position:relative; height:74px; margin:16px 2px 6px; border-radius:14px; overflow:hidden;
+  background:linear-gradient(90deg, rgba(167,139,250,.30), rgba(255,255,255,.05) 50%, rgba(52,224,208,.30)); border:1px solid var(--stroke); touch-action:none; cursor:pointer}
+.spectrum .tick{position:absolute; top:0; bottom:0; width:1px; background:rgba(255,255,255,.06)}
+.zone{position:absolute; top:0; bottom:0; pointer-events:none}
+.zone .band{position:absolute; top:0; bottom:0;}
+.dial{position:absolute; top:-4px; bottom:-4px; width:4px; margin-left:-2px; background:var(--gold); border-radius:3px; box-shadow:0 0 12px var(--gold); pointer-events:none}
+.dial::after{content:''; position:absolute; top:-7px; left:50%; transform:translateX(-50%); border:7px solid transparent; border-top-color:var(--gold)}
+.gmark{position:absolute; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 6px rgba(0,0,0,.6); pointer-events:none}
+.gmark span{position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9px; color:#fff; white-space:nowrap; text-shadow:0 1px 3px #000}
+.poles{display:flex; justify-content:space-between; font-weight:800; font-size:clamp(13px,3.6vw,17px); margin:2px 4px 0}
+.poles .l{color:var(--vio)} .poles .r{color:var(--cyan)}
+.valbubble{text-align:center; font-family:var(--mono); color:var(--gold); font-size:13px; margin-top:4px; min-height:16px}
+
+.toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(20,16,30,.96); border:1px solid var(--red); color:var(--text); padding:11px 18px; border-radius:12px; font-size:13.5px; box-shadow:0 14px 40px rgba(0,0,0,.6); opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:50}
+.toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+.winner{text-align:center; font-weight:900; font-size:clamp(22px,6vw,34px); margin:4px 0}
+.winner .name{color:var(--gold)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../../index.html">← thomas.fun</a>
+  <header>
+    <h1>FRE<span class="w">QUENZ</span></h1>
+    <div class="tag">Wellenlänge mit Freunden · ein Hinweis, ein verstecktes Ziel — trefft die Frequenz.</div>
+  </header>
+
+  <!-- Verbinden -->
+  <div class="card" id="scConnect">
+    <label>Dein Name</label>
+    <input id="inName" maxlength="18" placeholder="z. B. Alex" autocomplete="off">
+    <div style="height:12px"></div>
+    <label>Raum-Code (leer = neuen Raum erstellen)</label>
+    <div class="row">
+      <input id="inCode" maxlength="8" placeholder="z. B. AB12C" autocomplete="off" style="text-transform:uppercase">
+      <button class="btn-primary" id="btnJoin" style="flex:0 0 auto; min-width:130px">Beitreten</button>
+    </div>
+    <div class="hintline" id="connHint">Server kann nach Pause ~20–30 s zum Aufwachen brauchen.</div>
+  </div>
+
+  <!-- Lobby -->
+  <div class="card hidden" id="scLobby">
+    <label style="text-align:center">Raum-Code — teilen zum Mitspielen</label>
+    <div class="roomcode" id="lobbyCode">—</div>
+    <div style="text-align:center;margin-top:8px"><button id="btnShare" style="padding:8px 14px;font-size:13px">🔗 Einladungs-Link kopieren</button></div>
+    <div class="players" id="lobbyPlayers"></div>
+    <div class="row">
+      <button id="btnReady">Bereit ✓</button>
+      <button class="btn-go" id="btnStart" disabled>Spiel starten</button>
+    </div>
+    <div class="hintline" id="lobbyHint">Mind. 2 Spieler. Wenn alle bereit sind, kann gestartet werden.</div>
+  </div>
+
+  <!-- Spiel -->
+  <div class="card hidden" id="scGame">
+    <div class="ghead"><span>Runde <b id="gRound">1</b>/<b id="gTotal">8</b></span><span id="gScores"></span></div>
+    <div class="role" id="gRole">—</div>
+    <div class="clue" id="gClue"></div>
+
+    <div class="poles"><span class="l" id="poleL">—</span><span class="r" id="poleR">—</span></div>
+    <div class="spectrum" id="spectrum">
+      <div class="zone hidden" id="zone"></div>
+      <div class="dial hidden" id="dial"></div>
+    </div>
+    <div class="valbubble" id="valBubble"></div>
+
+    <!-- Geber: Hinweis -->
+    <div class="row hidden" id="clueRow">
+      <input id="inClue" maxlength="60" placeholder="EIN Hinweiswort (z. B. „Sauna“)" autocomplete="off">
+      <button class="btn-primary" id="btnClue" style="flex:0 0 auto; min-width:120px">Senden</button>
+    </div>
+    <!-- Rater: festlegen -->
+    <div class="hidden" id="guessRow">
+      <button class="btn-go" id="btnGuess" style="width:100%">Festlegen</button>
+    </div>
+    <div class="hintline" id="gHint"></div>
+  </div>
+
+  <!-- Ende -->
+  <div class="card hidden" id="scEnd">
+    <div class="winner" id="endWinner">—</div>
+    <div class="players" id="endScores"></div>
+    <button class="btn-primary" id="btnAgain" style="width:100%">Nochmal spielen</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   FREQUENZ — Client (Wellenlänge, online)
+   Verbindet zum Room-Code-WS-Server, spielt server-autoritativ.
+   ============================================================ */
+const DEFAULT_WS = "wss://thomas-projekte.onrender.com";
+const qs = new URLSearchParams(location.search);
+const WS_URL = (qs.get("ws") || DEFAULT_WS).replace(/^http/, "ws");
+
+const $ = id => document.getElementById(id);
+let ws=null, mySide=null, state=null, roster=[], allReady=false, code="";
+let dialPos=50, dialActive=false, guessLocked=false, lastPhase="";
+
+/* ---------- Toast ---------- */
+let toastT=0;
+function toast(m){ const el=$("toast"); el.textContent=m; el.classList.add("on"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("on"),3200); }
+
+/* ---------- Verbindung ---------- */
+function connect(){
+  const name=($("inName").value||"").trim().slice(0,18)||"Spieler";
+  code=($("inCode").value||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
+  localStorage.setItem("freq_name", name);
+  $("btnJoin").disabled=true; $("connHint").textContent="Verbinde…";
+  try{ ws=new WebSocket(WS_URL); }catch(e){ $("connHint").textContent="Verbindung fehlgeschlagen."; $("btnJoin").disabled=false; return; }
+  ws.addEventListener("open", ()=>{ ws.send(JSON.stringify({t:"join", game:"frequenz", code, name})); });
+  ws.addEventListener("message", e=>{ let m; try{m=JSON.parse(e.data);}catch{return;} onMsg(m); });
+  ws.addEventListener("close", ()=>{ toast("Verbindung getrennt."); $("btnJoin").disabled=false; show("scConnect"); });
+  ws.addEventListener("error", ()=>{ $("connHint").textContent="Server nicht erreichbar (vielleicht im Aufwachen — nochmal versuchen)."; $("btnJoin").disabled=false; });
+}
+function send(o){ if(ws && ws.readyState===1) ws.send(JSON.stringify(o)); }
+
+function onMsg(m){
+  if(m.t==="joined"){ mySide=String(m.side); code=m.code; $("lobbyCode").textContent=code; show("scLobby");
+    try{ history.replaceState(null,"", "?room="+code); }catch{} return; }
+  if(m.t==="err"){ toast(m.m||"Fehler"); $("btnJoin").disabled=false; return; }
+  if(m.t==="lobby"){ roster=m.roster||[]; allReady=!!m.allReady; renderLobby(); return; }
+  if(m.t==="reset"){ guessLocked=false; return; }
+  if(m.t==="state" && m.game==="frequenz"){ state=m.s; renderState(); return; }
+}
+
+/* ---------- Lobby ---------- */
+function renderLobby(){
+  // Nur in Lobby-Phase zeigen (sonst steuert renderState)
+  if(state && state.phase!=="lobby" && !state.sessionOver) return;
+  const box=$("lobbyPlayers"); box.innerHTML="";
+  roster.forEach(r=>{ const d=document.createElement("div"); d.className="pl"+(r.ready?" ready":"");
+    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(r.name)||("Spieler "+(Number(r.side)+1))}</span>`+
+      (String(r.side)===mySide?'<span class="me">DU</span>':'');
+    box.appendChild(d); });
+  $("btnStart").disabled=!allReady;
+  $("lobbyHint").textContent = roster.length<2 ? "Warte auf Mitspieler… (Code teilen!)" : (allReady? "Alle bereit — los geht's!" : "Mind. 2 Spieler, alle müssen auf Bereit drücken.");
+}
+function setReady(){ const me=roster.find(r=>String(r.side)===mySide); send({t:"ready", v: !(me&&me.ready)}); }
+
+/* ---------- Spielzustand ---------- */
+function show(which){ for(const id of ["scConnect","scLobby","scGame","scEnd"]) $(id).classList.toggle("hidden", id!==which); }
+
+function renderState(){
+  const s=state; if(!s) return;
+  if(s.sessionOver){ renderEnd(); return; }
+  if(s.phase==="lobby"){ show("scLobby"); renderLobby(); return; }
+  show("scGame");
+
+  $("gRound").textContent=s.round; $("gTotal").textContent=s.totalRounds;
+  $("gScores").textContent = s.roster.map(r=>`${(esc(r.name)||"P"+(Number(r.side)+1)).slice(0,6)} ${r.score}`).join(" · ");
+  $("poleL").textContent=s.spectrum?s.spectrum[0]:"—"; $("poleR").textContent=s.spectrum?s.spectrum[1]:"—";
+
+  const giverName = (s.roster.find(r=>String(r.side)===String(s.giver))||{}).name || "Spieler";
+  const phaseChanged = s.phase!==lastPhase; lastPhase=s.phase;
+
+  // Rollen-/Hinweistext
+  if(s.phase==="clue"){
+    if(s.isGiver){ $("gRole").innerHTML='Du bist <span class="who">Hinweisgeber</span> — sieh das Ziel, gib EIN Wort'; $("gClue").innerHTML='<span class="q">Welches Wort liegt genau auf dem Ziel?</span>'; }
+    else { $("gRole").innerHTML='<span class="who">'+esc(giverName)+'</span> überlegt einen Hinweis…'; $("gClue").innerHTML='<span class="q">gleich gibt es ein Hinweiswort</span>'; }
+  } else if(s.phase==="guess"){
+    $("gRole").innerHTML = s.isGiver? 'Dein Hinweis ist raus — warte auf die Rätenden ('+s.guessedCount+'/'+s.needGuesses+')' : 'Wohin gehört der Hinweis von <span class="who">'+esc(giverName)+'</span>?';
+    $("gClue").innerHTML='<span class="q">Hinweis</span>'+esc(s.clue);
+  } else if(s.phase==="reveal"){
+    $("gRole").innerHTML='Auflösung'; $("gClue").innerHTML='<span class="q">Hinweis war</span>'+esc(s.clue||"—");
+  }
+
+  // Zielzone (Geber während clue/guess; alle im reveal)
+  const zone=$("zone");
+  if(s.target!=null){ zone.classList.remove("hidden"); drawZone(zone, s.target); }
+  else zone.classList.add("hidden");
+
+  // Regler (nur Rater, clue+guess) / im reveal aus
+  const dial=$("dial");
+  const amGuesser = !s.isGiver && (s.phase==="clue"||s.phase==="guess");
+  if(amGuesser){ dial.classList.remove("hidden"); if(phaseChanged && s.myGuess==null){ dialPos = s.myGuess!=null? s.myGuess : 50; } if(s.myGuess!=null) dialPos=s.myGuess; setDial(dialPos); }
+  else dial.classList.add("hidden");
+
+  // Reveal: alle Tipps als Marker
+  clearMarks();
+  if(s.phase==="reveal" && s.reveal){ for(const b of s.reveal.breakdown){ if(b.pos!=null) addMark(b.pos, b.name, b.pts); } }
+
+  // Hinweisgeber-Eingabe
+  const showClueRow = s.phase==="clue" && s.isGiver;
+  $("clueRow").classList.toggle("hidden", !showClueRow);
+  if(showClueRow && phaseChanged){ $("inClue").value=""; setTimeout(()=>$("inClue").focus(),50); }
+
+  // Rater-Festlegen
+  const showGuessRow = s.phase==="guess" && !s.isGiver;
+  $("guessRow").classList.toggle("hidden", !showGuessRow);
+  if(phaseChanged && s.phase==="guess") guessLocked = (s.myGuess!=null);
+  const gb=$("btnGuess"); gb.disabled=guessLocked; gb.textContent=guessLocked?"Festgelegt ✓":"Festlegen";
+
+  // Bubble
+  $("valBubble").textContent = amGuesser ? ("Dein Tipp: "+Math.round(dialPos)) : (s.phase==="reveal"&&s.reveal? ("Ziel war "+s.reveal.target+" · "+(s.reveal.giverName||"Geber")+" +"+s.reveal.giverPts):"");
+
+  // Hint
+  $("gHint").textContent = s.phase==="reveal" ? "Nächste Runde gleich…" : (s.isGiver&&s.phase==="clue" ? "Tipp: ein Wort, das die anderen genau auf das Ziel führt." : "");
+}
+
+/* ---------- Spektrum-Zeichnen ---------- */
+function pct(v){ return Math.max(0,Math.min(100,v)); }
+const BANDS=[{d:3,c:"rgba(84,224,138,.55)"},{d:8,c:"rgba(84,224,138,.32)"},{d:15,c:"rgba(255,206,90,.26)"},{d:24,c:"rgba(255,206,90,.16)"},{d:34,c:"rgba(255,107,138,.12)"}];
+function drawZone(zone, target){
+  zone.innerHTML="";
+  // breiteste zuerst
+  for(let i=BANDS.length-1;i>=0;i--){ const b=BANDS[i]; const left=pct(target-b.d), right=pct(target+b.d);
+    const el=document.createElement("div"); el.className="band"; el.style.left=left+"%"; el.style.width=(right-left)+"%"; el.style.background=b.c; zone.appendChild(el); }
+  // Mittel-Linie
+  const c=document.createElement("div"); c.className="band"; c.style.left="calc("+target+"% - 1px)"; c.style.width="2px"; c.style.background="#fff"; c.style.opacity=".85"; zone.appendChild(c);
+}
+function setDial(v){ $("dial").style.left=pct(v)+"%"; }
+function clearMarks(){ document.querySelectorAll(".gmark").forEach(e=>e.remove()); }
+function addMark(pos, name, pts){ const m=document.createElement("div"); m.className="gmark"; m.style.left=pct(pos)+"%";
+  m.style.background = pts>=4?"var(--green)":pts>=2?"var(--gold)":"var(--red)";
+  m.innerHTML='<span>'+esc((name||"").slice(0,8))+' +'+pts+'</span>'; $("spectrum").appendChild(m); }
+
+/* ---------- Regler-Steuerung (Drag/Tap) ---------- */
+const spec=$("spectrum");
+function posFromEvent(e){ const r=spec.getBoundingClientRect(); return pct((e.clientX-r.left)/Math.max(1,r.width)*100); }
+spec.addEventListener("pointerdown", e=>{ if(!canDrag())return; dialActive=true; try{spec.setPointerCapture(e.pointerId);}catch{} dialPos=posFromEvent(e); setDial(dialPos); $("valBubble").textContent="Dein Tipp: "+Math.round(dialPos); });
+spec.addEventListener("pointermove", e=>{ if(!dialActive||!canDrag())return; dialPos=posFromEvent(e); setDial(dialPos); $("valBubble").textContent="Dein Tipp: "+Math.round(dialPos); });
+spec.addEventListener("pointerup", ()=>{ dialActive=false; });
+function canDrag(){ return state && !state.isGiver && (state.phase==="clue"||state.phase==="guess") && !guessLocked; }
+
+/* ---------- Aktionen ---------- */
+function sendClue(){ const v=($("inClue").value||"").trim(); if(!v){ toast("Gib ein Hinweiswort ein."); return; } send({t:"frequenz_clue", clue:v}); }
+function sendGuess(){ if(guessLocked)return; guessLocked=true; $("btnGuess").disabled=true; $("btnGuess").textContent="Festgelegt ✓"; send({t:"frequenz_guess", pos:Math.round(dialPos)}); }
+
+/* ---------- Ende ---------- */
+function renderEnd(){
+  show("scEnd");
+  const sorted=[...(state.roster||[])].sort((a,b)=>b.score-a.score);
+  const top=sorted[0];
+  $("endWinner").innerHTML = top? '🏆 <span class="name">'+esc(top.name||"Spieler")+'</span> gewinnt!' : "Spiel vorbei";
+  const box=$("endScores"); box.innerHTML="";
+  sorted.forEach((r,i)=>{ const d=document.createElement("div"); d.className="pl"; d.innerHTML=`<span class="nm">${i+1}. ${esc(r.name)||"Spieler"}</span><span class="sc">${r.score} Pkt</span>`; box.appendChild(d); });
+}
+
+/* ---------- Utility ---------- */
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ---------- Verdrahtung ---------- */
+$("btnJoin").addEventListener("click", connect);
+$("inCode").addEventListener("keydown", e=>{ if(e.key==="Enter") connect(); });
+$("inName").addEventListener("keydown", e=>{ if(e.key==="Enter") $("inCode").focus(); });
+$("btnReady").addEventListener("click", setReady);
+$("btnStart").addEventListener("click", ()=>send({t:"frequenz_start"}));
+$("btnClue").addEventListener("click", sendClue);
+$("inClue").addEventListener("keydown", e=>{ if(e.key==="Enter") sendClue(); });
+$("btnGuess").addEventListener("click", sendGuess);
+$("btnAgain").addEventListener("click", ()=>{ send({t:"reset"}); state=null; lastPhase=""; show("scLobby"); });
+$("btnShare").addEventListener("click", ()=>{ const url=location.origin+location.pathname+"?room="+code; (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(()=>toast("Link kopiert!"),()=>toast(url)); });
+
+// Vorbelegung
+$("inName").value = localStorage.getItem("freq_name")||"";
+if(qs.get("room")){ $("inCode").value=qs.get("room").toUpperCase(); }
+
+// Debug-Hook (nur fürs Testen, kein Einfluss aufs Spiel)
+window.__freq = { onMsg, get state(){return state;}, get side(){return mySide;} };
+</script>
+</body>
+</html>
