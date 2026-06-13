@@ -130,7 +130,13 @@ let W=0, H=0, DPR=Math.min(2, window.devicePixelRatio||1);
 
 /* Große Welt + Kamera */
 const WORLD_W = 4400, WORLD_H = 3100;
-const cam = { x:0, y:0 };
+const cam = { x:0, y:0 };                 // jetzt zentriert (Weltpunkt in Bildschirmmitte)
+const ZOOM = 0.6;                         // <1 = weiter rausgezoomt (mehr Karte sichtbar)
+function camClamp(){
+  const hw=(W/2)/ZOOM, hh=(H/2)/ZOOM;
+  cam.x = (WORLD_W<=2*hw)? WORLD_W/2 : clamp(cam.x, hw, WORLD_W-hw);
+  cam.y = (WORLD_H<=2*hh)? WORLD_H/2 : clamp(cam.y, hh, WORLD_H-hh);
+}
 
 const TAU = Math.PI*2;
 function angTo(ax,ay,bx,by){ return Math.atan2(by-ay,bx-ax); }
@@ -199,7 +205,7 @@ function newBattle(){
   foe = makeShip({ name:'IJN YAMATO', side:'foe', color:'#8a7b76', accent:'#ff5b5b',
     x:WORLD_W*0.80, y:WORLD_H*0.24, hd:angTo(WORLD_W*0.8,WORLD_H*0.24, WORLD_W*0.3,WORLD_H*0.7),
     maxSpeed:35, turn:0.18, hp:540, len:128, beam:32, weapons:battleshipWeapons(false) });
-  cam.x = clamp(me.x - W/2, 0, WORLD_W-W); cam.y = clamp(me.y - H/2, 0, WORLD_H-H);
+  cam.x = me.x; cam.y = me.y; camClamp();
   document.getElementById('myName').textContent = me.name;
   buildWeaponUI();
   gameOn = true;
@@ -287,7 +293,7 @@ function explode(x,y,big){
 cv.addEventListener('pointerdown', e=>{
   if(!gameOn) return;
   const r=cv.getBoundingClientRect();
-  me.wpX = (e.clientX-r.left)+cam.x; me.wpY = (e.clientY-r.top)+cam.y; me.throttle=1;
+  me.wpX = (e.clientX-r.left-W/2)/ZOOM+cam.x; me.wpY = (e.clientY-r.top-H/2)/ZOOM+cam.y; me.throttle=1;
 });
 window.addEventListener('keydown', e=>{
   if(e.code==='Space'){ e.preventDefault(); if(me){ me.wpX=null; me.wpY=null; me.throttle=0; } }
@@ -349,8 +355,7 @@ function update(dt){
   if(gameOn && foe && foe.alive) aiThink(foe, me, dt);
   if(gameOn && me && me.alive){ for(const w of me.weapons) if(w.auto && w.t<=0) fireWeapon(me,w,foe); }
   // Kamera folgt dem Spieler
-  if(me){ const tx=clamp(me.x - W/2,0,Math.max(0,WORLD_W-W)), ty=clamp(me.y - H/2,0,Math.max(0,WORLD_H-H));
-    cam.x += (tx-cam.x)*Math.min(1,dt*2.5); cam.y += (ty-cam.y)*Math.min(1,dt*2.5); }
+  if(me){ cam.x += (me.x-cam.x)*Math.min(1,dt*2.5); cam.y += (me.y-cam.y)*Math.min(1,dt*2.5); camClamp(); }
 
   for(const sh of shells){
     sh.t+=dt; const p=Math.min(1,sh.t/sh.tof);
@@ -457,11 +462,12 @@ let _now=0;
 function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(shake>0) ctx.translate((Math.random()-0.5)*shake,(Math.random()-0.5)*shake);
-  ctx.save(); ctx.translate(-cam.x,-cam.y);   // Welt-Koordinaten
+  ctx.save(); ctx.translate(W/2,H/2); ctx.scale(ZOOM,ZOOM); ctx.translate(-cam.x,-cam.y);   // Welt-Koordinaten (gezoomt)
 
   // Meer (gekachelt, nur sichtbarer Bereich)
-  const x0=Math.floor(cam.x/TILE)*TILE, y0=Math.floor(cam.y/TILE)*TILE;
-  for(let x=x0; x<cam.x+W+TILE; x+=TILE) for(let y=y0; y<cam.y+H+TILE; y+=TILE) ctx.drawImage(seaTile,x,y);
+  const _hw=(W/2)/ZOOM, _hh=(H/2)/ZOOM, _l=cam.x-_hw, _t=cam.y-_hh;
+  const x0=Math.floor(_l/TILE)*TILE, y0=Math.floor(_t/TILE)*TILE;
+  for(let x=x0; x<cam.x+_hw+TILE; x+=TILE) for(let y=y0; y<cam.y+_hh+TILE; y+=TILE) ctx.drawImage(seaTile,x,y);
   // Weltgrenze
   ctx.strokeStyle='rgba(120,150,175,.12)'; ctx.lineWidth=3; ctx.strokeRect(0,0,WORLD_W,WORLD_H);
 
@@ -521,7 +527,7 @@ function drawMinimap(){
   mctx.fillStyle='rgba(10,22,34,.85)'; mctx.fillRect(0,0,mw,mh);
   const sx=mw/WORLD_W, sy=mh/WORLD_H;
   // Sichtfenster
-  mctx.strokeStyle='rgba(255,255,255,.25)'; mctx.lineWidth=1; mctx.strokeRect(cam.x*sx,cam.y*sy,W*sx,H*sy);
+  mctx.strokeStyle='rgba(255,255,255,.25)'; mctx.lineWidth=1; const vhw=(W/2)/ZOOM, vhh=(H/2)/ZOOM; mctx.strokeRect((cam.x-vhw)*sx,(cam.y-vhh)*sy,(2*vhw)*sx,(2*vhh)*sy);
   function dot(s){ if(!s) return; mctx.fillStyle=s.side==='me'?'#6fd1ff':'#ff5b5b'; mctx.beginPath(); mctx.arc(s.x*sx,s.y*sy, s.alive?3:2,0,TAU); mctx.fill();
     if(s.alive){ mctx.strokeStyle=mctx.fillStyle; mctx.beginPath(); mctx.moveTo(s.x*sx,s.y*sy); mctx.lineTo(s.x*sx+Math.cos(s.hd)*6, s.y*sy+Math.sin(s.hd)*6); mctx.stroke(); } }
   dot(foe); dot(me);
