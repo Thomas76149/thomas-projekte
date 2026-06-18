@@ -149,6 +149,9 @@
     const now = new Date();
     const theme = effectiveTheme(now);
     document.body.dataset.theme = theme;
+    // Baum folgt immer der echten Jahreszeit (auch im Fußball-Modus)
+    const SEASONS = ["winter","spring","summer","autumn"];
+    document.body.dataset.season = SEASONS.includes(theme) ? theme : seasonOf(now);
     const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", THEME_BG[theme]||"#0a0b0f");
     // Button-Label
     if(seasonBtn){

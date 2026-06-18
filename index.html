@@ -9,12 +9,29 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hub.css?v=5" />
+  <link rel="stylesheet" href="css/hub.css?v=6" />
 </head>
 <body>
+  <div id="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
   <canvas id="bgfx" aria-hidden="true"></canvas>
   <canvas id="confetti" aria-hidden="true"></canvas>
   <div class="noise" aria-hidden="true"></div>
+  <div id="tree" aria-hidden="true">
+    <svg viewBox="0 0 200 260">
+      <g class="branch" stroke="#5a3a22" stroke-width="7" stroke-linecap="round" fill="none">
+        <path d="M100 250 L100 118"/><path d="M100 150 L58 98"/><path d="M100 162 L142 108"/><path d="M100 128 L76 92"/><path d="M100 132 L126 92"/>
+      </g>
+      <path class="trunk" d="M92 256 L92 150 Q100 140 108 150 L108 256 Z"/>
+      <g class="snowcap" fill="#eaf4ff">
+        <circle cx="58" cy="98" r="8"/><circle cx="142" cy="108" r="8"/><circle cx="100" cy="116" r="10"/><circle cx="76" cy="92" r="6"/><circle cx="126" cy="92" r="6"/>
+      </g>
+      <g class="canopy">
+        <circle class="leaf l1" cx="100" cy="78" r="48"/><circle class="leaf l2" cx="60" cy="100" r="34"/><circle class="leaf l3" cx="140" cy="100" r="34"/>
+        <circle class="leaf l1" cx="100" cy="120" r="40"/><circle class="leaf l2" cx="80" cy="68" r="26"/><circle class="leaf l3" cx="124" cy="66" r="26"/>
+        <g class="blossom" fill="#ffd1ec"><circle cx="80" cy="70" r="5"/><circle cx="120" cy="90" r="5"/><circle cx="100" cy="58" r="5"/><circle cx="64" cy="106" r="5"/><circle cx="136" cy="106" r="5"/><circle cx="106" cy="112" r="5"/></g>
+      </g>
+    </svg>
+  </div>
   <div class="wrap">
     <a class="topband" id="tband" href="#"></a>
 
@@ -68,6 +85,6 @@
   <script src="js/site-config.js?v=2"></script>
   <script src="js/portfolio-link.js?v=2"></script>
   <script src="js/hub-data.js?v=17"></script>
-  <script src="js/hub.js?v=7"></script>
+  <script src="js/hub.js?v=8"></script>
 </body>
 </html>

@@ -59,6 +59,10 @@ body{
 @keyframes au2{ 50%{ transform:translate(-15vw,16vh) scale(1.12);} }
 @keyframes au3{ 50%{ transform:translate(12vw,-12vh) scale(1.22);} }
 #fx{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+body::after{ content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:linear-gradient(115deg, transparent 32%, rgba(255,255,255,.035) 46%, rgba(39,231,255,.06) 50%, rgba(255,255,255,.035) 54%, transparent 68%);
+  background-size:300% 100%; animation:beam 15s linear infinite; }
+@keyframes beam{ to{ background-position:-220% 0; } }
 #confetti{ position:fixed; inset:0; z-index:90; pointer-events:none; }
 .wrap{ position:relative; z-index:1; max-width:1080px; margin:0 auto; padding:0 clamp(12px,3.5vw,28px) 64px; }
 
@@ -95,7 +99,8 @@ body{
 .brand small{ display:block; font-size:.62rem; letter-spacing:.22em; text-transform:uppercase; color:var(--muted2); margin-top:2px; }
 .hosts{ display:flex; gap:3px; margin-left:2px; }
 .hosts img{ width:22px; height:15px; border-radius:3px; }
-.flag{ box-shadow:0 0 0 1px rgba(255,255,255,.22), 0 3px 9px -3px rgba(0,0,0,.8); }
+.flag{ object-fit:cover; border:1px solid rgba(255,255,255,.32); border-radius:3px; background:#0c0a1c; filter:drop-shadow(0 0 5px var(--fc, rgba(150,150,180,.5))); }
+.side img.flag,.myteam .head img.flag{ border-radius:7px; border-width:1.5px; filter:drop-shadow(0 0 14px var(--fc, var(--neon-glow))); }
 .spacer{ flex:1 1 auto; }
 .actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .btn{ font:inherit; font-size:.82rem; font-weight:700; cursor:pointer; color:var(--text); border:1px solid var(--line);
@@ -136,8 +141,8 @@ body{
 .spot .badge{ background:var(--neon); color:var(--ink); font-weight:800; padding:3px 9px; border-radius:999px; font-size:.62rem; letter-spacing:.1em; box-shadow:0 0 16px var(--neon-glow); }
 .vs{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; }
 .side{ display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; min-width:0; cursor:pointer; }
-.side img{ width:64px; height:43px; border-radius:7px; transition:transform .25s, box-shadow .25s; }
-.side:hover img{ transform:scale(1.08) translateY(-2px); box-shadow:0 0 0 1px rgba(255,255,255,.3), 0 0 26px var(--neon-glow); }
+.side img{ width:64px; height:43px; transition:transform .25s, filter .25s; }
+.side:hover img{ transform:scale(1.08) translateY(-2px); filter:drop-shadow(0 0 24px var(--fc, var(--neon-glow))); }
 .side .nm{ font-weight:700; font-size:.96rem; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .vs .mid{ font-family:var(--head); font-weight:700; color:var(--muted); font-size:1.1rem; }
 .vs .mid.score{ color:#fff; font-size:1.9rem; letter-spacing:.04em; text-shadow:0 0 22px var(--neon-glow); }
@@ -308,7 +313,7 @@ footer a{ color:var(--neon); text-decoration:none; } footer a:hover{ text-decora
       <div><b>WM <i>2026</i></b><small>USA · Kanada · Mexiko</small></div>
     </div>
     <div class="hosts" aria-hidden="true">
-      <img class="flag" src="https://flagcdn.com/w40/us.png" alt=""><img class="flag" src="https://flagcdn.com/w40/ca.png" alt=""><img class="flag" src="https://flagcdn.com/w40/mx.png" alt="">
+      <img class="flag" src="flags/us.svg" style="--fc:#3057d6" alt=""><img class="flag" src="flags/ca.svg" style="--fc:#e23a2e" alt=""><img class="flag" src="flags/mx.svg" style="--fc:#1f9e57" alt="">
     </div>
     <div class="spacer"></div>
     <div class="actions">
@@ -415,6 +420,21 @@ const TEAMS = {
   "Portugal":["pt","Portugal"],"DR Congo":["cd","DR Kongo"],"Uzbekistan":["uz","Usbekistan"],"Colombia":["co","Kolumbien"],
   "England":["gb-eng","England"],"Croatia":["hr","Kroatien"],"Ghana":["gh","Ghana"],"Panama":["pa","Panama"],
 };
+// Primärfarbe je Land — für den farbigen Flaggen-Glow
+const TEAM_COLOR = {
+  "Mexico":"#1f9e57","South Africa":"#007a4d","South Korea":"#cd2e3a","Czech Republic":"#1a5fb4",
+  "Canada":"#e23a2e","Bosnia & Herzegovina":"#1b3fb0","Qatar":"#8d1b3d","Switzerland":"#e23a2e",
+  "Brazil":"#11a64a","Morocco":"#c1272d","Haiti":"#1a2ea8","Scotland":"#2266c6",
+  "USA":"#3057d6","Paraguay":"#d52b1e","Australia":"#1a3fa8","Turkey":"#e30a17",
+  "Germany":"#e6b400","Curaçao":"#1a3fb0","Ivory Coast":"#f77f00","Ecuador":"#ffd000",
+  "Netherlands":"#f36c21","Japan":"#d12244","Sweden":"#2b7fd6","Tunisia":"#e70013",
+  "Belgium":"#f5c518","Egypt":"#d81e2c","Iran":"#1faa4c","New Zealand":"#1a3fa8",
+  "Spain":"#e23a2e","Cape Verde":"#1a4fb0","Saudi Arabia":"#0a8a44","Uruguay":"#2b6fd6",
+  "France":"#2b5fd6","Senegal":"#11a64a","Iraq":"#e02434","Norway":"#e23a4a",
+  "Argentina":"#5aa6e6","Algeria":"#0a8a44","Austria":"#ed2939","Jordan":"#0a8a44",
+  "Portugal":"#1faa4c","DR Congo":"#2aa0ff","Uzbekistan":"#1aa6e6","Colombia":"#ffd000",
+  "England":"#e23a2e","Croatia":"#e23a3a","Ghana":"#11a64a","Panama":"#2b6fd6",
+};
 const KO_ORDER = ["Round of 32","Round of 16","Quarter-final","Semi-final","Match for third place","Final"];
 const KO_DE = {"Round of 32":"Sechzehntel","Round of 16":"Achtelfinale","Quarter-final":"Viertelfinale","Semi-final":"Halbfinale","Match for third place":"Spiel um Platz 3","Final":"Finale"};
 const REMOTE = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
@@ -430,7 +450,7 @@ const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const coarse = matchMedia("(pointer: coarse)").matches;
 const deName = t => (TEAMS[t]?.[1]) || t;
 const iso = t => TEAMS[t]?.[0] || null;
-function flag(t,w){ const c=iso(t); if(!c) return ""; const x=w||40; return `<img class="flag" src="https://flagcdn.com/w${x}/${c}.png" srcset="https://flagcdn.com/w${x*2}/${c}.png 2x" width="${x}" alt="" decoding="async">`; }
+function flag(t,w){ const c=iso(t); if(!c) return ""; const x=w||40; return `<img class="flag" src="flags/${c}.svg" width="${x}" style="--fc:${TEAM_COLOR[t]||'#9aa'}" alt="" decoding="async">`; }
 function isCode(t){ return !TEAMS[t]; }
 function hasScore(m){ return m.score && m.score.ft && m.score.ft.length===2 && typeof m.score.ft[0]==="number"; }
 function goalTier(m){ if(!hasScore(m)) return 0; const t=m.score.ft[0]+m.score.ft[1]; return t>=7?3:t>=5?2:t>=3?1:0; }
@@ -618,13 +638,18 @@ function bindTilt(){ if(reduce||coarse) return;
 let toastT=null; function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
 
 /* ===================== Partikel-Netz ===================== */
-(function fx(){ if(reduce) return; const cv=$("#fx"); if(!cv) return; const ctx=cv.getContext("2d"); let W,H,DPR,nodes=[];
+(function fx(){ if(reduce) return; const cv=$("#fx"); if(!cv) return; const ctx=cv.getContext("2d"); let W,H,DPR,nodes=[],orbs=[],t=0;
+  const ORB=["39,231,255","255,69,230","139,92,255"];
   function build(){ W=innerWidth;H=innerHeight;DPR=Math.min(2,devicePixelRatio||1); cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
-    const n=Math.min(72,Math.round(W*H/22000)); nodes=[]; for(let i=0;i<n;i++) nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.6+.6,c:Math.random()<.5}); }
+    const n=Math.min(70,Math.round(W*H/24000)); nodes=[]; for(let i=0;i<n;i++) nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.6+.6,c:Math.random()<.5});
+    const on=Math.max(4,Math.min(7,Math.round(W/330))); orbs=[]; for(let i=0;i<on;i++) orbs.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.13,vy:(Math.random()-.5)*.13,r:Math.random()*95+70,c:ORB[i%ORB.length],ph:Math.random()*6.28}); }
   const MAXD=140,MAXD2=MAXD*MAXD;
-  function frame(){ ctx.clearRect(0,0,W,H); for(const p of nodes){ p.x+=p.vx;p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; }
+  function frame(){ t+=0.01; ctx.clearRect(0,0,W,H);
+    for(const o of orbs){ o.x+=o.vx;o.y+=o.vy; if(o.x<-o.r)o.x=W+o.r; if(o.x>W+o.r)o.x=-o.r; if(o.y<-o.r)o.y=H+o.r; if(o.y>H+o.r)o.y=-o.r;
+      const a=.05+.03*Math.sin(t+o.ph); const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r); g.addColorStop(0,`rgba(${o.c},${a})`); g.addColorStop(1,`rgba(${o.c},0)`); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,6.283); ctx.fill(); }
+    for(const p of nodes){ p.x+=p.vx;p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; }
     for(let i=0;i<nodes.length;i++){ const a=nodes[i]; for(let j=i+1;j<nodes.length;j++){ const b=nodes[j]; const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
-      if(d2<MAXD2){ const al=(1-d2/MAXD2)*.16; ctx.strokeStyle=`rgba(39,231,255,${al})`; ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke(); } } }
+      if(d2<MAXD2){ const al=(1-d2/MAXD2)*.15; ctx.strokeStyle=`rgba(39,231,255,${al})`; ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke(); } } }
     for(const p of nodes){ ctx.beginPath(); ctx.fillStyle=p.c?"rgba(39,231,255,.7)":"rgba(255,69,230,.6)"; ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); }
     requestAnimationFrame(frame); }
   let rt; addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(build,180);}); build(); requestAnimationFrame(frame);

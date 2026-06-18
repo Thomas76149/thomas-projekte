@@ -3,13 +3,15 @@
    - Flaggen (flagcdn) + Fonts: stale-while-revalidate (nach 1. Laden offline da)
    - Ergebnis-Daten holt die App selbst live; SW cached nur als Fallback.
    Cache-Version hochzählen, wenn sich Shell-Dateien ändern. */
-const VERSION = "wm2026-v3";
+const VERSION = "wm2026-v4";
 const SHELL = "shell-" + VERSION;
 const RUNTIME = "rt-" + VERSION;
+const FLAG_CODES = ["mx","za","kr","cz","ca","ba","qa","ch","br","ma","ht","gb-sct","us","py","au","tr","de","cw","ci","ec","nl","jp","se","tn","be","eg","ir","nz","es","cv","sa","uy","fr","sn","iq","no","ar","dz","at","jo","pt","cd","uz","co","gb-eng","hr","gh","pa"];
 const SHELL_FILES = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png",
-  "./data/worldcup.json", "./data/worldcup.groups.json"
+  "./data/worldcup.json", "./data/worldcup.groups.json",
+  ...FLAG_CODES.map(c => "./flags/" + c + ".svg")
 ];
 
 self.addEventListener("install", e => {

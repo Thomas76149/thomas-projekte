@@ -38,6 +38,36 @@ body::before{
   transition:background .8s ease;
 }
 #bgfx{position:fixed; inset:0; z-index:0; width:100%; height:100%; pointer-events:none;}
+
+/* Aurora-Hintergrund — färbt sich automatisch mit dem Saison-/Turnier-Theme */
+#aurora{ position:fixed; inset:-15%; z-index:0; pointer-events:none; opacity:.5; filter:blur(62px) saturate(1.25); }
+#aurora span{ position:absolute; display:block; border-radius:50%; mix-blend-mode:screen; transition:background .8s ease; }
+#aurora .a1{ width:58vw; height:58vw; left:-12vw; top:-12vh; background:radial-gradient(circle, var(--accent), transparent 68%); animation:au1 26s ease-in-out infinite; }
+#aurora .a2{ width:52vw; height:52vw; right:-14vw; top:-6vh; background:radial-gradient(circle, var(--accent-2), transparent 68%); animation:au2 31s ease-in-out infinite; }
+#aurora .a3{ width:60vw; height:60vw; left:20vw; bottom:-26vh; background:radial-gradient(circle, var(--accent), transparent 68%); animation:au3 35s ease-in-out infinite; }
+@keyframes au1{ 50%{ transform:translate(16vw,12vh) scale(1.16);} }
+@keyframes au2{ 50%{ transform:translate(-14vw,15vh) scale(1.1);} }
+@keyframes au3{ 50%{ transform:translate(11vw,-11vh) scale(1.2);} }
+
+/* Jahreszeiten-Baum (wechselt automatisch je nach Datum, weht im Wind) */
+#tree{ position:fixed; left:clamp(2px,1.5vw,26px); bottom:0; width:clamp(96px,13vw,196px); z-index:0; pointer-events:none; opacity:.5;
+  filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)); }
+#tree svg{ width:100%; height:auto; display:block; }
+#tree .trunk{ fill:#5a3a22; }
+#tree .canopy{ transform-origin:50% 80%; animation:treesway 6s ease-in-out infinite; }
+#tree .leaf{ fill:#2ea84f; transition:fill .8s ease; }
+#tree .snowcap,#tree .blossom{ display:none; }
+body[data-season="spring"] #tree .leaf{ fill:#5fcf6f; }
+body[data-season="spring"] #tree .blossom{ display:block; }
+body[data-season="summer"] #tree .leaf{ fill:#2ea84f; }
+body[data-season="autumn"] #tree .leaf{ fill:#e7791d; }
+body[data-season="autumn"] #tree .leaf.l2{ fill:#c0431a; }
+body[data-season="autumn"] #tree .leaf.l3{ fill:#e0a019; }
+body[data-season="autumn"] #tree .canopy{ animation-duration:2.3s; } /* mehr Wind im Herbst */
+body[data-season="winter"] #tree .canopy{ display:none; }
+body[data-season="winter"] #tree .snowcap{ display:block; }
+@keyframes treesway{ 0%,100%{ transform:rotate(-1.6deg);} 50%{ transform:rotate(1.6deg);} }
+@media(max-width:680px){ #tree{ width:84px; opacity:.34; } }
 #confetti{position:fixed; inset:0; z-index:60; width:100%; height:100%; pointer-events:none;}
 .noise{
   pointer-events:none; position:fixed; inset:0; z-index:0; opacity:.035;
@@ -208,6 +238,7 @@ footer a:hover{ text-decoration:underline; }
 @media (prefers-reduced-motion: reduce){
   html{ scroll-behavior:auto; }
   .tile{ animation:none; opacity:1; transform:none; }
-  .tile::after,#bgfx,#confetti,body::before{ display:none; }
+  .tile::after,#bgfx,#confetti{ display:none; }
+  #aurora span,#tree .canopy{ animation:none; }
   body{ transition:none; }
 }
