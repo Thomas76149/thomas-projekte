@@ -213,7 +213,7 @@
     let W=0,H=0,DPR=1,parts=[],cfg=null,t=0,last=0;
     const CFG = {
       autumn:{type:"emoji", glyphs:["🍂","🍁","🍃"], n:24, sz:[16,32], vy:[.5,1.2], sway:1.1, wind:.7},
-      winter:{type:"snow", n:70, sz:[1,3.6], vy:[.4,1.3], wind:.14},
+      winter:{type:"snow", n:120, sz:[1,4], vy:[.4,1.4], wind:.16},
       spring:{type:"emoji", glyphs:["🌸","🌷","🌼","🦋"], n:20, sz:[14,26], vy:[.25,.7], sway:1.25, wind:.22},
       summer:{type:"orb", n:40, color:"rgba(255,214,120,.6)", wind:.05},
       default:{type:"orb", n:40, color:"rgba(255,200,140,.5)"},

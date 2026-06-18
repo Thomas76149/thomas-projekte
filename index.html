@@ -58,16 +58,23 @@
       <g class="tree">
         <ellipse class="tshadow" cx="300" cy="794" rx="132" ry="20" fill="rgba(0,0,0,.3)"/>
         <path class="trunk" d="M278 788 Q300 778 322 788 L314 678 Q300 666 286 678 Z" fill="var(--bark)"/>
-        <!-- kahler Winterbaum -->
-        <g class="winter">
-          <g stroke="var(--bark)" stroke-linecap="round" fill="none">
-            <path d="M300 684 L300 512" stroke-width="11"/>
-            <path d="M300 600 L232 520" stroke-width="8"/><path d="M300 612 L372 522" stroke-width="8"/>
-            <path d="M300 556 L250 496" stroke-width="6"/><path d="M300 552 L352 492" stroke-width="6"/>
-            <path d="M236 524 L210 492" stroke-width="4"/><path d="M368 526 L394 494" stroke-width="4"/>
-            <path d="M300 512 L300 478" stroke-width="5"/>
-          </g>
-          <g fill="#eef5ff" opacity=".95"><ellipse cx="300" cy="476" rx="20" ry="9"/><ellipse cx="232" cy="516" rx="16" ry="8"/><ellipse cx="372" cy="518" rx="16" ry="8"/><ellipse cx="250" cy="492" rx="11" ry="6"/><ellipse cx="352" cy="488" rx="11" ry="6"/></g>
+        <!-- kahler Winterbaum: nur Äste (verzweigt, wie der belaubte Baum ohne Blätter) -->
+        <g class="winter" stroke="var(--bark)" stroke-linecap="round" fill="none">
+          <path d="M300 676 Q298 604 268 548" stroke-width="12"/>
+          <path d="M300 676 Q302 604 332 548" stroke-width="12"/>
+          <path d="M300 632 Q300 566 300 506" stroke-width="9"/>
+          <path d="M268 548 Q248 516 212 498" stroke-width="7"/>
+          <path d="M268 548 Q260 510 248 478" stroke-width="6"/>
+          <path d="M332 548 Q352 516 388 500" stroke-width="7"/>
+          <path d="M332 548 Q340 510 352 480" stroke-width="6"/>
+          <path d="M300 506 Q288 484 270 474" stroke-width="5"/>
+          <path d="M300 506 Q312 484 330 474" stroke-width="5"/>
+          <path d="M300 506 Q300 486 300 468" stroke-width="4"/>
+          <path d="M212 498 Q196 486 180 482" stroke-width="4"/><path d="M388 500 Q404 488 420 484" stroke-width="4"/>
+          <path d="M248 478 q-8 -12 -20 -16" stroke-width="3"/><path d="M352 480 q8 -12 20 -16" stroke-width="3"/>
+          <path d="M180 482 q-12 -4 -22 -3" stroke-width="3"/><path d="M420 484 q12 -4 22 -3" stroke-width="3"/>
+          <path d="M270 474 q-8 -8 -18 -10" stroke-width="3"/><path d="M330 474 q8 -8 18 -10" stroke-width="3"/>
+          <g class="snowtwig" stroke="none" fill="#eef5ff" opacity=".88"><circle cx="158" cy="479" r="3"/><circle cx="442" cy="481" r="3"/><circle cx="300" cy="466" r="3.4"/><circle cx="228" cy="460" r="2.6"/><circle cx="372" cy="462" r="2.6"/><circle cx="266" cy="540" r="3"/><circle cx="334" cy="540" r="3"/></g>
         </g>
         <!-- belaubte Krone (Referenz-Stil) -->
         <g class="canopy">
@@ -146,6 +153,6 @@
   <script src="js/site-config.js?v=2"></script>
   <script src="js/portfolio-link.js?v=2"></script>
   <script src="js/hub-data.js?v=18"></script>
-  <script src="js/hub.js?v=10"></script>
+  <script src="js/hub.js?v=11"></script>
 </body>
 </html>
