@@ -3,7 +3,7 @@
    - Flaggen (flagcdn) + Fonts: stale-while-revalidate (nach 1. Laden offline da)
    - Ergebnis-Daten holt die App selbst live; SW cached nur als Fallback.
    Cache-Version hochzählen, wenn sich Shell-Dateien ändern. */
-const VERSION = "wm2026-v2";
+const VERSION = "wm2026-v3";
 const SHELL = "shell-" + VERSION;
 const RUNTIME = "rt-" + VERSION;
 const SHELL_FILES = [
