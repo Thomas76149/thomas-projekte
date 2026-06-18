@@ -490,6 +490,12 @@ const fmtTime = d => d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digi
 const dayKey = d => d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
 function now(){ return new Date(); }
 const LIVE_MS = 115*60000;
+// Heute / Morgen / Gestern statt Datum (mode "head" = lange Form für Überschriften)
+function relDay(d, mode){ if(!d) return ""; const n=now(); const a=new Date(n.getFullYear(),n.getMonth(),n.getDate()); const b=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const diff=Math.round((b-a)/86400000);
+  if(diff===0) return "Heute"; if(diff===1) return "Morgen"; if(diff===-1) return "Gestern"; if(diff===2) return "Übermorgen";
+  return mode==="head" ? d.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"}) : d.toLocaleDateString("de-DE",{day:"2-digit",month:"short"}); }
+// "LIVE" / "in X Std" / "in X Min" — sonst null
+function relStatus(k){ if(!k) return null; const ms=k-now(); if(ms<=0) return null; const min=Math.round(ms/60000); if(min<60) return "in "+min+" Min"; const h=Math.round(min/60); if(h<24) return "in "+h+" Std"; return null; }
 
 async function fetchJSON(url){ const r=await fetch(url,{cache:"no-store"}); if(!r.ok) throw 0; return r.json(); }
 function readCache(){ try{ const c=JSON.parse(localStorage.getItem(CACHE_KEY)); if(c&&c.matches) return c; }catch{} return null; }
@@ -550,7 +556,7 @@ function renderSpot(m,live){
       <div class="mid ${sc?'score':''}">${sc? m.score.ft[0]+" : "+m.score.ft[1] : "VS"}</div>
       <div class="side" data-team="${esc(m.team2)}">${flag(m.team2,80)||'<div style="font-size:1.4rem">🏳️</div>'}<div class="nm">${esc(deName(m.team2))}</div></div>
     </div>
-    <div class="meta">${k?`<span>🗓️ <b>${fmtDay(k)}</b></span><span>🕒 <b>${fmtTime(k)}</b> Uhr</span>`:""}${m.ground?`<span>📍 ${esc(m.ground)}</span>`:""}</div>`;
+    <div class="meta">${k?`<span>🗓️ <b>${relDay(k,"head")}</b></span><span>🕒 <b>${fmtTime(k)}</b> Uhr</span>${(!sc&&relStatus(k))?`<span>⏳ <b>${relStatus(k)}</b></span>`:""}`:""}${m.ground?`<span>📍 ${esc(m.ground)}</span>`:""}</div>`;
   bindTeamClicks(s);
 }
 const EMPTY = `<div class="panel" style="padding:20px;text-align:center;color:var(--muted)">Nichts hier.</div>`;
@@ -569,7 +575,7 @@ function renderMyTeam(){
   const isGer=FAV==="Germany"; const ms=teamMatches(FAV); const n=now(); const nextOwn=ms.find(m=>{ const k=parseKickoff(m.date,m.time); return k&&k>n; });
   box.innerHTML=`<div class="head">${flag(FAV,80)}
       <div style="flex:1;min-width:0"><div class="t">${esc(deName(FAV))} ${isGer?'<span class="stars" title="Der 4. Stern von 2014… der 5. lädt 🤫">★★★★</span>':''}</div>
-        <div class="sub">${grp?grpDE(grp.name):""} · ${rank?rank+". Platz":"—"} ${nextOwn?`· nächstes Spiel ${fmtDay(parseKickoff(nextOwn.date,nextOwn.time))}`:""}</div></div></div>
+        <div class="sub">${grp?grpDE(grp.name):""} · ${rank?rank+". Platz":"—"} ${nextOwn?`· nächstes Spiel ${relDay(parseKickoff(nextOwn.date,nextOwn.time),"head")}`:""}</div></div></div>
     <div class="body"><div class="stat"><div class="k">Punkte</div><div class="v countup" data-to="${me.pts}">0</div></div>
       <div class="stat"><div class="k">Bilanz (S-U-N)</div><div class="v">${me.w}-${me.d}-${me.l}</div></div>
       <div class="stat"><div class="k">Tore</div><div class="v">${me.gf}:${me.ga}</div></div></div>
@@ -593,9 +599,9 @@ function matchRow(m){
   const live=k&&n>=k&&n<new Date(+k+LIVE_MS)&&!sc; const favm=(m.team1===FAV||m.team2===FAV);
   const tier=goalTier(m); const tcls=tier?` g${tier}`:""; const badge=tier?`<span class="goalbadge">${["","torreich","spektakel ⚡","torfestival 🔥"][tier]}</span>`:"";
   let s1="",s2=""; if(sc){ const[a,b]=m.score.ft; if(a>b)s1="win"; else if(b>a)s2="win"; }
-  const scoreHtml=sc?`<div class="sc">${m.score.ft[0]} : ${m.score.ft[1]}</div>`:live?`<div class="sc">live</div>`:`<div class="sc tbd">${k?fmtTime(k):"–"}</div>`;
+  const scoreHtml=sc?`<div class="sc">${m.score.ft[0]} : ${m.score.ft[1]}</div>`:live?`<div class="sc">LIVE</div>`:`<div class="sc tbd">${relStatus(k)||(k?fmtTime(k):"–")}</div>`;
   return `<div class="match ${live?'live':''} ${favm?'favm':''}${tcls}">${badge}
-    <div class="time">${k?`<b>${k.toLocaleDateString("de-DE",{day:"2-digit",month:"short"})}</b>${m.group?grpDE(m.group):(KO_DE[m.round]||"")}`:""}</div>
+    <div class="time">${k?`<b>${relDay(k)}</b>${m.group?grpDE(m.group):(KO_DE[m.round]||"")}`:""}</div>
     <div class="tm t1" data-team="${esc(m.team1)}">${isCode(m.team1)?`<span class="nm" style="color:var(--muted2)">${esc(m.team1)}</span>`:`<span class="nm ${s1}">${esc(deName(m.team1))}</span>${flag(m.team1,40)}`}</div>
     ${scoreHtml}
     <div class="tm t2" data-team="${esc(m.team2)}">${isCode(m.team2)?`<span class="nm" style="color:var(--muted2)">${esc(m.team2)}</span>`:`${flag(m.team2,40)}<span class="nm ${s2}">${esc(deName(m.team2))}</span>`}</div>
@@ -613,7 +619,7 @@ function renderSchedule(){
   if(!list.length){ host.innerHTML=`<div class="panel" style="padding:22px;text-align:center;color:var(--muted)">Keine Spiele für diesen Filter.</div>`; return; }
   const days={}; list.forEach(o=>{ const key=dayKey(o.k); (days[key]||=[]).push(o.m); });
   host.innerHTML=Object.entries(days).map(([key,ms])=>{ const d=parseKickoff(ms[0].date,ms[0].time)||n; const isToday=key===todayK;
-    return `<div class="day"><p class="dh ${isToday?'today':''}"><b>${fmtDay(d)}</b>${isToday?'<span class="pill">HEUTE</span>':''}</p>${ms.map(m=>matchRow(m)).join("")}</div>`; }).join("");
+    return `<div class="day"><p class="dh ${isToday?'today':''}"><b>${relDay(d,"head")}</b></p>${ms.map(m=>matchRow(m)).join("")}</div>`; }).join("");
   bindTeamClicks(host);
 }
 function renderBracket(){

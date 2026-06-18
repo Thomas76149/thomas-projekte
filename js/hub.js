@@ -138,11 +138,9 @@
   function seasonOf(now){ const m=now.getMonth()+1; if(m<=2||m===12) return "winter"; if(m<=5) return "spring"; if(m<=8) return "summer"; return "autumn"; }
   function autoTheme(now){ return activeTournament(now) ? "football" : seasonOf(now); }
 
-  let override = (()=>{ try{ return localStorage.getItem(THEME_KEY)||"auto"; }catch{ return "auto"; } })();
-  function effectiveTheme(now){ return override==="auto" ? autoTheme(now) : override; }
+  function effectiveTheme(now){ return autoTheme(now); } // läuft komplett automatisch nach Datum
   let setParticles = () => {}; // wird von der fx-IIFE unten gesetzt
 
-  const seasonBtn = document.getElementById("seasonBtn");
   const tband = document.getElementById("tband");
 
   function applyTheme(){
@@ -153,11 +151,6 @@
     const SEASONS = ["winter","spring","summer","autumn"];
     document.body.dataset.season = SEASONS.includes(theme) ? theme : seasonOf(now);
     const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", THEME_BG[theme]||"#0a0b0f");
-    // Button-Label
-    if(seasonBtn){
-      if(override==="auto"){ const [em]=THEME_META[theme]||["🔁"]; seasonBtn.innerHTML = `<span class="em">${em}</span> Auto`; seasonBtn.title="Theme: automatisch nach Datum — klick zum Umschalten"; }
-      else { const [em,nm]=THEME_META[override]||["🎨",override]; seasonBtn.innerHTML = `<span class="em">${em}</span> ${nm}`; seasonBtn.title="Theme fest gewählt — klick für nächstes (… → Auto)"; }
-    }
     setParticles(document.body.dataset.season);
     renderBanner(theme, now);
   }
@@ -174,7 +167,7 @@
         ${t.app?`<span class="tb-go">zur Übersicht →</span>`:""}`;
       return;
     }
-    const soon = override==="auto" ? soonTournament(now) : null;
+    const soon = soonTournament(now);
     if(soon){
       const days = Math.ceil((d2(soon.start)-now)/DAY);
       tband.href = soon.app || "#";
@@ -187,15 +180,6 @@
     tband.classList.remove("show");
   }
 
-  const CYCLE = ["auto","football","winter","spring","summer","autumn"];
-  seasonBtn?.addEventListener("click",()=>{
-    const i = CYCLE.indexOf(override); override = CYCLE[(i+1)%CYCLE.length];
-    try{ localStorage.setItem(THEME_KEY,override); }catch{}
-    applyTheme();
-    const now=new Date(); const eff=effectiveTheme(now); const [em,nm]=THEME_META[eff]||["🔁","Auto"];
-    toast(override==="auto" ? `🔁 Auto-Theme (${nm} ${em})` : `${em} ${nm}-Theme`);
-    confetti(34, themeConfetti(eff));
-  });
   function themeConfetti(theme){
     return ({ winter:["#bfe6ff","#ffffff","#7fc8ff"], spring:["#ffc6e3","#4be38b","#ffffff"],
       summer:["#ffe16b","#ffb020","#ff7a1a"], autumn:["#ff7a1a","#ffb020","#c0531a","#e0a020"],
@@ -289,8 +273,6 @@
     { w:"tor", fn:()=>{ confetti(60,themeConfetti("football")); flash("TOOOR!"); } },
     { w:"goal", fn:()=>{ confetti(60,themeConfetti("football")); flash("GOAL!"); } },
     { w:"thomas", fn:()=>{ takeover("👋","Hey Thomas!","Deine Seite, deine Regeln. 🎮", null); } },
-    { w:"wm", fn:()=>{ override="football"; try{localStorage.setItem(THEME_KEY,"football");}catch{} applyTheme(); toast("⚽ Fußball-Modus an"); } },
-    { w:"schnee", fn:()=>{ override="winter"; try{localStorage.setItem(THEME_KEY,"winter");}catch{} applyTheme(); toast("❄️ Winter-Modus"); } },
   ];
   let wbuf="";
   addEventListener("keydown",e=>{
@@ -310,5 +292,5 @@
 
   // 3) Konsolen-Gruß
   console.log("%cthomas.fun","font-family:monospace;font-size:26px;font-weight:bold;color:#ff7a1a;text-shadow:0 2px 8px rgba(255,122,26,.4)");
-  console.log("%cVersteckt: Konami ↑↑↓↓←→←→ B A · tipp 'tor', 'wm', 'schnee' · oder klick den Ball ⚽","color:#9aa0ad");
+  console.log("%cVersteckt: Konami ↑↑↓↓←→←→ B A · tipp 'tor' · oder klick den Ball ⚽","color:#9aa0ad");
 })();
