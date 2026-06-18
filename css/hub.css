@@ -60,6 +60,19 @@ body{ --sky-glow:#1e3e63; --sun:#fff0a8; --sun-glow:#ffd86b; --cloud:rgba(232,24
 #scene .f{ transition:fill 1s ease; }
 #scene .f.fm{ fill:var(--foliage1); } #scene .f.fb{ fill:var(--foliage2); } #scene .f.fh{ fill:var(--foliage3); }
 #scene .blossom,#scene .winter,#scene .stars,#scene .rays{ display:none; }
+/* Tag/Nacht — automatisch nach Uhrzeit */
+#scene .nightveil,#scene .moon,#scene .nightstars{ display:none; }
+body[data-daytime="night"] #scene .nightveil{ display:block; fill-opacity:.52; }
+body[data-daytime="night"] #scene .moon{ display:block; }
+body[data-daytime="night"] #scene .nightstars{ display:block; }
+body[data-daytime="night"] #scene .sun,
+body[data-daytime="night"] #scene .sun-glow,
+body[data-daytime="night"] #scene .rays{ display:none; }
+#scene .moonglow{ transform-box:view-box; transform-origin:1160px 200px; }
+body[data-daytime="night"] #scene .moonglow{ animation:sunpulse 8s ease-in-out infinite; }
+#scene .nightstars circle{ animation:twinkle 3.2s ease-in-out infinite; }
+#scene .nightstars circle:nth-child(even){ animation-delay:1.6s; }
+@keyframes twinkle{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
 #scene .sun-glow{ transform-box:view-box; transform-origin:1160px 215px; animation:sunpulse 7s ease-in-out infinite; }
 #scene .rays{ transform-box:view-box; transform-origin:1160px 215px; animation:raysspin 64s linear infinite; }
 #scene .cl1{ animation:cloud1 95s linear infinite; } #scene .cl2{ animation:cloud2 130s linear infinite -50s; } #scene .cl3{ animation:cloud3 160s linear infinite -90s; }
@@ -94,7 +107,6 @@ body[data-season="winter"]{ --sky-glow:#16294a; --sun:#cfe0ff; --sun-glow:#9fc0f
   --foliage1:#e3edf8; --foliage2:#c6d4ea; --foliage3:#f2f7ff; } /* Hintergrund-Bäumchen schneebedeckt */
 body[data-season="winter"] #scene .canopy{ display:none; }
 body[data-season="winter"] #scene .winter{ display:block; }
-body[data-season="winter"] #scene .stars{ display:block; }
 @media(max-width:680px){ #scene{ opacity:.82; } }
 #confetti{position:fixed; inset:0; z-index:60; width:100%; height:100%; pointer-events:none;}
 .noise{
@@ -267,6 +279,6 @@ footer a:hover{ text-decoration:underline; }
   html{ scroll-behavior:auto; }
   .tile{ animation:none; opacity:1; transform:none; }
   .tile::after,#bgfx,#confetti{ display:none; }
-  #aurora span,#scene .canopy,#scene .rays,#scene .sun-glow,#scene .cl1,#scene .cl2,#scene .cl3,#scene .wind path{ animation:none; }
+  #aurora span,#scene .canopy,#scene .rays,#scene .sun-glow,#scene .cl1,#scene .cl2,#scene .cl3,#scene .wind path,#scene .moonglow,#scene .nightstars circle{ animation:none; }
   body{ transition:none; }
 }

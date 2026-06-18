@@ -51,15 +51,15 @@ window.THOMASFUN_ITEMS = [
   },
 
   // Games
-  { title:"Breakout", href:"spiele/breakout/index.html", emoji:"🧱", label:"Canvas · Arcade", desc:"Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch & Keyboard.", tags:["game","arcade","canvas","mobile"], big:true, section:"games" },
-  { title:"Fabrik‑Clicker", href:"spiele/tycoon/index.html", emoji:"🏭", label:"Clicker", desc:"Klicks, Combo, Upgrades und passives ₡ — Partikel & Sound, Speicherstand lokal.", tags:["game","clicker","idle","mobile"], big:true, section:"games" },
+  { title:"Breakout", href:"spiele/breakout/index.html", emoji:"🧱", label:"Canvas · Arcade", desc:"Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch & Keyboard.", tags:["game","arcade","canvas","mobile"], section:"games" },
+  { title:"Fabrik‑Clicker", href:"spiele/tycoon/index.html", emoji:"🏭", label:"Clicker", desc:"Klicks, Combo, Upgrades und passives ₡ — Partikel & Sound, Speicherstand lokal.", tags:["game","clicker","idle","mobile"], section:"games" },
   { title:"Tic‑Tac‑Toe", href:"spiele/tictactoe/index.html", emoji:"❎", label:"Online · Board", desc:"Online (Room‑Code) oder lokal gegen Bot/2‑Spieler.", tags:["game","board","mini","mobile","online"], section:"online" },
   { title:"Memory", href:"spiele/memory/index.html", emoji:"🧠", label:"Puzzle", desc:"Paare finden, Bestzeit jagen.", tags:["game","puzzle","memory","mobile"], section:"games" },
   { title:"2048", href:"spiele/2048/index.html", emoji:"🧩", label:"Puzzle", desc:"Schieben, mergen, Score jagen — Keyboard & Touch.", tags:["game","puzzle","mobile"], section:"games" },
   { title:"Minesweeper", href:"spiele/minesweeper/index.html", emoji:"💣", label:"Puzzle · Board", desc:"Aufdecken, markieren, nicht boomen — Touch & Maus, Bestzeiten.", tags:["game","puzzle","board","mobile"], section:"games" },
   { title:"Snake", href:"spiele/snake/index.html", emoji:"🐍", label:"Arcade", desc:"Klassiker: fressen, wachsen, nicht crashen. Auch Mobile‑Buttons.", tags:["game","arcade","snake","mobile"], section:"games" },
   { title:"Math Gates", href:"spiele/math-gates/index.html", emoji:"👥", label:"Runner · Crowd", desc:"Führ deine Menge durch Mathe‑Tore (×2, +15, ÷2 …), weich Hindernissen aus und überrenn am Ende den Boss — Pseudo‑3D, Partikel, Sound.", tags:["game","arcade","runner","mobile","canvas"], section:"games" },
-  { title:"Seeschlacht", href:"spiele/seeschlacht/index.html", emoji:"⚓", label:"Naval · Echtzeit", desc:"Top‑Down‑Seegefecht: dein Schlachtschiff gegen die KI. Breitseiten zeigen, schwere Batterien, lange Flugzeiten — mit dicken Effekten.", tags:["game","arcade","canvas","naval","strategy"], big:true, section:"games" },
+  { title:"Seeschlacht", href:"spiele/seeschlacht/index.html", emoji:"⚓", label:"Naval · Echtzeit", desc:"Top‑Down‑Seegefecht: dein Schlachtschiff gegen die KI. Breitseiten zeigen, schwere Batterien, lange Flugzeiten — mit dicken Effekten.", tags:["game","arcade","canvas","naval","strategy"], section:"games" },
   { title:"Pong", href:"spiele/pong/index.html", emoji:"🏓", label:"Online · Arcade", desc:"Online: 2er oder 4er im Viereck, Ready-Lobby — oder lokal gegen Bot.", tags:["game","arcade","online"], section:"online" },
   { title:"Multiplayer Jetkampf", href:"spiele/tanks/index.html", emoji:"✈️", label:"Online · 2D-Jet", desc:"Große Arena, Kamera am Jet, MG-Feuer, Rand-Markierungen für Gegner — bis 4 Spieler, Ready-Lobby.", tags:["game","arcade","online","multiplayer"], section:"online" },
   { title:"Trivia", href:"spiele/trivia/index.html", emoji:"🧠", label:"Online · Quiz", desc:"Bis 8 Spieler: Kategorien inkl. Militär/WW2, Schwierigkeit, viele Fragen ohne Wiederholung pro Durchlauf — Room wie Jetkampf/Pong.", tags:["game","quiz","online","multiplayer","military"], section:"online" },
@@ -75,7 +75,7 @@ window.THOMASFUN_ITEMS = [
   { title:"Reflex‑Test", href:"spiele/reflex/index.html", emoji:"⚡", label:"Test", desc:"Drück so schnell du kannst, wenn es grün wird — mit Rating & Durchschnitt.", tags:["test","tool","reflex","mobile"], section:"tests" },
   { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui","seasonal"], cat:"special", section:"tests" },
   { title:"To‑Do Liste", href:"spiele/todo/index.html", emoji:"✅", label:"App", desc:"Filter, erledigt löschen — localStorage.", tags:["tool","mobile"], section:"tests" },
-  { title:"Satelliten‑Ping", href:"spiele/spielchen/index.html", emoji:"🛰️", label:"Reflex", desc:"Kurz reagieren, wenn das Signal da ist.", tags:["game","reflex","mobile"], section:"tests" },
+  { title:"Satelliten‑Ping", href:"spiele/spielchen/index.html", emoji:"🛰️", label:"Reflex", desc:"Kurz reagieren, wenn das Signal da ist.", tags:["game","reflex","mobile"], cat:"tools", section:"tests" },
   { title:"Wirtschafts‑Race", href:"spiele/wirtschafts-race/index.html", emoji:"📊", label:"Daten · Zeitraffer", desc:"Länder‑Battle 1900–2026: Balken überholen sich, Flaggen, historische Events — mit Synthwave‑Musik. Umschaltbar PPP/Dollar.", tags:["tool","test","data","mobile"], section:"tests" },
 
   // Daten-Races & Simulationen

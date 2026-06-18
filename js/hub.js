@@ -150,6 +150,9 @@
     // Baum folgt immer der echten Jahreszeit (auch im Fußball-Modus)
     const SEASONS = ["winter","spring","summer","autumn"];
     document.body.dataset.season = SEASONS.includes(theme) ? theme : seasonOf(now);
+    // Tag/Nacht automatisch nach Uhrzeit (Sonne vs. Mond)
+    const h = now.getHours();
+    document.body.dataset.daytime = (h>=7 && h<19) ? "day" : "night";
     const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", THEME_BG[theme]||"#0a0b0f");
     setParticles(document.body.dataset.season);
     renderBanner(theme, now);
