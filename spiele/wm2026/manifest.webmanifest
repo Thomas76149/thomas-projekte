@@ -4,7 +4,7 @@
   "description": "Fußball-WM 2026 auf einen Blick: Countdown, Gruppen, Spielplan, Ergebnisse, Lieblingsteam.",
   "lang": "de",
   "dir": "ltr",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

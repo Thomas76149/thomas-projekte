@@ -5,7 +5,7 @@
 
 window.THOMASFUN_ITEMS = [
   // ⚽ Specials / Saisonales
-  { title:"WM 2026", href:"spiele/wm2026/index.html", emoji:"⚽", label:"Live · Fußball-WM", desc:"Die Fußball‑WM 2026 auf einen Blick: Live‑Countdown zum nächsten Spiel, Gruppen‑Tabellen, kompletter Spielplan mit Ergebnissen, Lieblingsteam markieren — und als App aufs Handy installierbar (PWA).", tags:["app","fussball","wm","live","featured","mobile","seasonal"], big:true, cat:"special", section:"games" },
+  { title:"WM 2026", href:"spiele/wm2026/", emoji:"⚽", label:"Live · Fußball-WM", desc:"Die Fußball‑WM 2026 auf einen Blick: Live‑Countdown zum nächsten Spiel, Gruppen‑Tabellen, kompletter Spielplan mit Ergebnissen, Lieblingsteam markieren — und als App aufs Handy installierbar (PWA).", tags:["app","fussball","wm","live","featured","mobile","seasonal"], big:true, cat:"special", section:"games" },
 
   // Featured / große Games
   { title:"Survive the Horde", href:"spiele/survive-the-horde/index.html", emoji:"🧟", label:"Roblox · Survival", desc:"Mein Roblox‑Game: Base bauen, Zombies abknallen, Welle um Welle überleben — allein oder im Co‑op. Promo‑Seite mit direktem Spiel‑Link.", tags:["game","roblox","featured","mobile"], big:true, section:"games" },

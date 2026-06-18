@@ -6,10 +6,11 @@
   <title>thomas.fun · Kleine Web-Sachen</title>
   <meta name="description" content="Spiele und Mini-Apps — anklicken und loslegen. Mit saisonalem Look und Fußball-Modus zur WM/EM." />
   <meta name="theme-color" content="#0a0b0f" />
+  <meta name="color-scheme" content="dark" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hub.css?v=7" />
+  <link rel="stylesheet" href="css/hub.css?v=8" />
 </head>
 <body>
   <div id="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
@@ -17,53 +18,71 @@
   <canvas id="confetti" aria-hidden="true"></canvas>
   <div class="noise" aria-hidden="true"></div>
   <div id="scene" aria-hidden="true">
-    <svg viewBox="0 0 1440 620" preserveAspectRatio="xMidYMax slice">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice">
       <defs>
         <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stop-color="var(--sky-glow)" stop-opacity="0"/>
-          <stop offset=".62" stop-color="var(--sky-glow)" stop-opacity="0"/>
-          <stop offset="1" stop-color="var(--sky-glow)" stop-opacity=".85"/>
+          <stop offset=".55" stop-color="var(--sky-glow)" stop-opacity="0"/>
+          <stop offset="1" stop-color="var(--sky-glow)" stop-opacity=".9"/>
         </linearGradient>
         <radialGradient id="sunG"><stop offset="0" stop-color="var(--sun-glow)" stop-opacity=".9"/><stop offset="1" stop-color="var(--sun-glow)" stop-opacity="0"/></radialGradient>
         <linearGradient id="groundG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ground)"/><stop offset="1" stop-color="var(--ground-dk)"/></linearGradient>
+        <radialGradient id="canShade" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="var(--foliage3)"/><stop offset=".55" stop-color="var(--foliage1)"/><stop offset="1" stop-color="var(--foliage2)"/></radialGradient>
       </defs>
-      <rect class="sky" x="0" y="0" width="1440" height="620" fill="url(#skyG)"/>
-      <g class="stars" fill="#dfe9ff"><circle cx="180" cy="90" r="1.6"/><circle cx="420" cy="60" r="1.3"/><circle cx="650" cy="120" r="1.7"/><circle cx="900" cy="70" r="1.3"/><circle cx="1120" cy="110" r="1.6"/><circle cx="1300" cy="60" r="1.4"/><circle cx="300" cy="150" r="1.2"/><circle cx="760" cy="50" r="1.4"/></g>
-      <circle class="sun-glow" cx="1150" cy="180" r="200" fill="url(#sunG)"/>
-      <g class="rays" stroke="var(--sun)" stroke-width="5" stroke-linecap="round" opacity=".5">
-        <line x1="1150" y1="80" x2="1150" y2="20"/><line x1="1150" y1="280" x2="1150" y2="340"/>
-        <line x1="1050" y1="180" x2="990" y2="180"/><line x1="1250" y1="180" x2="1310" y2="180"/>
-        <line x1="1080" y1="110" x2="1038" y2="68"/><line x1="1220" y1="250" x2="1262" y2="292"/>
-        <line x1="1080" y1="250" x2="1038" y2="292"/><line x1="1220" y1="110" x2="1262" y2="68"/>
+      <rect class="sky" x="0" y="0" width="1440" height="900" fill="url(#skyG)"/>
+      <g class="stars" fill="#dfe9ff"><circle cx="180" cy="90" r="1.6"/><circle cx="420" cy="60" r="1.3"/><circle cx="650" cy="120" r="1.7"/><circle cx="900" cy="70" r="1.3"/><circle cx="1120" cy="110" r="1.6"/><circle cx="1300" cy="60" r="1.4"/><circle cx="300" cy="150" r="1.2"/><circle cx="760" cy="50" r="1.4"/><circle cx="1010" cy="160" r="1.3"/><circle cx="540" cy="180" r="1.2"/></g>
+      <circle class="sun-glow" cx="1160" cy="215" r="230" fill="url(#sunG)"/>
+      <g class="rays" stroke="var(--sun)" stroke-width="6" stroke-linecap="round" opacity=".5">
+        <line x1="1160" y1="105" x2="1160" y2="40"/><line x1="1160" y1="325" x2="1160" y2="390"/>
+        <line x1="1050" y1="215" x2="985" y2="215"/><line x1="1270" y1="215" x2="1335" y2="215"/>
+        <line x1="1085" y1="140" x2="1040" y2="95"/><line x1="1235" y1="290" x2="1280" y2="335"/>
+        <line x1="1085" y1="290" x2="1040" y2="335"/><line x1="1235" y1="140" x2="1280" y2="95"/>
       </g>
-      <circle class="sun" cx="1150" cy="180" r="50" fill="var(--sun)"/>
+      <circle class="sun" cx="1160" cy="215" r="56" fill="var(--sun)"/>
       <g class="clouds" fill="var(--cloud)">
-        <g class="cl cl1"><ellipse cx="0" cy="0" rx="60" ry="26"/><ellipse cx="48" cy="8" rx="46" ry="22"/><ellipse cx="-44" cy="10" rx="40" ry="20"/></g>
-        <g class="cl cl2"><ellipse cx="0" cy="0" rx="50" ry="22"/><ellipse cx="40" cy="6" rx="38" ry="18"/><ellipse cx="-38" cy="8" rx="34" ry="17"/></g>
-        <g class="cl cl3"><ellipse cx="0" cy="0" rx="42" ry="18"/><ellipse cx="34" cy="6" rx="32" ry="15"/></g>
+        <g class="cl cl1"><ellipse cx="0" cy="0" rx="64" ry="28"/><ellipse cx="50" cy="8" rx="48" ry="23"/><ellipse cx="-46" cy="10" rx="42" ry="21"/></g>
+        <g class="cl cl2"><ellipse cx="0" cy="0" rx="52" ry="23"/><ellipse cx="42" cy="6" rx="40" ry="19"/><ellipse cx="-40" cy="8" rx="36" ry="18"/></g>
+        <g class="cl cl3"><ellipse cx="0" cy="0" rx="44" ry="19"/><ellipse cx="36" cy="6" rx="34" ry="16"/></g>
       </g>
-      <path class="hill-far" d="M0 470 Q 380 392 760 452 T 1440 442 L1440 620 L0 620 Z" fill="var(--hill-far)"/>
-      <path class="hill-mid" d="M0 520 Q 440 466 900 512 T 1440 506 L1440 620 L0 620 Z" fill="var(--hill-mid)"/>
-      <!-- ferne kleine Bäume -->
-      <g class="distant" fill="var(--hill-mid)"><path d="M1010 506 q-4 -34 14 -34 q18 0 14 34 z"/><path d="M1070 510 q-3 -26 11 -26 q14 0 11 26 z"/></g>
-      <path class="ground" d="M0 548 Q 500 520 980 542 T 1440 538 L1440 620 L0 620 Z" fill="url(#groundG)"/>
+      <path class="hill-far" d="M0 560 Q 380 482 760 540 T 1440 528 L1440 900 L0 900 Z" fill="var(--hill-far)"/>
+      <path class="hill-mid" d="M0 648 Q 460 588 920 636 T 1440 630 L1440 900 L0 900 Z" fill="var(--hill-mid)"/>
+      <!-- echte ferne Bäumchen (Tiefe) -->
+      <g class="distant">
+        <g transform="translate(1030,640)"><rect x="-3" y="-22" width="6" height="30" rx="3" fill="var(--bark)"/><circle cx="0" cy="-30" r="22" fill="var(--foliage2)"/></g>
+        <g transform="translate(1110,650)"><rect x="-3" y="-18" width="6" height="26" rx="3" fill="var(--bark)"/><circle cx="0" cy="-26" r="18" fill="var(--foliage2)"/></g>
+        <g transform="translate(1180,642)"><rect x="-2.5" y="-20" width="5" height="28" rx="2.5" fill="var(--bark)"/><circle cx="0" cy="-28" r="20" fill="var(--foliage2)"/></g>
+        <g transform="translate(120,650)"><rect x="-3" y="-20" width="6" height="28" rx="3" fill="var(--bark)"/><circle cx="0" cy="-28" r="20" fill="var(--foliage2)"/></g>
+      </g>
+      <path class="ground" d="M0 736 Q 520 706 1000 730 T 1440 724 L1440 900 L0 900 Z" fill="url(#groundG)"/>
       <!-- Hauptbaum -->
       <g class="tree">
-        <g class="branch" stroke="var(--bark)" stroke-width="9" stroke-linecap="round" fill="none">
-          <path d="M300 556 L300 392"/><path d="M300 452 L236 372"/><path d="M300 470 L372 384"/>
-          <path d="M300 410 L254 356"/><path d="M300 416 L350 352"/><path d="M268 404 L232 366"/><path d="M334 408 L372 372"/>
+        <ellipse class="tshadow" cx="300" cy="794" rx="132" ry="20" fill="rgba(0,0,0,.3)"/>
+        <path class="trunk" d="M278 788 Q300 778 322 788 L314 678 Q300 666 286 678 Z" fill="var(--bark)"/>
+        <!-- kahler Winterbaum -->
+        <g class="winter">
+          <g stroke="var(--bark)" stroke-linecap="round" fill="none">
+            <path d="M300 684 L300 512" stroke-width="11"/>
+            <path d="M300 600 L232 520" stroke-width="8"/><path d="M300 612 L372 522" stroke-width="8"/>
+            <path d="M300 556 L250 496" stroke-width="6"/><path d="M300 552 L352 492" stroke-width="6"/>
+            <path d="M236 524 L210 492" stroke-width="4"/><path d="M368 526 L394 494" stroke-width="4"/>
+            <path d="M300 512 L300 478" stroke-width="5"/>
+          </g>
+          <g fill="#eef5ff" opacity=".95"><ellipse cx="300" cy="476" rx="20" ry="9"/><ellipse cx="232" cy="516" rx="16" ry="8"/><ellipse cx="372" cy="518" rx="16" ry="8"/><ellipse cx="250" cy="492" rx="11" ry="6"/><ellipse cx="352" cy="488" rx="11" ry="6"/></g>
         </g>
-        <path class="trunk" d="M288 560 L290 430 Q300 416 310 430 L312 560 Z" fill="var(--bark)"/>
-        <g class="snowcap" fill="#eef5ff">
-          <circle cx="236" cy="372" r="13"/><circle cx="372" cy="384" r="13"/><circle cx="300" cy="360" r="16"/><circle cx="254" cy="356" r="10"/><circle cx="350" cy="352" r="10"/>
-        </g>
+        <!-- belaubte Krone (Referenz-Stil) -->
         <g class="canopy">
-          <circle class="f f3" cx="300" cy="372" r="78"/>
-          <circle class="f f2" cx="236" cy="392" r="54"/><circle class="f f2" cx="368" cy="392" r="54"/>
-          <circle class="f f1" cx="300" cy="338" r="60"/><circle class="f f3" cx="262" cy="338" r="44"/><circle class="f f3" cx="342" cy="340" r="44"/>
-          <circle class="f f1" cx="300" cy="420" r="56"/><circle class="f f2" cx="246" cy="430" r="38"/><circle class="f f2" cx="356" cy="430" r="38"/>
-          <circle class="f f1" cx="286" cy="300" r="34"/><circle class="f f3" cx="324" cy="306" r="30"/>
-          <g class="blossom" fill="#ffd6ec"><circle cx="262" cy="338" r="6"/><circle cx="342" cy="360" r="6"/><circle cx="300" cy="312" r="6"/><circle cx="236" cy="400" r="6"/><circle cx="366" cy="398" r="6"/><circle cx="300" cy="430" r="6"/><circle cx="320" cy="350" r="5"/><circle cx="280" cy="380" r="5"/></g>
+          <circle class="f fb" cx="316" cy="602" r="120"/>
+          <circle class="f fm" cx="300" cy="582" r="112"/>
+          <circle class="f fm" cx="232" cy="524" r="52"/><circle class="f fm" cx="300" cy="496" r="60"/><circle class="f fm" cx="372" cy="528" r="52"/>
+          <circle class="f fm" cx="196" cy="600" r="56"/><circle class="f fm" cx="404" cy="600" r="56"/>
+          <circle class="f fm" cx="244" cy="662" r="56"/><circle class="f fm" cx="358" cy="662" r="56"/><circle class="f fm" cx="300" cy="678" r="52"/>
+          <circle class="f fh" cx="252" cy="528" r="40"/><circle class="f fh" cx="300" cy="556" r="46"/><circle class="f fh" cx="206" cy="588" r="30"/>
+          <g class="blossom" fill="#ffe0f0"><circle cx="248" cy="520" r="7"/><circle cx="330" cy="520" r="7"/><circle cx="300" cy="492" r="7"/><circle cx="210" cy="600" r="6"/><circle cx="396" cy="598" r="6"/><circle cx="300" cy="640" r="7"/><circle cx="356" cy="556" r="6"/><circle cx="262" cy="588" r="6"/></g>
+        </g>
+        <!-- Wind-Striche (Herbst) -->
+        <g class="wind" stroke="rgba(255,255,255,.45)" stroke-width="3.5" stroke-linecap="round" fill="none">
+          <path d="M150 470 q40 -10 90 0"/><path d="M120 540 q46 -12 100 0"/><path d="M170 610 q40 -10 86 0"/>
+          <path d="M360 500 q44 -12 96 0"/><path d="M380 575 q40 -10 88 0"/>
         </g>
       </g>
     </svg>
@@ -120,7 +139,7 @@
 
   <script src="js/site-config.js?v=2"></script>
   <script src="js/portfolio-link.js?v=2"></script>
-  <script src="js/hub-data.js?v=17"></script>
+  <script src="js/hub-data.js?v=18"></script>
   <script src="js/hub.js?v=9"></script>
 </body>
 </html>

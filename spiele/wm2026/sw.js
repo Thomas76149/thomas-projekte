@@ -5,7 +5,7 @@
    - Flaggen/Fonts: stale-while-revalidate. Live-Ergebnisse (GitHub): network-first.
    - Precache ist best-effort: einzelne fehlende Datei bricht die Installation nicht ab.
    Version hochzählen, wenn sich Shell-Dateien ändern. */
-const VERSION = "wm2026-v5";
+const VERSION = "wm2026-v6";
 const SHELL = "shell-" + VERSION;
 const RUNTIME = "rt-" + VERSION;
 const CORE = [
