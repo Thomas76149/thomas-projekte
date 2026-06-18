@@ -158,7 +158,7 @@
       if(override==="auto"){ const [em]=THEME_META[theme]||["🔁"]; seasonBtn.innerHTML = `<span class="em">${em}</span> Auto`; seasonBtn.title="Theme: automatisch nach Datum — klick zum Umschalten"; }
       else { const [em,nm]=THEME_META[override]||["🎨",override]; seasonBtn.innerHTML = `<span class="em">${em}</span> ${nm}`; seasonBtn.title="Theme fest gewählt — klick für nächstes (… → Auto)"; }
     }
-    setParticles(theme);
+    setParticles(document.body.dataset.season);
     renderBanner(theme, now);
   }
   function renderBanner(theme, now){
@@ -212,12 +212,11 @@
     const cv=document.getElementById("bgfx"); if(!cv) return; const ctx=cv.getContext("2d");
     let W=0,H=0,DPR=1,parts=[],cfg=null,t=0;
     const CFG = {
-      autumn:{type:"emoji", glyphs:["🍂","🍁","🍃"], n:16, sz:[16,30], vy:[.3,.9], sway:.7},
-      winter:{type:"snow", n:80, sz:[1,3.5], vy:[.4,1.3]},
-      spring:{type:"emoji", glyphs:["🌸","🌷","🌼"], n:20, sz:[14,26], vy:[.25,.7], sway:1.0},
-      summer:{type:"orb", n:46, color:"rgba(255,210,90,.55)"},
-      football:{type:"emoji", glyphs:["⚽"], n:9, sz:[18,30], vy:[.3,.8], sway:.5, orbs:28},
-      default:{type:"orb", n:46, color:"rgba(255,180,120,.4)"},
+      autumn:{type:"emoji", glyphs:["🍂","🍁","🍃"], n:28, sz:[16,32], vy:[.5,1.2], sway:1.1, wind:.6},
+      winter:{type:"snow", n:90, sz:[1,3.6], vy:[.4,1.3]},
+      spring:{type:"emoji", glyphs:["🌸","🌷","🌼","🦋"], n:22, sz:[14,26], vy:[.25,.7], sway:1.25},
+      summer:{type:"orb", n:42, color:"rgba(255,214,120,.6)"},
+      default:{type:"orb", n:42, color:"rgba(255,200,140,.5)"},
     };
     function accent(){ const c=getComputedStyle(document.body).getPropertyValue("--accent").trim(); return c||"#ff7a1a"; }
     function rnd(a,b){ return a+Math.random()*(b-a); }
@@ -238,8 +237,9 @@
         if(p.k==="orb"){ p.x+=p.vx;p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; p.tw+=0.03;
           ctx.globalAlpha=.35+.25*Math.sin(p.tw); ctx.fillStyle=cfg.color||acc; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
         if(p.k==="snow"){ p.y+=p.vy; p.x+=Math.sin(t+p.ph)*.4; if(p.y>H+5){p.y=-5;p.x=Math.random()*W;} ctx.globalAlpha=p.a; ctx.fillStyle="rgba(226,242,255,1)"; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
-        // emoji
-        p.y+=p.vy; p.x+=Math.sin(t+p.ph)*p.sw; p.rot+=p.vr; if(p.y>H+30){p.y=-30;p.x=Math.random()*W;}
+        // emoji (mit optionalem Wind)
+        p.y+=p.vy; p.x+=Math.sin(t+p.ph)*p.sw + (cfg.wind||0); p.rot+=p.vr;
+        if(p.y>H+30){p.y=-30;p.x=Math.random()*W;} if(p.x>W+30)p.x=-30; if(p.x<-30)p.x=W+30;
         ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=.85; ctx.font=p.s+"px serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(p.g,0,0); ctx.restore(); ctx.globalAlpha=1;
       }
       requestAnimationFrame(frame);
@@ -247,10 +247,10 @@
     let rt; addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(build,180); });
     if(cfg) build(); requestAnimationFrame(frame);
     // Falls Theme schon vor fx() gesetzt: aktuelles anwenden
-    setParticles(document.body.dataset.theme||"autumn");
+    setParticles(document.body.dataset.season||"summer");
   })();
-  // Theme jetzt sicher anwenden (Partikel-Setup steht)
-  setParticles(document.body.dataset.theme || effectiveTheme(new Date()));
+  // Partikel jetzt sicher setzen (Setup steht) — nach Jahreszeit
+  setParticles(document.body.dataset.season || seasonOf(new Date()));
 
   /* ============================================================
      Konfetti

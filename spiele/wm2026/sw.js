@@ -1,27 +1,33 @@
-/* WM 2026 — Service Worker
-   - App-Shell: cache-first (offline startfähig)
-   - Flaggen (flagcdn) + Fonts: stale-while-revalidate (nach 1. Laden offline da)
-   - Ergebnis-Daten holt die App selbst live; SW cached nur als Fallback.
-   Cache-Version hochzählen, wenn sich Shell-Dateien ändern. */
-const VERSION = "wm2026-v4";
+/* WM 2026 — Service Worker (robust)
+   - Navigationen: NETWORK-FIRST (neueste Version gewinnt; offline -> Cache-Fallback).
+     So macht ein alter/kaputter Cache die Seite nie "nicht verfügbar".
+   - Statische Assets (eigene Domain): cache-first.
+   - Flaggen/Fonts: stale-while-revalidate. Live-Ergebnisse (GitHub): network-first.
+   - Precache ist best-effort: einzelne fehlende Datei bricht die Installation nicht ab.
+   Version hochzählen, wenn sich Shell-Dateien ändern. */
+const VERSION = "wm2026-v5";
 const SHELL = "shell-" + VERSION;
 const RUNTIME = "rt-" + VERSION;
-const FLAG_CODES = ["mx","za","kr","cz","ca","ba","qa","ch","br","ma","ht","gb-sct","us","py","au","tr","de","cw","ci","ec","nl","jp","se","tn","be","eg","ir","nz","es","cv","sa","uy","fr","sn","iq","no","ar","dz","at","jo","pt","cd","uz","co","gb-eng","hr","gh","pa"];
-const SHELL_FILES = [
+const CORE = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-180.png", "./icon-maskable-512.png",
-  "./data/worldcup.json", "./data/worldcup.groups.json",
-  ...FLAG_CODES.map(c => "./flags/" + c + ".svg")
+  "./data/worldcup.json", "./data/worldcup.groups.json"
 ];
+const FLAG_CODES = ["mx","za","kr","cz","ca","ba","qa","ch","br","ma","ht","gb-sct","us","py","au","tr","de","cw","ci","ec","nl","jp","se","tn","be","eg","ir","nz","es","cv","sa","uy","fr","sn","iq","no","ar","dz","at","jo","pt","cd","uz","co","gb-eng","hr","gh","pa"];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(SHELL).then(c => c.addAll(SHELL_FILES)).then(() => self.skipWaiting()));
+  e.waitUntil((async () => {
+    const c = await caches.open(SHELL);
+    // Core muss klappen, Flaggen best-effort (allSettled)
+    try { await c.addAll(CORE); } catch (_) {}
+    await Promise.allSettled(FLAG_CODES.map(code => c.add("./flags/" + code + ".svg")));
+    self.skipWaiting();
+  })());
 });
 self.addEventListener("activate", e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(k => k !== SHELL && k !== RUNTIME).map(k => caches.delete(k))
-    )).then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== SHELL && k !== RUNTIME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
@@ -30,7 +36,15 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
 
-  // Live-Ergebnisse (GitHub raw): immer Netz zuerst, Fallback Cache
+  // 1) Navigationen -> NETWORK-FIRST
+  if (req.mode === "navigate") {
+    e.respondWith(
+      fetch(req).then(r => { caches.open(SHELL).then(c => c.put(req, r.clone())); return r; })
+        .catch(() => caches.match(req).then(m => m || caches.match("./index.html")))
+    );
+    return;
+  }
+  // 2) Live-Ergebnisse (GitHub) -> network-first, Cache als Fallback
   if (url.hostname.includes("githubusercontent.com")) {
     e.respondWith(
       fetch(req).then(r => { const cp = r.clone(); caches.open(RUNTIME).then(c => c.put(req, cp)); return r; })
@@ -38,8 +52,7 @@ self.addEventListener("fetch", e => {
     );
     return;
   }
-
-  // Flaggen + Fonts: stale-while-revalidate
+  // 3) Flaggen-CDN / Fonts -> stale-while-revalidate
   if (url.hostname.includes("flagcdn.com") || url.hostname.includes("fonts.g")) {
     e.respondWith(
       caches.match(req).then(cached => {
@@ -49,13 +62,12 @@ self.addEventListener("fetch", e => {
     );
     return;
   }
-
-  // App-Shell (eigene Domain): cache-first
+  // 4) Eigene statische Assets -> cache-first, sonst Netz
   if (url.origin === self.location.origin) {
     e.respondWith(
       caches.match(req).then(cached => cached || fetch(req).then(r => {
         const cp = r.clone(); caches.open(SHELL).then(c => c.put(req, cp)); return r;
-      }).catch(() => caches.match("./index.html")))
+      }))
     );
   }
 });
