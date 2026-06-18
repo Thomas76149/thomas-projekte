@@ -90,7 +90,8 @@ body[data-season="autumn"] #scene .wind path{ animation-duration:3.4s; }
 @keyframes gust{ 0%{ stroke-dashoffset:240; opacity:0; transform:translateX(-24px);} 16%{ opacity:.7;} 52%{ stroke-dashoffset:0; opacity:.7;} 74%{ opacity:0; transform:translateX(54px);} 100%{ stroke-dashoffset:-240; opacity:0; transform:translateX(80px);} }
 /* Winter */
 body[data-season="winter"]{ --sky-glow:#16294a; --sun:#cfe0ff; --sun-glow:#9fc0ff; --cloud:rgba(210,222,245,.42);
-  --hill-far:#9fb0cc; --hill-mid:#7e90b0; --ground:#cdd9ec; --ground-dk:#8a9cbe; --bark:#46331f; }
+  --hill-far:#9fb0cc; --hill-mid:#7e90b0; --ground:#cdd9ec; --ground-dk:#8a9cbe; --bark:#46331f;
+  --foliage1:#e3edf8; --foliage2:#c6d4ea; --foliage3:#f2f7ff; } /* Hintergrund-Bäumchen schneebedeckt */
 body[data-season="winter"] #scene .canopy{ display:none; }
 body[data-season="winter"] #scene .winter{ display:block; }
 body[data-season="winter"] #scene .stars{ display:block; }
