@@ -354,7 +354,7 @@
      Custom-Cursor: weicher Glüh-Ring + Schweif + Klick-Ripple (nur Desktop)
      ============================================================ */
   (function cursorFX(){
-    if(reduce || !(matchMedia && matchMedia("(pointer:fine)").matches)) return;
+    if(reduce || !(matchMedia && matchMedia("(any-pointer:fine)").matches)) return;
     const ring=document.createElement("div"); ring.id="curring"; document.body.appendChild(ring);
     const cv=document.createElement("canvas"); cv.id="cursorfx"; document.body.appendChild(cv); const ctx=cv.getContext("2d");
     let W,H,DPR,mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my,parts=[],last=0,moved=0,scale=1;
