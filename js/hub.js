@@ -203,6 +203,8 @@
       winter:{type:"snow", n:120, sz:[1,4], vy:[.4,1.4], wind:.16},
       spring:{type:"emoji", glyphs:["🌸","🌷","🌼","🦋"], n:20, sz:[14,26], vy:[.25,.7], sway:1.25, wind:.22},
       summer:{type:"orb", n:40, color:"rgba(255,214,120,.6)", wind:.05},
+      rain:{type:"rain", n:100},
+      snow:{type:"snow", n:120, sz:[1,4], vy:[.5,1.6], wind:.2},
       default:{type:"orb", n:40, color:"rgba(255,200,140,.5)"},
     };
     function accent(){ const c=getComputedStyle(document.body).getPropertyValue("--accent").trim(); return c||"#ff7a1a"; }
@@ -211,6 +213,7 @@
     function mk(kind){
       if(kind==="snow") return {k:"snow",x:Math.random()*W,y:Math.random()*H,r:rnd(cfg.sz[0],cfg.sz[1]),vy:rnd(cfg.vy[0],cfg.vy[1]),ph:Math.random()*6.28,a:rnd(.4,.95)};
       if(kind==="orb") return {k:"orb",x:Math.random()*W,y:Math.random()*H,r:rnd(.6,2),vx:rnd(-.16,.16),vy:rnd(-.16,.16),tw:Math.random()*6.28};
+      if(kind==="rain") return {k:"rain",x:Math.random()*W,y:Math.random()*H,vy:rnd(7,12),len:rnd(9,20)};
       const g=cfg.glyphs[Math.floor(Math.random()*cfg.glyphs.length)];
       return {k:"emoji",g,x:Math.random()*W,y:Math.random()*H,s:rnd(cfg.sz[0],cfg.sz[1]),vy:rnd(cfg.vy[0],cfg.vy[1]),rot:Math.random()*6.28,vr:rnd(-.02,.02),ph:Math.random()*6.28,sw:cfg.sway||.6};
     }
@@ -224,6 +227,7 @@
         if(p.k==="orb"){ p.x+=p.vx*dt;p.y+=p.vy*dt; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; p.tw+=0.03*dt;
           ctx.globalAlpha=.35+.25*Math.sin(p.tw); ctx.fillStyle=cfg.color||acc; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
         if(p.k==="snow"){ p.y+=p.vy*dt; p.x+=(Math.sin(t+p.ph)*.4 + wind)*dt; if(p.y>H+5){p.y=-5;p.x=Math.random()*W;} if(p.x>W+5)p.x=-5; if(p.x<-5)p.x=W+5; ctx.globalAlpha=p.a; ctx.fillStyle="rgba(226,242,255,1)"; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
+        if(p.k==="rain"){ p.y+=p.vy*dt; p.x-=1.1*dt; if(p.y>H){p.y=-p.len;p.x=Math.random()*W;} ctx.strokeStyle="rgba(165,195,230,.42)"; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+2,p.y-p.len); ctx.stroke(); continue; }
         // emoji (mit Wind)
         p.y+=p.vy*dt; p.x+=(Math.sin(t+p.ph)*p.sw + wind)*dt; p.rot+=p.vr*dt;
         if(p.y>H+30){p.y=-30;p.x=Math.random()*W;} if(p.x>W+30)p.x=-30; if(p.x<-30)p.x=W+30;
@@ -296,4 +300,53 @@
   // 3) Konsolen-Gruß
   console.log("%cthomas.fun","font-family:monospace;font-size:26px;font-weight:bold;color:#ff7a1a;text-shadow:0 2px 8px rgba(255,122,26,.4)");
   console.log("%cVersteckt: Konami ↑↑↓↓←→←→ B A · tipp 'tor' · oder klick den Ball ⚽","color:#9aa0ad");
+
+  /* ============================================================
+     Sound (dezent, mit Mute) + Wetter (Open-Meteo, exakt mit Standort)
+     ============================================================ */
+  const Sound = (()=>{
+    let ctx,master,windGain,rainGain,buf;
+    let on = (()=>{ try{ return localStorage.getItem("hub_sound")!=="off"; }catch{ return true; } })();
+    function ensure(){ if(ctx) return; try{
+      const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; ctx=new AC();
+      master=ctx.createGain(); master.gain.value=on?1:0; master.connect(ctx.destination);
+      const len=ctx.sampleRate*2; buf=ctx.createBuffer(1,len,ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+      const w=ctx.createBufferSource(); w.buffer=buf; w.loop=true; const wf=ctx.createBiquadFilter(); wf.type="lowpass"; wf.frequency.value=460; windGain=ctx.createGain(); windGain.gain.value=.04; w.connect(wf); wf.connect(windGain); windGain.connect(master); w.start();
+      const r=ctx.createBufferSource(); r.buffer=buf; r.loop=true; const rf=ctx.createBiquadFilter(); rf.type="highpass"; rf.frequency.value=1100; rainGain=ctx.createGain(); rainGain.gain.value=0; r.connect(rf); rf.connect(rainGain); rainGain.connect(master); r.start();
+    }catch{} }
+    function resume(){ ensure(); if(ctx&&ctx.state==="suspended") ctx.resume(); }
+    return {
+      resume, isOn:()=>on,
+      click(){ if(!on) return; resume(); if(!ctx) return; const c=ctx.currentTime; const o=ctx.createOscillator(),g=ctx.createGain(); o.type="triangle"; o.frequency.setValueAtTime(640,c); o.frequency.exponentialRampToValueAtTime(310,c+.07); g.gain.setValueAtTime(.0001,c); g.gain.exponentialRampToValueAtTime(.05,c+.008); g.gain.exponentialRampToValueAtTime(.0001,c+.12); o.connect(g); g.connect(master); o.start(); o.stop(c+.13); },
+      rain(level){ if(!ctx||!rainGain) return; rainGain.gain.setTargetAtTime(on?level:0,ctx.currentTime,.6); },
+      setOn(v){ on=v; try{localStorage.setItem("hub_sound",v?"on":"off");}catch{} if(v) resume(); if(master&&ctx) master.gain.setTargetAtTime(v?1:0,ctx.currentTime,.12); }
+    };
+  })();
+  let wxRain=0;
+  const soundBtn=document.getElementById("soundBtn");
+  function updSoundBtn(){ if(soundBtn) soundBtn.textContent=Sound.isOn()?"🔊":"🔇"; }
+  updSoundBtn();
+  soundBtn?.addEventListener("click",e=>{ e.preventDefault(); Sound.setOn(!Sound.isOn()); updSoundBtn(); if(Sound.isOn()){ Sound.rain(wxRain); toast("🔊 Ton an"); } else toast("🔇 Ton aus"); });
+  addEventListener("pointerdown",e=>{ Sound.resume(); const t=e.target.closest&&e.target.closest(".tile,.chip,.fchip,.back,#logoBall,#soundBtn,.topband"); if(t) Sound.click(); }, true);
+
+  const WX_ICON={clear:"☀️",clouds:"☁️",fog:"🌫️",rain:"🌧️",snow:"🌨️",storm:"⛈️"};
+  function wmo(code){ if(code===0) return "clear"; if(code<=3) return "clouds"; if(code===45||code===48) return "fog"; if(code>=95) return "storm"; if((code>=71&&code<=77)||code===85||code===86) return "snow"; if((code>=51&&code<=67)||(code>=80&&code<=82)) return "rain"; return "clouds"; }
+  const wxChip=document.getElementById("wxChip");
+  function applyWeather(cond,temp,isDay){
+    document.body.dataset.weather=cond;
+    if(typeof isDay==="boolean") document.body.dataset.daytime=isDay?"day":"night";
+    if(cond==="rain"||cond==="storm") setParticles("rain");
+    else if(cond==="snow") setParticles("snow");
+    else setParticles(document.body.dataset.season);
+    wxRain = cond==="storm"?.09:(cond==="rain"?.05:0); Sound.rain(wxRain);
+    if(wxChip){ wxChip.textContent=(WX_ICON[cond]||"☀️")+(temp!=null?" "+Math.round(temp)+"°":""); wxChip.classList.add("show"); }
+  }
+  window.__wx=applyWeather; // Test-Hook
+  (function loadWeather(){ if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(p=>{
+      const la=p.coords.latitude.toFixed(3), lo=p.coords.longitude.toFixed(3);
+      fetch("https://api.open-meteo.com/v1/forecast?latitude="+la+"&longitude="+lo+"&current=weather_code,temperature_2m,is_day&timezone=auto")
+        .then(r=>r.json()).then(j=>{ const c=j&&j.current; if(!c) return; applyWeather(wmo(c.weather_code), c.temperature_2m, c.is_day===1); }).catch(()=>{});
+    }, ()=>{}, {timeout:9000, maximumAge:1800000});
+  })();
 })();

@@ -108,6 +108,21 @@ body[data-season="winter"]{ --sky-glow:#16294a; --sun:#cfe0ff; --sun-glow:#9fc0f
 body[data-season="winter"] #scene .canopy{ display:none; }
 body[data-season="winter"] #scene .winter{ display:block; }
 @media(max-width:680px){ #scene{ opacity:.82; } }
+
+/* Wetter-Overlays + Steuerung (Ton / Wetter-Chip) */
+.topctl{ position:fixed; top:12px; right:12px; z-index:50; display:flex; align-items:center; gap:8px; }
+.ctlbtn{ font:inherit; font-size:1rem; line-height:1; cursor:pointer; border:1px solid var(--border); background:rgba(16,16,24,.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--text); width:38px; height:38px; border-radius:50%; display:grid; place-items:center; transition:.18s; -webkit-tap-highlight-color:transparent; }
+.ctlbtn:hover{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); transform:translateY(-1px); }
+.wxchip{ display:none; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:var(--text); border:1px solid var(--border); background:rgba(16,16,24,.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:7px 12px; border-radius:999px; }
+.wxchip.show{ display:inline-flex; }
+#wxveil{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity 1s ease; background:#8497ad; }
+body[data-weather="rain"] #wxveil,body[data-weather="storm"] #wxveil{ opacity:.16; }
+body[data-weather="fog"] #wxveil{ opacity:.34; background:#c2ccd8; }
+body[data-weather="clouds"] #wxveil{ opacity:.1; }
+#lightning{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0; background:#dff0ff; }
+body[data-weather="storm"] #lightning{ animation:flash 8s linear infinite; }
+@keyframes flash{ 0%,100%{ opacity:0; } 1.5%{ opacity:.5; } 3%{ opacity:0; } 4.5%{ opacity:.4; } 6%{ opacity:0; } }
+@media(max-width:680px){ .topctl{ top:8px; right:8px; } }
 #confetti{position:fixed; inset:0; z-index:60; width:100%; height:100%; pointer-events:none;}
 .noise{
   pointer-events:none; position:fixed; inset:0; z-index:0; opacity:.035;
@@ -279,6 +294,6 @@ footer a:hover{ text-decoration:underline; }
   html{ scroll-behavior:auto; }
   .tile{ animation:none; opacity:1; transform:none; }
   .tile::after,#bgfx,#confetti{ display:none; }
-  #aurora span,#scene .canopy,#scene .rays,#scene .sun-glow,#scene .cl1,#scene .cl2,#scene .cl3,#scene .wind path,#scene .moonglow,#scene .nightstars circle{ animation:none; }
+  #aurora span,#scene .canopy,#scene .rays,#scene .sun-glow,#scene .cl1,#scene .cl2,#scene .cl3,#scene .wind path,#scene .moonglow,#scene .nightstars circle,#lightning{ animation:none; }
   body{ transition:none; }
 }
