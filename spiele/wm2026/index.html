@@ -262,6 +262,18 @@ tr.fav .nm{ color:#ffc9f6; }
 @keyframes g3flow{ to{ background-position:300% 0;} }
 @keyframes g3radiate{ 0%,100%{ box-shadow:0 0 0 1.5px rgba(255,255,255,.3), 0 0 24px -6px var(--mag-glow);} 50%{ box-shadow:0 0 0 2px #fff, 0 0 46px 2px var(--mag-glow);} }
 @keyframes scorepop{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.12);} }
+/* rotierende Licht-Strahlen hinter der Zahl — je mehr Tore, desto krasser */
+.match.g1 .sc,.match.g2 .sc,.match.g3 .sc{ position:relative; isolation:isolate; overflow:visible; }
+.match.g1 .sc::before,.match.g2 .sc::before,.match.g3 .sc::before{ content:""; position:absolute; left:50%; top:50%; width:150px; height:150px; transform:translate(-50%,-50%); z-index:-1; pointer-events:none;
+  background:repeating-conic-gradient(from 0deg, var(--rayc) 0 4deg, transparent 4deg 15deg);
+  -webkit-mask:radial-gradient(closest-side, transparent 14%, #000 32%, rgba(0,0,0,.4) 55%, transparent 76%);
+  mask:radial-gradient(closest-side, transparent 14%, #000 32%, rgba(0,0,0,.4) 55%, transparent 76%);
+  animation:rayspin 8s linear infinite, raypulse 1.8s ease-in-out infinite; }
+.match.g1 .sc::before{ --rayc:rgba(255,176,32,.45); width:120px; }
+.match.g2 .sc::before{ --rayc:rgba(255,69,230,.6); width:190px; animation-duration:6.5s,1.6s; }
+.match.g3 .sc::before{ --rayc:rgba(255,255,255,.65); width:250px; animation-duration:5s,1.3s; }
+@keyframes rayspin{ 0%{ transform:translate(-50%,-50%) rotate(0) scale(.82);} 50%{ transform:translate(-50%,-50%) rotate(180deg) scale(1.12);} 100%{ transform:translate(-50%,-50%) rotate(360deg) scale(.82);} }
+@keyframes raypulse{ 0%,100%{ opacity:.4;} 50%{ opacity:.9;} }
 
 /* ---------------- Turnierbaum ---------------- */
 .bracket{ display:flex; gap:30px; overflow-x:auto; padding:6px 4px 16px; scrollbar-width:thin; }
