@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hub.css?v=11" />
+  <link rel="stylesheet" href="css/hub.css?v=12" />
 </head>
 <body>
   <div id="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
@@ -28,13 +28,6 @@
         <radialGradient id="sunG"><stop offset="0" stop-color="var(--sun-glow)" stop-opacity=".9"/><stop offset="1" stop-color="var(--sun-glow)" stop-opacity="0"/></radialGradient>
         <linearGradient id="groundG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ground)"/><stop offset="1" stop-color="var(--ground-dk)"/></linearGradient>
         <radialGradient id="canShade" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="var(--foliage3)"/><stop offset=".55" stop-color="var(--foliage1)"/><stop offset="1" stop-color="var(--foliage2)"/></radialGradient>
-        <linearGradient id="stadSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2417" stop-opacity="0"/><stop offset=".7" stop-color="#0a2417" stop-opacity=".45"/><stop offset="1" stop-color="#0c3a22" stop-opacity=".85"/></linearGradient>
-        <linearGradient id="pitchG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#22a558"/><stop offset="1" stop-color="#0d6230"/></linearGradient>
-        <linearGradient id="standG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b1a2e"/><stop offset="1" stop-color="#162942" stop-opacity=".55"/></linearGradient>
-        <radialGradient id="flood"><stop offset="0" stop-color="rgba(196,232,255,.5)"/><stop offset="1" stop-color="rgba(196,232,255,0)"/></radialGradient>
-        <radialGradient id="pitchGlow"><stop offset="0" stop-color="rgba(170,255,200,.2)"/><stop offset="1" stop-color="rgba(170,255,200,0)"/></radialGradient>
-        <pattern id="crowd" width="20" height="14" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.7" fill="rgba(255,255,255,.22)"/><circle cx="13" cy="10" r="1.7" fill="rgba(120,200,255,.22)"/><circle cx="17" cy="3" r="1.4" fill="rgba(255,190,130,.2)"/></pattern>
-        <clipPath id="pitchClip"><path d="M120 900 L470 560 L970 560 L1320 900 Z"/></clipPath>
       </defs>
       <g class="landscape">
       <rect class="sky" x="0" y="0" width="1440" height="900" fill="url(#skyG)"/>
@@ -107,32 +100,6 @@
         <path d="M1180 460 q60 -15 118 -3 q28 4 52 0"/>
       </g>
       </g><!-- /landscape -->
-      <g class="stadium">
-        <rect x="0" y="0" width="1440" height="900" fill="url(#stadSky)"/>
-        <path d="M0 458 Q720 398 1440 458 L1440 566 L0 566 Z" fill="url(#standG)"/>
-        <path d="M0 458 Q720 398 1440 458 L1440 566 L0 566 Z" fill="url(#crowd)" opacity=".85"/>
-        <path d="M0 566 L120 900 L0 900 Z" fill="url(#standG)"/><path d="M1440 566 L1320 900 L1440 900 Z" fill="url(#standG)"/>
-        <g class="masts" stroke="#1a2c44" stroke-width="6" fill="#22344f">
-          <line x1="210" y1="150" x2="210" y2="470"/><rect x="150" y="118" width="120" height="40" rx="6"/>
-          <line x1="1230" y1="150" x2="1230" y2="470"/><rect x="1170" y="118" width="120" height="40" rx="6"/>
-        </g>
-        <g class="lamps" fill="#fff7d8"><circle cx="170" cy="138" r="5"/><circle cx="190" cy="138" r="5"/><circle cx="210" cy="138" r="5"/><circle cx="230" cy="138" r="5"/><circle cx="250" cy="138" r="5"/><circle cx="1190" cy="138" r="5"/><circle cx="1210" cy="138" r="5"/><circle cx="1230" cy="138" r="5"/><circle cx="1250" cy="138" r="5"/><circle cx="1270" cy="138" r="5"/></g>
-        <ellipse class="flood fl1" cx="210" cy="150" rx="300" ry="230" fill="url(#flood)"/>
-        <ellipse class="flood fl2" cx="1230" cy="150" rx="300" ry="230" fill="url(#flood)"/>
-        <path d="M120 900 L470 560 L970 560 L1320 900 Z" fill="url(#pitchG)"/>
-        <g clip-path="url(#pitchClip)">
-          <rect x="0" y="560" width="1440" height="48" fill="rgba(255,255,255,.05)"/><rect x="0" y="656" width="1440" height="56" fill="rgba(0,0,0,.06)"/><rect x="0" y="768" width="1440" height="70" fill="rgba(255,255,255,.05)"/>
-          <ellipse cx="720" cy="440" rx="920" ry="270" fill="url(#pitchGlow)"/>
-        </g>
-        <g stroke="rgba(255,255,255,.82)" fill="none" stroke-width="3" stroke-linejoin="round">
-          <path d="M150 888 L476 566 L964 566 L1290 888"/>
-          <line x1="305" y1="720" x2="1135" y2="720"/>
-          <ellipse cx="720" cy="720" rx="132" ry="42"/>
-          <path d="M430 900 L500 800 L940 800 L1010 900"/>
-          <rect x="678" y="548" width="84" height="20" rx="2"/>
-        </g>
-        <circle cx="720" cy="720" r="4" fill="rgba(255,255,255,.82)"/>
-      </g>
     </svg>
   </div>
   <div class="wrap">
