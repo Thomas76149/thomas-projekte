@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>thomas.fun · Kleine Web-Sachen</title>
+  <meta name="description" content="Spiele und Mini-Apps — anklicken und loslegen. Mit saisonalem Look und Fußball-Modus zur WM/EM." />
+  <meta name="theme-color" content="#0a0b0f" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+/* ============================================================
+   thomas.fun — Hub-Styles  (v5)
+   Dunkles Grundgerüst + Theme-Engine:
+   - Saison-Themes (Winter/Frühling/Sommer/Herbst) automatisch nach Datum
+   - Fußball-Modus automatisch während WM/EM (überschreibt Saison)
+   Themes setzen nur die Akzent-/Hintergrundfarben (--accent*, --bg*),
+   die Kacheln behalten ihre kuratierte bunte Palette (siehe hub.js).
+   ============================================================ */
+:root{
+  --bg:#0a0b0f; --bg-soft:#0e1015;
+  --card:#14151b; --card-2:#181a21; --border:#262833;
+  --text:#f3f4f7; --muted:#9aa0ad;
+  --accent:#ff7a1a; --accent-2:#ffb020;
+  --accent-soft:rgba(255,122,26,.16); --accent-glow:rgba(255,122,26,.35);
+  --radius:18px;
+  --font:"Outfit",system-ui,sans-serif; --font-head:"Space Grotesk",sans-serif;
+}
+/* ---- Saison- & Turnier-Themes ---- */
+body[data-theme="autumn"]{ --bg:#0b0a08; --bg-soft:#100d0a; --accent:#ff7a1a; --accent-2:#ffb020; --accent-soft:rgba(255,122,26,.16); --accent-glow:rgba(255,122,26,.36); }
+body[data-theme="winter"]{ --bg:#070b12; --bg-soft:#0a1019; --accent:#7fc8ff; --accent-2:#d6ecff; --accent-soft:rgba(127,200,255,.16); --accent-glow:rgba(127,200,255,.40); }
+body[data-theme="spring"]{ --bg:#080f0a; --bg-soft:#0c150f; --accent:#4be38b; --accent-2:#ffc6e3; --accent-soft:rgba(75,227,139,.15); --accent-glow:rgba(75,227,139,.38); }
+body[data-theme="summer"]{ --bg:#0c0a06; --bg-soft:#12100a; --accent:#ffb020; --accent-2:#ffe16b; --accent-soft:rgba(255,176,32,.16); --accent-glow:rgba(255,176,32,.40); }
+body[data-theme="football"]{ --bg:#06140d; --bg-soft:#08210f; --accent:#1fd76b; --accent-2:#ffcc3e; --accent-soft:rgba(31,215,107,.16); --accent-glow:rgba(31,215,107,.42); }
+
+*,*::before,*::after{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; min-height:100vh; font-family:var(--font);
+  background:var(--bg); color:var(--text); line-height:1.45; overflow-x:hidden;
+  transition:background .8s ease;
+}
+/* sanfter Farbschimmer passend zum Theme */
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.8;
+  background:
+    radial-gradient(1100px 520px at 50% -8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+    radial-gradient(800px 460px at 88% 6%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 55%);
+  transition:background .8s ease;
+}
+#bgfx{position:fixed; inset:0; z-index:0; width:100%; height:100%; pointer-events:none;}
+
+/* Aurora-Hintergrund — färbt sich automatisch mit dem Saison-/Turnier-Theme */
+#aurora{ position:fixed; inset:-15%; z-index:0; pointer-events:none; opacity:.3; filter:blur(46px) saturate(1.2); will-change:transform; }
+#aurora span{ position:absolute; display:block; border-radius:50%; mix-blend-mode:screen; transition:background .8s ease; }
+#aurora .a1{ width:58vw; height:58vw; left:-12vw; top:-12vh; background:radial-gradient(circle, var(--accent), transparent 68%); animation:au1 26s ease-in-out infinite; }
+#aurora .a2{ width:52vw; height:52vw; right:-14vw; top:-6vh; background:radial-gradient(circle, var(--accent-2), transparent 68%); animation:au2 31s ease-in-out infinite; }
+#aurora .a3{ width:60vw; height:60vw; left:20vw; bottom:-26vh; background:radial-gradient(circle, var(--accent), transparent 68%); animation:au3 35s ease-in-out infinite; }
+@keyframes au1{ 50%{ transform:translate(16vw,12vh) scale(1.16);} }
+@keyframes au2{ 50%{ transform:translate(-14vw,15vh) scale(1.1);} }
+@keyframes au3{ 50%{ transform:translate(11vw,-11vh) scale(1.2);} }
+
+/* ===== Jahreszeiten-Landschaft (Hintergrund-Szene) ===== */
+#scene{ position:fixed; left:0; right:0; bottom:0; height:100vh; z-index:0; pointer-events:none; opacity:.92; }
+#scene svg{ width:100%; height:100%; display:block; }
+/* Default-Farben (werden je Saison überschrieben) */
+body{ --sky-glow:#1e3e63; --sun:#fff0a8; --sun-glow:#ffd86b; --cloud:rgba(232,240,255,.5);
+  --hill-far:#236b52; --hill-mid:#185139; --ground:#1f6e3e; --ground-dk:#0c2c1a; --bark:#5a3a20;
+  --foliage1:#2fb255; --foliage2:#1f8a40; --foliage3:#56cf72; }
+#scene .canopy{ transform-box:view-box; transform-origin:300px 788px; animation:treesway 6s ease-in-out infinite; }
+#scene .f{ transition:fill 1s ease; }
+#scene .f.fm{ fill:var(--foliage1); } #scene .f.fb{ fill:var(--foliage2); } #scene .f.fh{ fill:var(--foliage3); }
+#scene .blossom,#scene .winter,#scene .stars,#scene .rays{ display:none; }
+/* Tag/Nacht — automatisch nach Uhrzeit */
+#scene .nightveil,#scene .moon,#scene .nightstars{ display:none; }
+body[data-daytime="night"] #scene .nightveil{ display:block; fill-opacity:.52; }
+body[data-daytime="night"] #scene .moon{ display:block; }
+body[data-daytime="night"] #scene .nightstars{ display:block; }
+body[data-daytime="night"] #scene .sun,
+body[data-daytime="night"] #scene .sun-glow,
+body[data-daytime="night"] #scene .rays{ display:none; }
+#scene .moonglow{ transform-box:view-box; transform-origin:1160px 200px; }
+body[data-daytime="night"] #scene .moonglow{ animation:sunpulse 8s ease-in-out infinite; }
+#scene .nightstars circle{ animation:twinkle 3.2s ease-in-out infinite; }
+#scene .nightstars circle:nth-child(even){ animation-delay:1.6s; }
+@keyframes twinkle{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+#scene .sun-glow{ transform-box:view-box; transform-origin:1160px 215px; animation:sunpulse 7s ease-in-out infinite; }
+#scene .rays{ transform-box:view-box; transform-origin:1160px 215px; animation:raysspin 64s linear infinite; }
+#scene .cl1{ animation:cloud1 95s linear infinite; } #scene .cl2{ animation:cloud2 130s linear infinite -50s; } #scene .cl3{ animation:cloud3 160s linear infinite -90s; }
+@keyframes treesway{ 0%,100%{ transform:rotate(-1.4deg);} 50%{ transform:rotate(1.4deg);} }
+@keyframes sunpulse{ 0%,100%{ opacity:.8; transform:scale(1);} 50%{ opacity:1; transform:scale(1.06);} }
+@keyframes raysspin{ to{ transform:rotate(360deg);} }
+@keyframes cloud1{ from{ transform:translate(-240px,150px);} to{ transform:translate(1680px,150px);} }
+@keyframes cloud2{ from{ transform:translate(-240px,260px);} to{ transform:translate(1680px,260px);} }
+@keyframes cloud3{ from{ transform:translate(-240px,110px);} to{ transform:translate(1680px,110px);} }
+/* Frühling */
+body[data-season="spring"]{ --sky-glow:#2a4a52; --sun:#ffe1a6; --sun-glow:#ffcf8a; --cloud:rgba(232,242,255,.55);
+  --hill-far:#2f6a4a; --hill-mid:#235235; --ground:#2c6e3e; --ground-dk:#143a22; --bark:#5a3a22; --foliage1:#5fd06f; --foliage2:#3aa856; --foliage3:#84e08e; }
+body[data-season="spring"] #scene .blossom{ display:block; }
+/* Sommer */
+body[data-season="summer"] #scene .rays{ display:block; }
+/* Herbst */
+body[data-season="autumn"]{ --sky-glow:#5a3320; --sun:#ff9a3c; --sun-glow:#ff7e2a; --cloud:rgba(222,210,206,.45);
+  --hill-far:#7a4a26; --hill-mid:#5e3618; --ground:#6e431d; --ground-dk:#321b0a; --bark:#4a2f1c; --foliage1:#e7791d; --foliage2:#bb3f17; --foliage3:#f0b328; }
+body[data-season="autumn"] #scene .canopy{ animation-duration:2.2s; } /* mehr Wind */
+/* Wind-Striche: zeichnen sich selbst (dash) + driften + rollen ein; alle Jahreszeiten leicht */
+#scene .wind{ opacity:.4; }
+#scene .wind path{ stroke-dasharray:240; stroke-dashoffset:240; opacity:0; animation:gust 5.5s ease-in-out infinite; }
+#scene .wind path:nth-child(2){ animation-delay:.7s; } #scene .wind path:nth-child(3){ animation-delay:1.5s; }
+#scene .wind path:nth-child(4){ animation-delay:2.2s; } #scene .wind path:nth-child(5){ animation-delay:3s; }
+#scene .wind path:nth-child(6){ animation-delay:.4s; } #scene .wind path:nth-child(7){ animation-delay:1.1s; } #scene .wind path:nth-child(8){ animation-delay:2.6s; }
+body[data-season="autumn"] #scene .wind{ opacity:1; }
+body[data-season="autumn"] #scene .wind path{ animation-duration:3.4s; }
+@keyframes gust{ 0%{ stroke-dashoffset:240; opacity:0; transform:translateX(-24px);} 16%{ opacity:.7;} 52%{ stroke-dashoffset:0; opacity:.7;} 74%{ opacity:0; transform:translateX(54px);} 100%{ stroke-dashoffset:-240; opacity:0; transform:translateX(80px);} }
+/* Winter */
+body[data-season="winter"]{ --sky-glow:#16294a; --sun:#cfe0ff; --sun-glow:#9fc0ff; --cloud:rgba(210,222,245,.42);
+  --hill-far:#9fb0cc; --hill-mid:#7e90b0; --ground:#cdd9ec; --ground-dk:#8a9cbe; --bark:#46331f;
+  --foliage1:#e3edf8; --foliage2:#c6d4ea; --foliage3:#f2f7ff; } /* Hintergrund-Bäumchen schneebedeckt */
+body[data-season="winter"] #scene .canopy{ display:none; }
+body[data-season="winter"] #scene .winter{ display:block; }
+@media(max-width:680px){ #scene{ opacity:.82; } }
+
+/* Wetter-Overlays + Steuerung (Ton / Wetter-Chip) */
+.topctl{ position:fixed; top:12px; right:12px; z-index:50; display:flex; align-items:center; gap:8px; }
+.ctlbtn{ font:inherit; font-size:1rem; line-height:1; cursor:pointer; border:1px solid var(--border); background:rgba(16,16,24,.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); color:var(--text); width:38px; height:38px; border-radius:50%; display:grid; place-items:center; transition:.18s; -webkit-tap-highlight-color:transparent; }
+.ctlbtn:hover{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); transform:translateY(-1px); }
+.wxchip{ display:none; align-items:center; gap:6px; font-size:.82rem; font-weight:700; color:var(--text); border:1px solid var(--border); background:rgba(16,16,24,.6); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); padding:7px 12px; border-radius:999px; }
+.wxchip.show{ display:inline-flex; }
+#wxveil{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0; transition:opacity 1s ease; background:#8497ad; }
+body[data-weather="rain"] #wxveil,body[data-weather="storm"] #wxveil{ opacity:.16; }
+body[data-weather="fog"] #wxveil{ opacity:.34; background:#c2ccd8; }
+body[data-weather="clouds"] #wxveil{ opacity:.1; }
+#lightning{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0; background:#dff0ff; }
+body[data-weather="storm"] #lightning{ animation:flash 8s linear infinite; }
+@keyframes flash{ 0%,100%{ opacity:0; } 1.5%{ opacity:.5; } 3%{ opacity:0; } 4.5%{ opacity:.4; } 6%{ opacity:0; } }
+@media(max-width:680px){ .topctl{ top:8px; right:8px; } }
+
+/* Custom-Cursor (nur Desktop, per JS erzeugt) */
+#cursorfx{ position:fixed; inset:0; z-index:69; pointer-events:none; }
+#curring{ position:fixed; left:0; top:0; width:30px; height:30px; border:2px solid var(--accent); border-radius:50%; pointer-events:none; z-index:70;
+  mix-blend-mode:screen; box-shadow:0 0 12px -1px var(--accent-glow), inset 0 0 8px -2px var(--accent-glow); will-change:transform; transition:border-color .5s ease, box-shadow .5s ease; }
+#curdot{ position:fixed; left:0; top:0; width:8px; height:8px; border-radius:50%; background:var(--accent); pointer-events:none; z-index:71; box-shadow:0 0 8px -1px var(--accent-glow); will-change:transform; }
+/* Standard-Cursor ausblenden, wenn der Custom-Cursor aktiv ist (nur Desktop) */
+body.customcur, body.customcur a, body.customcur button, body.customcur .tile, body.customcur .chip, body.customcur .fchip, body.customcur select, body.customcur #logoBall{ cursor:none; }
+body.customcur input, body.customcur textarea{ cursor:text; }
+#confetti{position:fixed; inset:0; z-index:60; width:100%; height:100%; pointer-events:none;}
+.noise{
+  pointer-events:none; position:fixed; inset:0; z-index:0; opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.wrap{max-width:1080px; margin:0 auto; padding:clamp(1.1rem,4vw,2.4rem); position:relative; z-index:1;}
+
+/* ---------------- Turnier-/Saison-Banner ---------------- */
+.topband{ display:none; }
+.topband.show{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;
+  margin:0 0 8px; padding:12px 18px; border-radius:999px; text-decoration:none; color:var(--text);
+  background:linear-gradient(110deg, color-mix(in srgb,var(--accent) 26%, transparent), color-mix(in srgb,var(--accent-2) 16%, transparent));
+  border:1px solid color-mix(in srgb,var(--accent) 45%, var(--border));
+  box-shadow:0 14px 36px -22px var(--accent-glow); font-weight:700; font-size:.95rem;
+  transition:transform .18s, box-shadow .18s;
+}
+.topband.show:hover{ transform:translateY(-2px); box-shadow:0 18px 44px -20px var(--accent-glow); }
+.topband .tb-emoji{ font-size:1.25rem; }
+.topband .tb-go{ font-weight:800; color:var(--accent-2); }
+.topband .live{ display:inline-flex; align-items:center; gap:6px; }
+.topband .live::before{ content:""; width:8px; height:8px; border-radius:50%; background:#ff4d5e; box-shadow:0 0 0 0 rgba(255,77,94,.6); animation:blip 1.1s infinite; }
+@keyframes blip{70%{box-shadow:0 0 0 9px rgba(255,77,94,0);}100%{box-shadow:0 0 0 0 rgba(255,77,94,0);}}
+
+/* ---------------- Header / Hero ---------------- */
+header{ text-align:center; padding:1.6rem 0 2.2rem; position:relative; }
+.hrow{ display:flex; align-items:center; justify-content:center; gap:14px; position:relative; }
+.logo{
+  font-family:var(--font-head); font-weight:700; font-size:clamp(2.6rem,9vw,4.2rem);
+  letter-spacing:-.045em; line-height:1; margin:0; text-shadow:0 0 60px color-mix(in srgb,var(--accent) 22%, transparent);
+}
+.logo span{ background:linear-gradient(120deg,var(--accent),var(--accent-2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; }
+.logo .ball{ display:inline-block; cursor:pointer; transition:transform .5s cubic-bezier(.2,.8,.3,1); -webkit-tap-highlight-color:transparent; }
+.logo .ball:hover{ transform:rotate(22deg) scale(1.1); }
+.logo .ball.spin{ animation:ballspin 1s cubic-bezier(.25,.9,.3,1); }
+@keyframes ballspin{ to{ transform:rotate(720deg);} }
+.tagline{ margin:.9rem 0 0; font-size:1.06rem; color:var(--text); font-weight:600; }
+.subtag{ margin:.5rem auto 0; max-width:60ch; color:var(--muted); font-size:.96rem; line-height:1.55; }
+.back{
+  display:inline-block; margin-top:1.2rem; font-size:.88rem; font-weight:600; color:var(--muted); text-decoration:none;
+  border:1px solid var(--border); border-radius:99px; padding:7px 16px;
+  transition:color .2s, border-color .2s, box-shadow .2s, background .2s;
+}
+.back:hover{ color:var(--text); border-color:var(--accent); box-shadow:0 0 16px var(--accent-soft); background:var(--accent-soft); }
+
+/* Saison-Umschalter (oben rechts) */
+.seasonbtn{
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  font:inherit; font-size:.8rem; font-weight:700; cursor:pointer; color:var(--text);
+  border:1px solid var(--border); background:rgba(255,255,255,.04); border-radius:999px; padding:8px 13px;
+  display:inline-flex; align-items:center; gap:7px; transition:.18s; -webkit-tap-highlight-color:transparent;
+}
+.seasonbtn:hover{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); transform:translateY(-50%) translateY(-1px); }
+.seasonbtn .em{ font-size:1.05rem; }
+@media(max-width:640px){ .seasonbtn{ position:static; transform:none; margin-top:14px; } .seasonbtn:hover{ transform:translateY(-1px);} .hrow{ flex-direction:column; } }
+
+/* ---------------- Toolbar ---------------- */
+.toolbar{
+  display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin:0 auto 22px; padding:12px;
+  border:1px solid var(--border); border-radius:20px; background:rgba(255,255,255,.025);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.search{
+  flex:1; min-width:min(520px,92vw); display:flex; gap:10px; align-items:center;
+  border:1px solid var(--border); border-radius:999px; padding:11px 16px; background:rgba(0,0,0,.3);
+  transition:border-color .2s, box-shadow .2s;
+}
+.search:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.search>span{ color:var(--muted); font-size:1.05rem; }
+.search input{ flex:1; font:inherit; border:none; outline:none; background:transparent; color:var(--text); font-size:.95rem; }
+.search input::placeholder{ color:var(--muted); }
+.chips{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+.chip{
+  font:inherit; cursor:pointer; border-radius:999px; border:1px solid var(--border); background:rgba(255,255,255,.03);
+  color:var(--muted); padding:9px 15px; font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  transition:transform .12s ease, background .18s, border-color .18s, box-shadow .18s, color .18s;
+}
+.chip:hover{ transform:translateY(-1px); border-color:var(--accent); color:var(--text); }
+.chip[aria-pressed="true"]{ background:var(--accent-soft); border-color:var(--accent); color:color-mix(in srgb,var(--accent-2) 70%, white); box-shadow:0 6px 18px -8px var(--accent-glow); }
+#btnClear{ letter-spacing:.04em; }
+
+/* ---------------- Abteilungen (Kategorien) ---------------- */
+.mutedLine{ text-align:center; margin:0 0 14px; color:var(--muted); font-size:.9rem; font-family:var(--font-head); letter-spacing:.02em; }
+.section{ margin-top:30px; scroll-margin-top:20px; }
+.section h2{
+  margin:18px 0 14px; font-family:var(--font-head); font-size:1.05rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--text); display:flex; align-items:center; gap:11px;
+}
+.section h2 .ic{
+  width:34px; height:34px; flex:none; border-radius:11px; display:grid; place-items:center; font-size:1.05rem;
+  background:radial-gradient(circle at 32% 26%, var(--accent-soft), transparent 72%), rgba(255,255,255,.03);
+  border:1px solid color-mix(in srgb,var(--accent) 26%, var(--border));
+}
+.section h2 .cnt{ font-size:.66rem; letter-spacing:.08em; color:var(--muted); background:rgba(255,255,255,.05); border:1px solid var(--border); border-radius:999px; padding:3px 9px; }
+.section h2 .ln{ flex:1; height:1px; background:linear-gradient(90deg,var(--border),transparent); }
+
+/* ---------------- Grid + Kacheln ---------------- */
+.grid{ display:grid; gap:15px; grid-template-columns:1fr; }
+@media(min-width:520px){ .grid{ grid-template-columns:repeat(2,1fr); } }
+@media(min-width:980px){ .grid{ grid-template-columns:repeat(3,1fr); } }
+
+.tile{
+  --c:var(--accent); --cg:var(--accent-glow);
+  position:relative; display:flex; flex-direction:column; padding:1.4rem 1.3rem;
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  text-decoration:none; color:inherit; overflow:hidden; isolation:isolate;
+  transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  opacity:0; transform:translateY(16px); animation:tileIn .5s cubic-bezier(.2,.8,.3,1) forwards;
+  animation-delay:calc(min(var(--i,0),22) * .04s);
+}
+@keyframes tileIn{ to{ opacity:1; transform:none; } }
+.tile::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--c),transparent 80%); opacity:.55; transition:opacity .22s; }
+.tile::after{ content:""; position:absolute; top:0; bottom:0; left:-60%; width:45%; z-index:2; background:linear-gradient(100deg,transparent,rgba(255,255,255,.07),transparent); transform:skewX(-18deg); transition:left .6s ease; pointer-events:none; }
+.tile:hover{ transform:translateY(-5px); border-color:color-mix(in srgb,var(--c) 55%, var(--border)); box-shadow:0 22px 48px -22px var(--cg), 0 0 0 1px color-mix(in srgb,var(--c) 30%, transparent); }
+.tile:hover::before{ opacity:1; }
+.tile:hover::after{ left:130%; }
+.tile:focus-visible{ outline:2px solid var(--c); outline-offset:3px; }
+.tile__emoji{
+  width:52px; height:52px; border-radius:14px; display:grid; place-items:center; font-size:1.7rem; line-height:1; margin-bottom:.85rem;
+  background:radial-gradient(circle at 32% 26%, color-mix(in srgb,var(--c) 32%, transparent), transparent 72%), rgba(255,255,255,.035);
+  border:1px solid color-mix(in srgb,var(--c) 28%, var(--border)); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); transition:transform .22s ease;
+}
+.tile:hover .tile__emoji{ transform:scale(1.06) rotate(-3deg); }
+.tile__label{ font-size:.68rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--c); margin-bottom:.4rem; filter:brightness(1.15); }
+.tile__title{ font-family:var(--font-head); font-size:1.25rem; font-weight:700; margin:0 0 .4rem; }
+.tile__desc{ margin:0; font-size:.88rem; color:var(--muted); }
+.tile__go{ margin-top:auto; padding-top:.9rem; font-weight:700; font-size:.85rem; color:var(--c); filter:brightness(1.15); display:inline-flex; align-items:center; gap:6px; transition:gap .2s; }
+.tile:hover .tile__go{ gap:11px; }
+.tile .pwa{ position:absolute; top:10px; right:10px; z-index:3; font-size:.58rem; font-weight:800; letter-spacing:.1em; color:#04230f; background:linear-gradient(120deg,var(--c),color-mix(in srgb,var(--c) 50%, white)); padding:3px 8px; border-radius:999px; }
+
+.tile.big{ padding:1.7rem 1.5rem; }
+.tile.big::before{ height:4px; opacity:.8; }
+.tile.big{ background:radial-gradient(900px 320px at 18% 0%, color-mix(in srgb,var(--c) 14%, transparent), transparent 60%), var(--card-2); border-color:color-mix(in srgb,var(--c) 26%, var(--border)); }
+.tile.big .tile__emoji{ width:60px; height:60px; font-size:2.1rem; }
+.tile.big .tile__title{ font-size:1.55rem; }
+.tile.big .tile__desc{ font-size:.94rem; }
+@media(min-width:520px){ .tile.big{ grid-column:span 2; } }
+
+footer{ margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--border); text-align:center; font-size:.85rem; color:var(--muted); text-shadow:0 1px 8px rgba(0,0,0,.7); }
+footer a{ color:var(--accent); text-decoration:none; }
+footer a:hover{ text-decoration:underline; }
+.hidden{ display:none !important; }
+
+/* ---------------- Easter-Egg-Overlay ---------------- */
+.takeover{ position:fixed; inset:0; z-index:100; display:grid; place-items:center; text-align:center; padding:24px;
+  background:radial-gradient(circle at 50% 40%, color-mix(in srgb,var(--accent) 22%, rgba(5,6,9,.92)), rgba(3,4,7,.97)); opacity:0; pointer-events:none; transition:.45s; }
+.takeover.show{ opacity:1; pointer-events:auto; }
+.takeover .inner{ transform:scale(.85); transition:.45s cubic-bezier(.2,1.3,.4,1); }
+.takeover.show .inner{ transform:scale(1); }
+.takeover .big-emoji{ font-size:clamp(4rem,18vw,8rem); filter:drop-shadow(0 10px 30px var(--accent-glow)); animation:bob 2.4s ease-in-out infinite; }
+@keyframes bob{ 50%{ transform:translateY(-12px) rotate(-3deg);} }
+.takeover h1{ font-family:var(--font-head); font-weight:700; font-size:clamp(1.6rem,7vw,3rem); margin:.3em 0 .2em;
+  background:linear-gradient(120deg,var(--accent),#fff,var(--accent-2)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.takeover p{ color:var(--muted); margin:0 0 1.4em; }
+.takeover button{ font:inherit; font-weight:800; cursor:pointer; border:1px solid var(--border); background:var(--card); color:var(--text); padding:11px 22px; border-radius:999px; }
+
+/* Toast */
+.toast{ position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:80;
+  background:rgba(12,14,20,.96); border:1px solid var(--border); color:var(--text); padding:11px 18px; border-radius:999px;
+  font-size:.85rem; font-weight:600; box-shadow:0 18px 50px -28px #000; opacity:0; transition:.3s; pointer-events:none; backdrop-filter:blur(8px); }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Fallback ohne color-mix */
+@supports not (color: color-mix(in srgb, red, blue)){
+  .tile:hover{ border-color:var(--c); } .tile__emoji{ border-color:var(--border); } .tile.big{ border-color:var(--border); }
+  .topband.show{ background:var(--accent-soft); }
+}
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto; }
+  .tile{ animation:none; opacity:1; transform:none; }
+  .tile::after,#bgfx,#confetti{ display:none; }
+  #aurora span,#scene .canopy,#scene .rays,#scene .sun-glow,#scene .cl1,#scene .cl2,#scene .cl3,#scene .wind path,#scene .moonglow,#scene .nightstars circle,#lightning{ animation:none; }
+  body{ transition:none; }
+}
+
+</style>
+</head>
+<body>
+  <div id="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
+  <canvas id="bgfx" aria-hidden="true"></canvas>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <div class="noise" aria-hidden="true"></div>
+  <div id="scene" aria-hidden="true">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMax slice">
+      <defs>
+        <linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="var(--sky-glow)" stop-opacity="0"/>
+          <stop offset=".55" stop-color="var(--sky-glow)" stop-opacity="0"/>
+          <stop offset="1" stop-color="var(--sky-glow)" stop-opacity=".9"/>
+        </linearGradient>
+        <radialGradient id="sunG"><stop offset="0" stop-color="var(--sun-glow)" stop-opacity=".9"/><stop offset="1" stop-color="var(--sun-glow)" stop-opacity="0"/></radialGradient>
+        <linearGradient id="groundG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ground)"/><stop offset="1" stop-color="var(--ground-dk)"/></linearGradient>
+        <radialGradient id="canShade" cx="38%" cy="32%" r="75%"><stop offset="0" stop-color="var(--foliage3)"/><stop offset=".55" stop-color="var(--foliage1)"/><stop offset="1" stop-color="var(--foliage2)"/></radialGradient>
+        <radialGradient id="moonG"><stop offset="0" stop-color="rgba(220,230,255,.55)"/><stop offset="1" stop-color="rgba(220,230,255,0)"/></radialGradient>
+      </defs>
+      <g class="landscape">
+      <rect class="sky" x="0" y="0" width="1440" height="900" fill="url(#skyG)"/>
+      <g class="stars" fill="#dfe9ff"><circle cx="180" cy="90" r="1.6"/><circle cx="420" cy="60" r="1.3"/><circle cx="650" cy="120" r="1.7"/><circle cx="900" cy="70" r="1.3"/><circle cx="1120" cy="110" r="1.6"/><circle cx="1300" cy="60" r="1.4"/><circle cx="300" cy="150" r="1.2"/><circle cx="760" cy="50" r="1.4"/><circle cx="1010" cy="160" r="1.3"/><circle cx="540" cy="180" r="1.2"/></g>
+      <circle class="sun-glow" cx="1160" cy="215" r="230" fill="url(#sunG)"/>
+      <g class="rays" stroke="var(--sun)" stroke-width="6" stroke-linecap="round" opacity=".5">
+        <line x1="1160" y1="105" x2="1160" y2="40"/><line x1="1160" y1="325" x2="1160" y2="390"/>
+        <line x1="1050" y1="215" x2="985" y2="215"/><line x1="1270" y1="215" x2="1335" y2="215"/>
+        <line x1="1085" y1="140" x2="1040" y2="95"/><line x1="1235" y1="290" x2="1280" y2="335"/>
+        <line x1="1085" y1="290" x2="1040" y2="335"/><line x1="1235" y1="140" x2="1280" y2="95"/>
+      </g>
+      <circle class="sun" cx="1160" cy="215" r="56" fill="var(--sun)"/>
+      <g class="clouds" fill="var(--cloud)">
+        <g class="cl cl1"><ellipse cx="0" cy="0" rx="64" ry="28"/><ellipse cx="50" cy="8" rx="48" ry="23"/><ellipse cx="-46" cy="10" rx="42" ry="21"/></g>
+        <g class="cl cl2"><ellipse cx="0" cy="0" rx="52" ry="23"/><ellipse cx="42" cy="6" rx="40" ry="19"/><ellipse cx="-40" cy="8" rx="36" ry="18"/></g>
+        <g class="cl cl3"><ellipse cx="0" cy="0" rx="44" ry="19"/><ellipse cx="36" cy="6" rx="34" ry="16"/></g>
+      </g>
+      <path class="hill-far" d="M0 560 Q 380 482 760 540 T 1440 528 L1440 900 L0 900 Z" fill="var(--hill-far)"/>
+      <path class="hill-mid" d="M0 648 Q 460 588 920 636 T 1440 630 L1440 900 L0 900 Z" fill="var(--hill-mid)"/>
+      <!-- echte ferne Bäumchen (Tiefe) -->
+      <g class="distant">
+        <g transform="translate(1030,640)"><rect x="-3" y="-22" width="6" height="30" rx="3" fill="var(--bark)"/><circle cx="0" cy="-30" r="22" fill="var(--foliage2)"/></g>
+        <g transform="translate(1110,650)"><rect x="-3" y="-18" width="6" height="26" rx="3" fill="var(--bark)"/><circle cx="0" cy="-26" r="18" fill="var(--foliage2)"/></g>
+        <g transform="translate(1180,642)"><rect x="-2.5" y="-20" width="5" height="28" rx="2.5" fill="var(--bark)"/><circle cx="0" cy="-28" r="20" fill="var(--foliage2)"/></g>
+        <g transform="translate(120,650)"><rect x="-3" y="-20" width="6" height="28" rx="3" fill="var(--bark)"/><circle cx="0" cy="-28" r="20" fill="var(--foliage2)"/></g>
+      </g>
+      <path class="ground" d="M0 736 Q 520 706 1000 730 T 1440 724 L1440 900 L0 900 Z" fill="url(#groundG)"/>
+      <!-- Hauptbaum -->
+      <g class="tree">
+        <ellipse class="tshadow" cx="300" cy="794" rx="132" ry="20" fill="rgba(0,0,0,.3)"/>
+        <path class="trunk" d="M278 788 Q300 778 322 788 L314 678 Q300 666 286 678 Z" fill="var(--bark)"/>
+        <!-- kahler Winterbaum: nur Äste (verzweigt, wie der belaubte Baum ohne Blätter) -->
+        <g class="winter" stroke="var(--bark)" stroke-linecap="round" fill="none">
+          <path d="M300 676 Q298 604 268 548" stroke-width="12"/>
+          <path d="M300 676 Q302 604 332 548" stroke-width="12"/>
+          <path d="M300 632 Q300 566 300 506" stroke-width="9"/>
+          <path d="M268 548 Q248 516 212 498" stroke-width="7"/>
+          <path d="M268 548 Q260 510 248 478" stroke-width="6"/>
+          <path d="M332 548 Q352 516 388 500" stroke-width="7"/>
+          <path d="M332 548 Q340 510 352 480" stroke-width="6"/>
+          <path d="M300 506 Q288 484 270 474" stroke-width="5"/>
+          <path d="M300 506 Q312 484 330 474" stroke-width="5"/>
+          <path d="M300 506 Q300 486 300 468" stroke-width="4"/>
+          <path d="M212 498 Q196 486 180 482" stroke-width="4"/><path d="M388 500 Q404 488 420 484" stroke-width="4"/>
+          <path d="M248 478 q-8 -12 -20 -16" stroke-width="3"/><path d="M352 480 q8 -12 20 -16" stroke-width="3"/>
+          <path d="M180 482 q-12 -4 -22 -3" stroke-width="3"/><path d="M420 484 q12 -4 22 -3" stroke-width="3"/>
+          <path d="M270 474 q-8 -8 -18 -10" stroke-width="3"/><path d="M330 474 q8 -8 18 -10" stroke-width="3"/>
+          <g class="snowtwig" stroke="none" fill="#eef5ff" opacity=".88"><circle cx="158" cy="479" r="3"/><circle cx="442" cy="481" r="3"/><circle cx="300" cy="466" r="3.4"/><circle cx="228" cy="460" r="2.6"/><circle cx="372" cy="462" r="2.6"/><circle cx="266" cy="540" r="3"/><circle cx="334" cy="540" r="3"/></g>
+        </g>
+        <!-- belaubte Krone (Referenz-Stil) -->
+        <g class="canopy">
+          <circle class="f fb" cx="316" cy="602" r="120"/>
+          <circle class="f fm" cx="300" cy="582" r="112"/>
+          <circle class="f fm" cx="232" cy="524" r="52"/><circle class="f fm" cx="300" cy="496" r="60"/><circle class="f fm" cx="372" cy="528" r="52"/>
+          <circle class="f fm" cx="196" cy="600" r="56"/><circle class="f fm" cx="404" cy="600" r="56"/>
+          <circle class="f fm" cx="244" cy="662" r="56"/><circle class="f fm" cx="358" cy="662" r="56"/><circle class="f fm" cx="300" cy="678" r="52"/>
+          <circle class="f fh" cx="252" cy="528" r="40"/><circle class="f fh" cx="300" cy="556" r="46"/><circle class="f fh" cx="206" cy="588" r="30"/>
+          <g class="blossom" fill="#ffe0f0"><circle cx="248" cy="520" r="7"/><circle cx="330" cy="520" r="7"/><circle cx="300" cy="492" r="7"/><circle cx="210" cy="600" r="6"/><circle cx="396" cy="598" r="6"/><circle cx="300" cy="640" r="7"/><circle cx="356" cy="556" r="6"/><circle cx="262" cy="588" r="6"/></g>
+        </g>
+      </g>
+      <!-- Wind-Striche im Zeichentrick-Stil: zeichnen sich selbst, driften, rollen ein -->
+      <g class="wind" stroke="rgba(238,246,255,.6)" stroke-width="3.4" stroke-linecap="round" fill="none">
+        <path d="M80 470 q46 -12 94 -3 q30 5 56 0 q22 -1 23 -17 q-1 -11 -12 -11 q-9 1 -6 10"/>
+        <path d="M60 548 q60 -15 120 -3 q28 4 52 0"/>
+        <path d="M120 612 q44 -11 90 -2 q26 6 30 -8 q4 -11 -7 -13"/>
+        <path d="M520 402 q46 -12 94 -3 q30 5 56 0 q22 -1 23 -17 q-1 -11 -12 -11 q-9 1 -6 10"/>
+        <path d="M650 500 q60 -15 120 -3 q28 4 52 0"/>
+        <path d="M980 360 q40 -10 84 -3 q24 5 28 -9"/>
+        <path d="M1060 560 q44 -11 90 -2 q26 6 30 -8 q4 -11 -7 -13"/>
+        <path d="M1180 460 q60 -15 118 -3 q28 4 52 0"/>
+      </g>
+      <rect class="nightveil" x="0" y="0" width="1440" height="900" fill="#070f20"/>
+      <g class="moon">
+        <circle class="moonglow" cx="1160" cy="200" r="155" fill="url(#moonG)"/>
+        <circle cx="1160" cy="200" r="52" fill="#eef2ff"/>
+        <circle cx="1140" cy="186" r="11" fill="#d4dcf0"/><circle cx="1180" cy="212" r="8" fill="#d4dcf0"/><circle cx="1156" cy="226" r="6" fill="#d4dcf0"/>
+      </g>
+      <g class="nightstars" fill="#eaf0ff"><circle cx="160" cy="80" r="2"/><circle cx="320" cy="140" r="1.6"/><circle cx="480" cy="70" r="1.8"/><circle cx="600" cy="170" r="1.4"/><circle cx="720" cy="60" r="2"/><circle cx="840" cy="130" r="1.5"/><circle cx="980" cy="92" r="1.8"/><circle cx="300" cy="220" r="1.4"/><circle cx="540" cy="250" r="1.5"/><circle cx="700" cy="300" r="1.4"/><circle cx="200" cy="320" r="1.6"/><circle cx="900" cy="240" r="1.5"/><circle cx="1040" cy="180" r="1.6"/><circle cx="120" cy="190" r="1.5"/><circle cx="430" cy="330" r="1.3"/><circle cx="640" cy="110" r="1.5"/></g>
+      </g><!-- /landscape -->
+    </svg>
+  </div>
+  <div id="wxveil" aria-hidden="true"></div>
+  <div id="lightning" aria-hidden="true"></div>
+  <div class="topctl">
+    <span id="wxChip" class="wxchip" title="Wetter an deinem Standort"></span>
+    <button id="soundBtn" class="ctlbtn" type="button" title="Ton an/aus" aria-label="Ton an/aus">🔊</button>
+  </div>
+
+  <div class="wrap">
+    <a class="topband" id="tband" href="#"></a>
+
+    <header>
+      <div class="hrow">
+        <p class="logo">thomas<span>.fun</span> <span class="ball" id="logoBall" role="button" tabindex="0" title="Klick mich…" aria-label="Ball">⚽</span></p>
+      </div>
+      <p class="tagline">Kleine Dinge zum Anklicken — Vanilla HTML, CSS &amp; JS.</p>
+      <p class="subtag">Spiele, Mini‑Tools und Tests, ordentlich nach Abteilungen sortiert. Such dir was aus, klick drauf, fertig.</p>
+      <a class="back" href="#" data-portfolio-link>Zum Portfolio</a>
+    </header>
+
+    <div class="toolbar" aria-label="Suche & Filter">
+      <div class="search" role="search">
+        <span aria-hidden="true">⌕</span>
+        <input id="q" type="search" placeholder="Suche… (z.B. pong, wm, online, puzzle)" autocomplete="off" />
+        <button class="chip" id="btnClear" type="button" aria-pressed="false">Reset</button>
+      </div>
+      <div class="chips" role="group" aria-label="Filter">
+        <button class="chip" type="button" data-filter="all" aria-pressed="true">Alle</button>
+        <button class="chip" type="button" data-filter="game" aria-pressed="false">Spiele</button>
+        <button class="chip" type="button" data-filter="online" aria-pressed="false">Online</button>
+        <button class="chip" type="button" data-filter="puzzle" aria-pressed="false">Puzzle</button>
+        <button class="chip" type="button" data-filter="data" aria-pressed="false">Daten</button>
+        <button class="chip" type="button" data-filter="test" aria-pressed="false">Tests</button>
+        <button class="chip" type="button" data-filter="mobile" aria-pressed="false">Handy</button>
+      </div>
+    </div>
+
+    <p class="mutedLine" id="countLine">—</p>
+
+    <main id="cats"></main>
+
+    <footer>
+      Team-Projekt: <a href="https://orbitex-demo.pages.dev" target="_blank" rel="noopener noreferrer">Orbitex</a>
+      · <a href="#" data-portfolio-link>Portfolio</a>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="takeover" id="takeover" aria-hidden="true">
+    <div class="inner">
+      <div class="big-emoji">🏆</div>
+      <h1>Titel</h1>
+      <p>Untertitel</p>
+      <button type="button">Schließen →</button>
+    </div>
+  </div>
+
+  <script>
+/**
+ * Öffentliche Basis-URL deines Portfolios, ohne Slash am Ende.
+ * Steuert „Zum Portfolio“ / Footer-Link auf dem thomas.fun-Hub.
+ */
+window.PORTFOLIO_SITE_URL = "https://thomaswebsite.thomaso-halbach.workers.dev";
+
+</script>
+  <script>
+(() => {
+  const raw = typeof window.PORTFOLIO_SITE_URL === "string" ? window.PORTFOLIO_SITE_URL.trim() : "";
+  const nodes = document.querySelectorAll("[data-portfolio-link]");
+
+  if (!raw) {
+    const hint =
+      "Noch keine Portfolio-URL: In js/site-config.js PORTFOLIO_SITE_URL eintragen (Deploy von thomas-portfolio).";
+    nodes.forEach((a) => {
+      a.title = hint;
+    });
+    return;
+  }
+
+  const base = raw.replace(/\/$/, "");
+  nodes.forEach((a) => {
+    a.href = `${base}/`;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.removeAttribute("title");
+  });
+})();
+
+</script>
+  <script>
+// Zentrale Liste: hier fügst du neue Spiele/Tools hinzu.
+// Tags steuern Filter + Suche (z.B. "game", "test", "arcade", "puzzle", "mobile", "canvas", "strategy").
+// Optional: "cat" setzt die Abteilung fest (special|arcade|puzzle|online|strategy|data|tools).
+//   Ohne "cat" wird die Abteilung automatisch aus den Tags abgeleitet (siehe hub.js).
+
+window.THOMASFUN_ITEMS = [
+  // ⚽ Specials / Saisonales
+  { title:"WM 2026", href:"spiele/wm2026/", emoji:"⚽", label:"Live · Fußball-WM", desc:"Die Fußball‑WM 2026 auf einen Blick: Live‑Countdown zum nächsten Spiel, Gruppen‑Tabellen, kompletter Spielplan mit Ergebnissen, Lieblingsteam markieren — und als App aufs Handy installierbar (PWA).", tags:["app","fussball","wm","live","featured","mobile","seasonal"], big:true, cat:"special", section:"games" },
+
+  // Featured / große Games
+  { title:"Survive the Horde", href:"spiele/survive-the-horde/index.html", emoji:"🧟", label:"Roblox · Survival", desc:"Mein Roblox‑Game: Base bauen, Zombies abknallen, Welle um Welle überleben — allein oder im Co‑op. Promo‑Seite mit direktem Spiel‑Link.", tags:["game","roblox","featured","mobile"], big:true, section:"games" },
+  {
+    title: "Jet‑Kampf",
+    href: "spiele/jetspiel/index.html",
+    emoji: "🎮",
+    label: "Canvas · Arcade",
+    desc: "Arcade mit Wärme, Upgrades, verschiedenen Gegnern — auch Touch.",
+    tags: ["game","arcade","canvas","mobile","featured"],
+    big: true,
+    section: "games",
+  },
+  {
+    title: "Tower Defense",
+    href: "spiele/towerdefense/index.html",
+    emoji: "🗼",
+    label: "Strategy · TD",
+    desc: "Upgrades (2 Pfade), Kampagne (Kapitel 1) & Tutorial — viel Juice.",
+    tags: ["game","strategy","towerdefense","mobile","canvas","featured"],
+    big: true,
+    section: "games",
+  },
+  {
+    title: "Tunnel Runner",
+    href: "spiele/tunnel-runner/index.html",
+    emoji: "🕳️",
+    label: "Pseudo‑3D · Arcade",
+    desc: "Neon‑Tunnel in Fake‑3D: Gates dodgen, Speed steigt, Highscore.",
+    tags: ["game","arcade","mobile","canvas","featured"],
+    big: true,
+    section: "games",
+  },
+  {
+    title: "Asteroids",
+    href: "spiele/asteroids/index.html",
+    emoji: "🪐",
+    label: "Arcade · Physics",
+    desc: "Rotation, Schub, Schießen, Steine splitten — Score & Wellen.",
+    tags: ["game","arcade","space","canvas","featured"],
+    big: true,
+    section: "games",
+  },
+
+  // Games
+  { title:"Breakout", href:"spiele/breakout/index.html", emoji:"🧱", label:"Canvas · Arcade", desc:"Paddle bewegen, Ball bouncen, Blöcke zerstören — Touch & Keyboard.", tags:["game","arcade","canvas","mobile"], section:"games" },
+  { title:"Fabrik‑Clicker", href:"spiele/tycoon/index.html", emoji:"🏭", label:"Clicker", desc:"Klicks, Combo, Upgrades und passives ₡ — Partikel & Sound, Speicherstand lokal.", tags:["game","clicker","idle","mobile"], section:"games" },
+  { title:"Tic‑Tac‑Toe", href:"spiele/tictactoe/index.html", emoji:"❎", label:"Online · Board", desc:"Online (Room‑Code) oder lokal gegen Bot/2‑Spieler.", tags:["game","board","mini","mobile","online"], section:"online" },
+  { title:"Memory", href:"spiele/memory/index.html", emoji:"🧠", label:"Puzzle", desc:"Paare finden, Bestzeit jagen.", tags:["game","puzzle","memory","mobile"], section:"games" },
+  { title:"2048", href:"spiele/2048/index.html", emoji:"🧩", label:"Puzzle", desc:"Schieben, mergen, Score jagen — Keyboard & Touch.", tags:["game","puzzle","mobile"], section:"games" },
+  { title:"Minesweeper", href:"spiele/minesweeper/index.html", emoji:"💣", label:"Puzzle · Board", desc:"Aufdecken, markieren, nicht boomen — Touch & Maus, Bestzeiten.", tags:["game","puzzle","board","mobile"], section:"games" },
+  { title:"Snake", href:"spiele/snake/index.html", emoji:"🐍", label:"Arcade", desc:"Klassiker: fressen, wachsen, nicht crashen. Auch Mobile‑Buttons.", tags:["game","arcade","snake","mobile"], section:"games" },
+  { title:"Math Gates", href:"spiele/math-gates/index.html", emoji:"👥", label:"Runner · Crowd", desc:"Führ deine Menge durch Mathe‑Tore (×2, +15, ÷2 …), weich Hindernissen aus und überrenn am Ende den Boss — Pseudo‑3D, Partikel, Sound.", tags:["game","arcade","runner","mobile","canvas"], section:"games" },
+  { title:"Seeschlacht", href:"spiele/seeschlacht/index.html", emoji:"⚓", label:"Naval · Echtzeit", desc:"Top‑Down‑Seegefecht: dein Schlachtschiff gegen die KI. Breitseiten zeigen, schwere Batterien, lange Flugzeiten — mit dicken Effekten.", tags:["game","arcade","canvas","naval","strategy"], section:"games" },
+  { title:"Pong", href:"spiele/pong/index.html", emoji:"🏓", label:"Online · Arcade", desc:"Online: 2er oder 4er im Viereck, Ready-Lobby — oder lokal gegen Bot.", tags:["game","arcade","online"], section:"online" },
+  { title:"Multiplayer Jetkampf", href:"spiele/tanks/index.html", emoji:"✈️", label:"Online · 2D-Jet", desc:"Große Arena, Kamera am Jet, MG-Feuer, Rand-Markierungen für Gegner — bis 4 Spieler, Ready-Lobby.", tags:["game","arcade","online","multiplayer"], section:"online" },
+  { title:"Trivia", href:"spiele/trivia/index.html", emoji:"🧠", label:"Online · Quiz", desc:"Bis 8 Spieler: Kategorien inkl. Militär/WW2, Schwierigkeit, viele Fragen ohne Wiederholung pro Durchlauf — Room wie Jetkampf/Pong.", tags:["game","quiz","online","multiplayer","military"], section:"online" },
+  { title:"BlockBlast", href:"spiele/blockblast/index.html", emoji:"🧱", label:"Puzzle · Blocks", desc:"3 Blöcke unten, platzieren, Reihen/Spalten clearen, Highscore jagen.", tags:["game","puzzle","blocks","mobile","canvas"], section:"games" },
+  { title:"Spider‑Swing", href:"spiele/orbit-hook/index.html", emoji:"🪝", label:"Arcade · One‑Button", desc:"Spider‑Ball: an Felsen schwingen, runterfallen möglich, Ziel erreichen.", tags:["game","arcade","mobile","canvas"], section:"games" },
+  { title:"Time‑Stop Dash", href:"spiele/time-stop-dash/index.html", emoji:"⏱️", label:"Arcade · Skill", desc:"Zeit läuft nur bei Bewegung — dash durch Neon‑Hindernisse.", tags:["game","arcade","reflex","mobile","canvas"], section:"games" },
+  { title:"Loop‑Runner", href:"spiele/loop-runner/index.html", emoji:"⭕", label:"Arcade · Minimal", desc:"Auf dem Ring laufen, innen/außen wechseln — dodge die Gates.", tags:["game","arcade","mobile","canvas"], section:"games" },
+  { title:"Stein‑Schere‑Papier", href:"spiele/rps/index.html", emoji:"🪨", label:"Online · Mini", desc:"Online (Room‑Code) oder lokal Streak jagen — mit Partikeln, Sound und Vibration.", tags:["game","mini","mobile","online"], section:"online" },
+  { title:"UNO Online", href:"spiele/uno/index.html", emoji:"🃏", label:"Online · Cards", desc:"UNO (2–8 Spieler) im Browser: Room teilen, starten, Karten spielen.", tags:["game","cards","online","mobile"], section:"online" },
+
+  // Tests & Tools
+  { title:"CPS‑Tester", href:"spiele/cps/index.html", emoji:"🖱️", label:"Test", desc:"CPS messen: Zeit 0,1s–60s selbst wählen, Klicks beim Drücken, Bestwert.", tags:["test","tool","cps","mobile"], section:"tests" },
+  { title:"Reflex‑Test", href:"spiele/reflex/index.html", emoji:"⚡", label:"Test", desc:"Drück so schnell du kannst, wenn es grün wird — mit Rating & Durchschnitt.", tags:["test","tool","reflex","mobile"], section:"tests" },
+  { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui","seasonal"], cat:"special", section:"tests" },
+  { title:"To‑Do Liste", href:"spiele/todo/index.html", emoji:"✅", label:"App", desc:"Filter, erledigt löschen — localStorage.", tags:["tool","mobile"], section:"tests" },
+  { title:"Satelliten‑Ping", href:"spiele/spielchen/index.html", emoji:"🛰️", label:"Reflex", desc:"Kurz reagieren, wenn das Signal da ist.", tags:["game","reflex","mobile"], cat:"tools", section:"tests" },
+  { title:"Wirtschafts‑Race", href:"spiele/wirtschafts-race/index.html", emoji:"📊", label:"Daten · Zeitraffer", desc:"Länder‑Battle 1900–2026: Balken überholen sich, Flaggen, historische Events — mit Synthwave‑Musik. Umschaltbar PPP/Dollar.", tags:["tool","test","data","mobile"], section:"tests" },
+
+  // Daten-Races & Simulationen
+  { title:"Gaming‑Race", href:"spiele/gaming-race/index.html", emoji:"🎮", label:"Daten · Zeitraffer", desc:"Welche Plattform hat die meisten Spieler? Steam, Xbox, Roblox, Minecraft & Co. von 2000 bis heute — inkl. dem irren Among‑Us‑Spike 2020.", tags:["tool","test","data","mobile"], section:"tests" },
+  { title:"YouTube‑Race", href:"spiele/youtube-race/index.html", emoji:"📺", label:"Daten · Zeitraffer", desc:"Die größten YouTube‑Kanäle 2010–2026: von Smosh über PewDiePie und T‑Series bis zum MrBeast‑Rekord. Schau, wer wen überholt.", tags:["tool","test","data","mobile"], section:"tests" },
+  { title:"Epidemie‑Simulator", href:"spiele/epidemie/index.html", emoji:"🦠", label:"Simulation · Sandbox", desc:"Jeder Punkt ein Mensch: stell Ansteckung, Tödlichkeit, Impfquote & Lockdown ein und sieh live, wie sich eine Krankheit ausbreitet — oder stoppt.", tags:["tool","test","sim","mobile"], section:"tests" },
+  { title:"Sonnensystem", href:"spiele/sonnensystem/index.html", emoji:"🪐", label:"Simulation · Weltraum", desc:"Die acht Planeten mit ihren echten relativen Umlaufzeiten. Zeitraffer aufdrehen, Datum mitlaufen lassen, Planeten anklicken.", tags:["tool","test","sim","space","mobile"], section:"tests" },
+];
+
+
+</script>
+  <script>
+(() => {
+  "use strict";
+  const items = Array.isArray(window.THOMASFUN_ITEMS) ? window.THOMASFUN_ITEMS : [];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const q = document.getElementById("q");
+  const btnClear = document.getElementById("btnClear");
+  const chips = [...document.querySelectorAll("[data-filter]")];
+  const countLine = document.getElementById("countLine");
+  const cats = document.getElementById("cats");
+
+  let filter = "all";
+  const FILTER_LS_KEY = "hub_filter_v1";
+
+  /* ============================================================
+     Abteilungen (Kategorien)
+     ============================================================ */
+  const CATS = [
+    { key:"special",  title:"Specials & Saisonales", icon:"✨" },
+    { key:"arcade",   title:"Arcade & Action",       icon:"🕹️" },
+    { key:"puzzle",   title:"Puzzle & Köpfchen",      icon:"🧩" },
+    { key:"online",   title:"Online & Multiplayer",   icon:"🌐" },
+    { key:"strategy", title:"Strategie",              icon:"🗺️" },
+    { key:"data",     title:"Daten & Simulationen",   icon:"📊" },
+    { key:"tools",    title:"Tests & Tools",          icon:"🧪" },
+  ];
+  function categoryOf(it) {
+    if (it.cat) return it.cat;
+    const t = normalizeTags(it.tags);
+    if (t.includes("online")) return "online";
+    if (t.includes("seasonal")) return "special";
+    if (t.includes("strategy") || t.includes("towerdefense") || t.includes("naval")) return "strategy";
+    if (t.includes("sim") || t.includes("data")) return "data";
+    if (t.includes("puzzle")) return "puzzle";
+    if (t.includes("test") || t.includes("tool")) return "tools";
+    return "arcade";
+  }
+
+  /* Kuratierte Akzent-Palette pro Kachel (stabil nach Titel). */
+  const PALETTE = [
+    ["#ff7a1a","rgba(255,122,26,.38)"],["#ff5d73","rgba(255,93,115,.38)"],
+    ["#c46bff","rgba(196,107,255,.38)"],["#5b8cff","rgba(91,140,255,.38)"],
+    ["#22d3ee","rgba(34,211,238,.38)"],["#2dd4a7","rgba(45,212,167,.38)"],
+    ["#f5c542","rgba(245,197,66,.38)"],["#ff6a52","rgba(255,106,82,.38)"],
+  ];
+  function colorFor(str){ let h=0; const s=String(str||""); for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return PALETTE[h%PALETTE.length]; }
+
+  function isMobileLike(){ try{ const coarse=matchMedia&&matchMedia("(pointer: coarse)").matches; const small=Math.min(innerWidth||9999,innerHeight||9999)<=900; const touch=(navigator.maxTouchPoints||0)>1; return coarse||(touch&&small);}catch{return false;} }
+  function normalizeTags(tags){ return (tags||[]).map(t=>String(t).toLowerCase()).filter(Boolean); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+  function el(tag,attrs={},kids=[]){ const n=document.createElement(tag); for(const[k,v]of Object.entries(attrs)){ if(k==="class")n.className=v; else if(k==="html")n.innerHTML=v; else n.setAttribute(k,v);} for(const c of kids) n.appendChild(c); return n; }
+
+  /* ============================================================
+     Render — Kategorien dynamisch aufbauen
+     ============================================================ */
+  function render(){
+    if(!cats) return;
+    cats.innerHTML = "";
+    const sorted = [...items].sort((a,b)=>{
+      const af=normalizeTags(a.tags).includes("featured")?1:0, bf=normalizeTags(b.tags).includes("featured")?1:0; if(af!==bf) return bf-af;
+      const ab=a.big?1:0, bb=b.big?1:0; if(ab!==bb) return bb-ab;
+      return String(a.title||"").localeCompare(String(b.title||""),"de");
+    });
+    let gi=0;
+    CATS.forEach(cat=>{
+      const list = sorted.filter(it=> categoryOf(it)===cat.key);
+      if(!list.length) return;
+      const sec = el("section",{ class:"section", id:"sec-"+cat.key, "data-cat":cat.key });
+      sec.appendChild(el("h2",{ html:`<span class="ic">${cat.icon}</span>${esc(cat.title)}<span class="cnt">${list.length}</span><span class="ln"></span>` }));
+      const grid = el("div",{ class:"grid" });
+      list.forEach(it=>{
+        const tags = normalizeTags(it.tags);
+        const [c,cg] = colorFor(it.title);
+        const a = el("a",{ class:`tile${it.big?" big":""}`, href:it.href||"#", "data-tags":tags.join(" "), style:`--c:${c};--cg:${cg};--i:${gi++}` });
+        const pwa = tags.includes("app") ? `<span class="pwa">APP</span>` : "";
+        const verb = (tags.includes("test")||tags.includes("tool")) ? "Öffnen →" : (tags.includes("app")?"Starten →":"Spielen →");
+        a.innerHTML = `${pwa}
+          <div class="tile__emoji" aria-hidden="true">${esc(it.emoji)||"🎲"}</div>
+          <div class="tile__label">${esc(it.label)}</div>
+          <h2 class="tile__title">${esc(it.title)||"Untitled"}</h2>
+          <p class="tile__desc">${esc(it.desc)}</p>
+          <div class="tile__go">${verb}</div>`;
+        grid.appendChild(a);
+      });
+      sec.appendChild(grid);
+      cats.appendChild(sec);
+    });
+  }
+
+  function apply(){
+    const term = (q?.value||"").trim().toLowerCase();
+    const tiles = [...document.querySelectorAll(".tile[data-tags]")];
+    let shown=0;
+    for(const t of tiles){
+      const tags=(t.getAttribute("data-tags")||"").toLowerCase();
+      const text=(t.innerText||"").toLowerCase();
+      const matchTerm=!term||tags.includes(term)||text.includes(term);
+      const matchFilter=filter==="all"||tags.includes(filter);
+      const ok=matchTerm&&matchFilter; t.classList.toggle("hidden",!ok); if(ok) shown++;
+    }
+    document.querySelectorAll(".section[data-cat]").forEach(sec=>{
+      const vis=[...sec.querySelectorAll(".tile")].some(t=>!t.classList.contains("hidden"));
+      sec.classList.toggle("hidden",!vis);
+    });
+    if(countLine) countLine.textContent = shown ? `${shown} ${shown===1?"Eintrag":"Einträge"}` : "Keine Treffer.";
+  }
+
+  function applyFilter(next){ filter=next||"all"; chips.forEach(x=>x.setAttribute("aria-pressed",x.getAttribute("data-filter")===filter?"true":"false")); try{localStorage.setItem(FILTER_LS_KEY,filter);}catch{} apply(); }
+  function initialFilter(){ try{const p=new URLSearchParams(location.search);const f=(p.get("filter")||"").toLowerCase().trim(); if(f) return f;}catch{} try{const l=(localStorage.getItem(FILTER_LS_KEY)||"").toLowerCase().trim(); if(l) return l;}catch{} return isMobileLike()?"mobile":"all"; }
+
+  chips.forEach(c=> c.addEventListener("click",()=> applyFilter(c.getAttribute("data-filter")||"all")));
+  q?.addEventListener("input",apply);
+  btnClear?.addEventListener("click",()=>{ if(q) q.value=""; applyFilter("all"); q?.focus(); });
+
+  render();
+  applyFilter(initialFilter());
+
+  /* ============================================================
+     THEME-ENGINE — Saison automatisch, Fußball-Modus bei WM/EM
+     ============================================================ */
+  const THEME_KEY = "hub_theme_v1";
+  const THEME_META = {
+    winter:["❄️","Winter"], spring:["🌸","Frühling"], summer:["☀️","Sommer"],
+    autumn:["🍂","Herbst"], football:["⚽","Fußball"],
+  };
+  const THEME_BG = { autumn:"#0b0a08", winter:"#070b12", spring:"#080f0a", summer:"#0c0a06", football:"#06140d" };
+  // Turnier-Kalender (Datumsbereiche). "app" = Link, wenn vorhanden.
+  const TOURNAMENTS = [
+    { name:"WM 2026", emoji:"⚽", start:"2026-06-11", end:"2026-07-19", app:"spiele/wm2026/index.html", host:"USA · Kanada · Mexiko" },
+    { name:"EM 2028", emoji:"🏆", start:"2028-06-09", end:"2028-07-09", host:"GB & Irland" },
+    { name:"WM 2030", emoji:"⚽", start:"2030-06-13", end:"2030-07-21", host:"Spanien · Portugal · Marokko" },
+    { name:"EM 2032", emoji:"🏆", start:"2032-06-12", end:"2032-07-12", host:"Italien · Türkei" },
+  ];
+  const d2 = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
+  const DAY = 86400000;
+  function activeTournament(now){ for(const t of TOURNAMENTS){ const s=d2(t.start), e=new Date(+d2(t.end)+DAY); if(now>=s && now<e) return t; } return null; }
+  function soonTournament(now){ let best=null; for(const t of TOURNAMENTS){ const s=d2(t.start); const diff=(s-now)/DAY; if(diff>0 && diff<=30 && (!best||s<d2(best.start))) best=t; } return best; }
+  function seasonOf(now){ const m=now.getMonth()+1; if(m<=2||m===12) return "winter"; if(m<=5) return "spring"; if(m<=8) return "summer"; return "autumn"; }
+  function autoTheme(now){ return activeTournament(now) ? "football" : seasonOf(now); }
+
+  function effectiveTheme(now){ return autoTheme(now); } // läuft komplett automatisch nach Datum
+  let setParticles = () => {}; // wird von der fx-IIFE unten gesetzt
+
+  const tband = document.getElementById("tband");
+
+  function applyTheme(){
+    const now = new Date();
+    const theme = effectiveTheme(now);
+    document.body.dataset.theme = theme;
+    // Baum folgt immer der echten Jahreszeit (auch im Fußball-Modus)
+    const SEASONS = ["winter","spring","summer","autumn"];
+    document.body.dataset.season = SEASONS.includes(theme) ? theme : seasonOf(now);
+    // Tag/Nacht automatisch nach Uhrzeit (Sonne vs. Mond)
+    const h = now.getHours();
+    document.body.dataset.daytime = (h>=7 && h<19) ? "day" : "night";
+    const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", THEME_BG[theme]||"#0a0b0f");
+    setParticles(document.body.dataset.season);
+    renderBanner(theme, now);
+  }
+  function renderBanner(theme, now){
+    if(!tband) return;
+    const act = activeTournament(now);
+    if(theme==="football"){
+      const t = act || TOURNAMENTS[0];
+      const day = act ? Math.floor((now - d2(act.start))/DAY)+1 : null;
+      tband.href = t.app || "#";
+      tband.classList.toggle("show",true);
+      tband.innerHTML = `<span class="tb-emoji">${t.emoji}</span>
+        <span><b>${esc(t.name)} läuft</b>${day?` · Tag ${day}`:""} <span class="live">live</span></span>
+        ${t.app?`<span class="tb-go">zur Übersicht →</span>`:""}`;
+      return;
+    }
+    const soon = soonTournament(now);
+    if(soon){
+      const days = Math.ceil((d2(soon.start)-now)/DAY);
+      tband.href = soon.app || "#";
+      tband.classList.add("show");
+      tband.innerHTML = `<span class="tb-emoji">${soon.emoji}</span>
+        <span><b>${esc(soon.name)}</b> startet in ${days} Tag${days===1?"":"en"} · ${esc(soon.host)}</span>
+        ${soon.app?`<span class="tb-go">Vorschau →</span>`:""}`;
+      return;
+    }
+    tband.classList.remove("show");
+  }
+
+  function themeConfetti(theme){
+    return ({ winter:["#bfe6ff","#ffffff","#7fc8ff"], spring:["#ffc6e3","#4be38b","#ffffff"],
+      summer:["#ffe16b","#ffb020","#ff7a1a"], autumn:["#ff7a1a","#ffb020","#c0531a","#e0a020"],
+      football:["#1fd76b","#ffcc3e","#ffffff","#0f9d4d"] }[theme]) || null;
+  }
+
+  applyTheme();
+
+  /* ============================================================
+     Hintergrund-Partikel (Theme-abhängig)
+     ============================================================ */
+  (function fx(){
+    if(reduce) return;
+    const cv=document.getElementById("bgfx"); if(!cv) return; const ctx=cv.getContext("2d");
+    let W=0,H=0,DPR=1,parts=[],cfg=null,t=0,last=0;
+    const CFG = {
+      autumn:{type:"emoji", glyphs:["🍂","🍁","🍃"], n:24, sz:[16,32], vy:[.5,1.2], sway:1.1, wind:.7},
+      winter:{type:"snow", n:120, sz:[1,4], vy:[.4,1.4], wind:.16},
+      spring:{type:"emoji", glyphs:["🌸","🌷","🌼","🦋"], n:20, sz:[14,26], vy:[.25,.7], sway:1.25, wind:.22},
+      summer:{type:"orb", n:40, color:"rgba(255,214,120,.6)", wind:.05},
+      rain:{type:"rain", n:100},
+      snow:{type:"snow", n:120, sz:[1,4], vy:[.5,1.6], wind:.2},
+      default:{type:"orb", n:40, color:"rgba(255,200,140,.5)"},
+    };
+    function accent(){ const c=getComputedStyle(document.body).getPropertyValue("--accent").trim(); return c||"#ff7a1a"; }
+    function rnd(a,b){ return a+Math.random()*(b-a); }
+    function size(){ W=innerWidth;H=innerHeight;DPR=Math.min(1.5,devicePixelRatio||1); cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0); }
+    function mk(kind){
+      if(kind==="snow") return {k:"snow",x:Math.random()*W,y:Math.random()*H,r:rnd(cfg.sz[0],cfg.sz[1]),vy:rnd(cfg.vy[0],cfg.vy[1]),ph:Math.random()*6.28,a:rnd(.4,.95)};
+      if(kind==="orb") return {k:"orb",x:Math.random()*W,y:Math.random()*H,r:rnd(.6,2),vx:rnd(-.16,.16),vy:rnd(-.16,.16),tw:Math.random()*6.28};
+      if(kind==="rain") return {k:"rain",x:Math.random()*W,y:Math.random()*H,vy:rnd(7,12),len:rnd(9,20)};
+      const g=cfg.glyphs[Math.floor(Math.random()*cfg.glyphs.length)];
+      return {k:"emoji",g,x:Math.random()*W,y:Math.random()*H,s:rnd(cfg.sz[0],cfg.sz[1]),vy:rnd(cfg.vy[0],cfg.vy[1]),rot:Math.random()*6.28,vr:rnd(-.02,.02),ph:Math.random()*6.28,sw:cfg.sway||.6};
+    }
+    function build(){ size(); parts=[]; if(!cfg) return; const orbs=cfg.orbs||0;
+      for(let i=0;i<cfg.n;i++) parts.push(mk(cfg.type));
+      for(let i=0;i<orbs;i++){ const o=mk("orb"); parts.push(o); }
+    }
+    setParticles = (theme)=>{ cfg = CFG[theme]||CFG.default; build(); };
+    function frame(ts){ const dt=last?Math.min(2.5,(ts-last)/16.667):1; last=ts; t+=0.016*dt; ctx.clearRect(0,0,W,H); const acc=accent(); const wind=(cfg&&cfg.wind)||0;
+      for(const p of parts){
+        if(p.k==="orb"){ p.x+=p.vx*dt;p.y+=p.vy*dt; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; p.tw+=0.03*dt;
+          ctx.globalAlpha=.35+.25*Math.sin(p.tw); ctx.fillStyle=cfg.color||acc; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
+        if(p.k==="snow"){ p.y+=p.vy*dt; p.x+=(Math.sin(t+p.ph)*.4 + wind)*dt; if(p.y>H+5){p.y=-5;p.x=Math.random()*W;} if(p.x>W+5)p.x=-5; if(p.x<-5)p.x=W+5; ctx.globalAlpha=p.a; ctx.fillStyle="rgba(226,242,255,1)"; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); ctx.globalAlpha=1; continue; }
+        if(p.k==="rain"){ p.y+=p.vy*dt; p.x-=1.1*dt; if(p.y>H){p.y=-p.len;p.x=Math.random()*W;} ctx.strokeStyle="rgba(165,195,230,.42)"; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p.x+2,p.y-p.len); ctx.stroke(); continue; }
+        // emoji (mit Wind)
+        p.y+=p.vy*dt; p.x+=(Math.sin(t+p.ph)*p.sw + wind)*dt; p.rot+=p.vr*dt;
+        if(p.y>H+30){p.y=-30;p.x=Math.random()*W;} if(p.x>W+30)p.x=-30; if(p.x<-30)p.x=W+30;
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.globalAlpha=.85; ctx.font=p.s+"px serif"; ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText(p.g,0,0); ctx.restore(); ctx.globalAlpha=1;
+      }
+      requestAnimationFrame(frame);
+    }
+    let rt; addEventListener("resize",()=>{ clearTimeout(rt); rt=setTimeout(build,180); });
+    if(cfg) build(); requestAnimationFrame(frame);
+    // Falls Theme schon vor fx() gesetzt: aktuelles anwenden
+    setParticles(document.body.dataset.season||"summer");
+  })();
+  // Partikel jetzt sicher setzen (Setup steht) — nach Jahreszeit
+  setParticles(document.body.dataset.season || seasonOf(new Date()));
+
+  /* ============================================================
+     Konfetti
+     ============================================================ */
+  const confCv=document.getElementById("confetti"); const cctx=confCv?confCv.getContext("2d"):null; let confP=[],confRAF=null;
+  function sizeConf(){ if(!confCv) return; const DPR=Math.min(2,devicePixelRatio||1); confCv.width=innerWidth*DPR; confCv.height=innerHeight*DPR; cctx.setTransform(DPR,0,0,DPR,0,0); }
+  addEventListener("resize",sizeConf); sizeConf();
+  function confetti(n,colors){ if(reduce||!cctx) return; colors=colors||["#ff7a1a","#ffb020","#ffffff","#22d3ee","#c46bff"];
+    for(let i=0;i<n;i++) confP.push({x:Math.random()*innerWidth,y:-20-Math.random()*innerHeight*.3,vx:(Math.random()-.5)*5,vy:Math.random()*4+3,r:Math.random()*7+4,a:Math.random()*6.28,va:(Math.random()-.5)*.3,c:colors[i%colors.length]});
+    if(!confRAF) confRAF=requestAnimationFrame(confTick);
+  }
+  function confTick(){ cctx.clearRect(0,0,innerWidth,innerHeight); confP=confP.filter(p=>p.y<innerHeight+30);
+    for(const p of confP){ p.x+=p.vx;p.y+=p.vy;p.vy+=.12;p.a+=p.va;p.vx*=.99; cctx.save();cctx.translate(p.x,p.y);cctx.rotate(p.a);cctx.fillStyle=p.c;cctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*.6);cctx.restore(); }
+    if(confP.length) confRAF=requestAnimationFrame(confTick); else { confRAF=null; cctx.clearRect(0,0,innerWidth,innerHeight); }
+  }
+
+  /* ============================================================
+     Toast
+     ============================================================ */
+  let toastT=null; const toastEl=document.getElementById("toast");
+  function toast(msg){ if(!toastEl) return; toastEl.textContent=msg; toastEl.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>toastEl.classList.remove("show"),2400); }
+
+  /* ============================================================
+     Easter-Eggs 🥚
+     ============================================================ */
+  // 1) Logo-Ball antippen
+  const ball=document.getElementById("logoBall"); let ballN=0,ballT=null;
+  ball?.addEventListener("click",()=>{ ballN++; ball.classList.remove("spin"); void ball.offsetWidth; ball.classList.add("spin"); confetti(26,themeConfetti(document.body.dataset.theme));
+    clearTimeout(ballT); ballT=setTimeout(()=>ballN=0,1600);
+    if(ballN===5){ toast("⚽ Tooor! Du hast den Ball gefunden."); confetti(70,themeConfetti("football")); }
+    if(ballN>=9){ takeover("⚽","GOOOAL!","Du klickst schneller als der VAR gucken kann.", themeConfetti("football")); ballN=0; }
+  });
+  // 2) Konami + Wort-Trigger
+  const KONAMI="ArrowUp,ArrowUp,ArrowDown,ArrowDown,ArrowLeft,ArrowRight,ArrowLeft,ArrowRight,b,a"; const kbuf=[];
+  const WORDS=[
+    { w:"tor", fn:()=>{ confetti(60,themeConfetti("football")); flash("TOOOR!"); } },
+    { w:"goal", fn:()=>{ confetti(60,themeConfetti("football")); flash("GOAL!"); } },
+    { w:"thomas", fn:()=>{ takeover("👋","Hey Thomas!","Deine Seite, deine Regeln. 🎮", null); } },
+  ];
+  let wbuf="";
+  addEventListener("keydown",e=>{
+    kbuf.push(e.key); if(kbuf.length>12) kbuf.shift();
+    if(kbuf.join(",").endsWith(KONAMI)){ takeover("🏆","Deutschland wird Weltmeister!","Konami-Code aktiviert. Glaub fest dran. 🤫", ["#000","#dd0000","#ffce00","#fff"]); }
+    if(e.key.length===1){ wbuf=(wbuf+e.key.toLowerCase()).slice(-8); for(const it of WORDS){ if(wbuf.endsWith(it.w)){ it.fn(); wbuf=""; break; } } }
+  });
+  function flash(txt){ if(reduce) return; const d=document.createElement("div"); d.textContent=txt;
+    d.style.cssText="position:fixed;inset:0;z-index:95;display:grid;place-items:center;font-family:var(--font-head);font-weight:700;font-size:16vw;color:#fff;text-shadow:0 0 40px var(--accent-glow);pointer-events:none;opacity:0;transition:.2s";
+    document.body.appendChild(d); requestAnimationFrame(()=>d.style.opacity="1"); setTimeout(()=>{d.style.opacity="0"; setTimeout(()=>d.remove(),300);},700);
+  }
+  // Overlay
+  const tk=document.getElementById("takeover");
+  function takeover(emoji,title,sub,colors){ if(!tk) return; tk.querySelector(".big-emoji").textContent=emoji; tk.querySelector("h1").textContent=title; tk.querySelector("p").textContent=sub||""; tk.classList.add("show"); confetti(150,colors); }
+  tk?.querySelector("button")?.addEventListener("click",()=> tk.classList.remove("show"));
+  tk?.addEventListener("click",e=>{ if(e.target===tk) tk.classList.remove("show"); });
+
+  // 3) Konsolen-Gruß
+  console.log("%cthomas.fun","font-family:monospace;font-size:26px;font-weight:bold;color:#ff7a1a;text-shadow:0 2px 8px rgba(255,122,26,.4)");
+  console.log("%cVersteckt: Konami ↑↑↓↓←→←→ B A · tipp 'tor' · oder klick den Ball ⚽","color:#9aa0ad");
+
+  /* ============================================================
+     Sound (dezent, mit Mute) + Wetter (Open-Meteo, exakt mit Standort)
+     ============================================================ */
+  const Sound = (()=>{
+    let ctx,master,windGain,rainGain,buf;
+    let on = (()=>{ try{ return localStorage.getItem("hub_sound")!=="off"; }catch{ return true; } })();
+    function ensure(){ if(ctx) return; try{
+      const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return; ctx=new AC();
+      master=ctx.createGain(); master.gain.value=on?1:0; master.connect(ctx.destination);
+      const len=ctx.sampleRate*2; buf=ctx.createBuffer(1,len,ctx.sampleRate); const d=buf.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+      const w=ctx.createBufferSource(); w.buffer=buf; w.loop=true; const wf=ctx.createBiquadFilter(); wf.type="lowpass"; wf.frequency.value=460; windGain=ctx.createGain(); windGain.gain.value=.04; w.connect(wf); wf.connect(windGain); windGain.connect(master); w.start();
+      const r=ctx.createBufferSource(); r.buffer=buf; r.loop=true; const rf=ctx.createBiquadFilter(); rf.type="highpass"; rf.frequency.value=1100; rainGain=ctx.createGain(); rainGain.gain.value=0; r.connect(rf); rf.connect(rainGain); rainGain.connect(master); r.start();
+    }catch{} }
+    function resume(){ ensure(); if(ctx&&ctx.state==="suspended") ctx.resume(); }
+    return {
+      resume, isOn:()=>on,
+      click(){ if(!on) return; resume(); if(!ctx) return; const c=ctx.currentTime; const o=ctx.createOscillator(),g=ctx.createGain(); o.type="triangle"; o.frequency.setValueAtTime(640,c); o.frequency.exponentialRampToValueAtTime(310,c+.07); g.gain.setValueAtTime(.0001,c); g.gain.exponentialRampToValueAtTime(.05,c+.008); g.gain.exponentialRampToValueAtTime(.0001,c+.12); o.connect(g); g.connect(master); o.start(); o.stop(c+.13); },
+      rain(level){ if(!ctx||!rainGain) return; rainGain.gain.setTargetAtTime(on?level:0,ctx.currentTime,.6); },
+      setOn(v){ on=v; try{localStorage.setItem("hub_sound",v?"on":"off");}catch{} if(v) resume(); if(master&&ctx) master.gain.setTargetAtTime(v?1:0,ctx.currentTime,.12); }
+    };
+  })();
+  let wxRain=0;
+  const soundBtn=document.getElementById("soundBtn");
+  function updSoundBtn(){ if(soundBtn) soundBtn.textContent=Sound.isOn()?"🔊":"🔇"; }
+  updSoundBtn();
+  soundBtn?.addEventListener("click",e=>{ e.preventDefault(); Sound.setOn(!Sound.isOn()); updSoundBtn(); if(Sound.isOn()){ Sound.rain(wxRain); toast("🔊 Ton an"); } else toast("🔇 Ton aus"); });
+  addEventListener("pointerdown",e=>{ Sound.resume(); const t=e.target.closest&&e.target.closest(".tile,.chip,.fchip,.back,#logoBall,#soundBtn,.topband"); if(t) Sound.click(); }, true);
+
+  const WX_ICON={clear:"☀️",clouds:"☁️",fog:"🌫️",rain:"🌧️",snow:"🌨️",storm:"⛈️"};
+  function wmo(code){ if(code===0) return "clear"; if(code<=3) return "clouds"; if(code===45||code===48) return "fog"; if(code>=95) return "storm"; if((code>=71&&code<=77)||code===85||code===86) return "snow"; if((code>=51&&code<=67)||(code>=80&&code<=82)) return "rain"; return "clouds"; }
+  const wxChip=document.getElementById("wxChip");
+  function applyWeather(cond,temp,isDay){
+    document.body.dataset.weather=cond;
+    if(typeof isDay==="boolean") document.body.dataset.daytime=isDay?"day":"night";
+    if(cond==="rain"||cond==="storm") setParticles("rain");
+    else if(cond==="snow") setParticles("snow");
+    else setParticles(document.body.dataset.season);
+    wxRain = cond==="storm"?.09:(cond==="rain"?.05:0); Sound.rain(wxRain);
+    if(wxChip){ wxChip.textContent=(WX_ICON[cond]||"☀️")+(temp!=null?" "+Math.round(temp)+"°":""); wxChip.classList.add("show"); }
+  }
+  window.__wx=applyWeather; // Test-Hook
+  (function loadWeather(){ if(!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(p=>{
+      const la=p.coords.latitude.toFixed(3), lo=p.coords.longitude.toFixed(3);
+      fetch("https://api.open-meteo.com/v1/forecast?latitude="+la+"&longitude="+lo+"&current=weather_code,temperature_2m,is_day&timezone=auto")
+        .then(r=>r.json()).then(j=>{ const c=j&&j.current; if(!c) return; applyWeather(wmo(c.weather_code), c.temperature_2m, c.is_day===1); }).catch(()=>{});
+    }, ()=>{}, {timeout:9000, maximumAge:1800000});
+  })();
+
+  /* ============================================================
+     Custom-Cursor: weicher Glüh-Ring + Schweif + Klick-Ripple (nur Desktop)
+     ============================================================ */
+  (function cursorFX(){
+    if(reduce || !(matchMedia && matchMedia("(any-pointer:fine)").matches)) return;
+    const ring=document.createElement("div"); ring.id="curring"; document.body.appendChild(ring);
+    const cv=document.createElement("canvas"); cv.id="cursorfx"; document.body.appendChild(cv); const ctx=cv.getContext("2d");
+    const dot=document.createElement("div"); dot.id="curdot"; document.body.appendChild(dot);
+    document.body.classList.add("customcur"); // blendet den Standard-Cursor aus
+    let W,H,DPR,mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my,parts=[],last=0,moved=0,scale=1;
+    function rgb(v){ let h=(getComputedStyle(document.body).getPropertyValue(v).trim()||"#ff7a1a").replace("#",""); if(h.length===3) h=h.split("").map(x=>x+x).join(""); const n=parseInt(h,16); return ((n>>16)&255)+","+((n>>8)&255)+","+(n&255); }
+    function size(){ W=innerWidth;H=innerHeight;DPR=Math.min(1.5,devicePixelRatio||1); cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+    size(); addEventListener("resize",size);
+    addEventListener("pointermove",e=>{ if(e.pointerType==="touch") return; mx=e.clientX; my=e.clientY;
+      dot.style.transform="translate("+mx+"px,"+my+"px) translate(-50%,-50%)";
+      const ts=e.timeStamp||0; if(ts-moved>14){ moved=ts; parts.push({x:mx,y:my,r:Math.random()*3+3,life:1,col:Math.random()<.78?rgb("--accent"):rgb("--accent-2")}); }
+    },{passive:true});
+    addEventListener("pointerdown",e=>{ if(e.pointerType==="touch") return; scale=.55;
+      parts.push({x:e.clientX,y:e.clientY,ripple:true,r:8,life:1,col:rgb("--accent")});
+      for(let i=0;i<10;i++){ const a=Math.random()*6.283,s=Math.random()*3+1.6; parts.push({x:e.clientX,y:e.clientY,r:Math.random()*2.5+2,life:1,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col:Math.random()<.6?rgb("--accent"):rgb("--accent-2")}); }
+    });
+    function frame(ts){ const dt=last?Math.min(2.5,(ts-last)/16.667):1; last=ts;
+      rx+=(mx-rx)*Math.min(1,.22*dt); ry+=(my-ry)*Math.min(1,.22*dt); scale+=(1-scale)*Math.min(1,.12*dt);
+      ring.style.transform="translate("+rx+"px,"+ry+"px) translate(-50%,-50%) scale("+scale.toFixed(3)+")";
+      ctx.clearRect(0,0,W,H);
+      for(const p of parts){
+        if(p.ripple){ p.r+=4*dt; p.life-=.05*dt; ctx.strokeStyle="rgba("+p.col+","+(Math.max(0,p.life)*.6)+")"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,6.283); ctx.stroke(); continue; }
+        if(p.vx){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vx*=.94; p.vy*=.94; }
+        p.life-=.045*dt; ctx.fillStyle="rgba("+p.col+","+(Math.max(0,p.life)*.8)+")"; ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(0,p.r*p.life),0,6.283); ctx.fill();
+      }
+      parts=parts.filter(p=>p.life>0); if(parts.length>150) parts.splice(0,parts.length-150);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+})();
+
+</script>
+</body>
+</html>
