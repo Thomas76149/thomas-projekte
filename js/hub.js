@@ -357,11 +357,14 @@
     if(reduce || !(matchMedia && matchMedia("(any-pointer:fine)").matches)) return;
     const ring=document.createElement("div"); ring.id="curring"; document.body.appendChild(ring);
     const cv=document.createElement("canvas"); cv.id="cursorfx"; document.body.appendChild(cv); const ctx=cv.getContext("2d");
+    const dot=document.createElement("div"); dot.id="curdot"; document.body.appendChild(dot);
+    document.body.classList.add("customcur"); // blendet den Standard-Cursor aus
     let W,H,DPR,mx=innerWidth/2,my=innerHeight/2,rx=mx,ry=my,parts=[],last=0,moved=0,scale=1;
     function rgb(v){ let h=(getComputedStyle(document.body).getPropertyValue(v).trim()||"#ff7a1a").replace("#",""); if(h.length===3) h=h.split("").map(x=>x+x).join(""); const n=parseInt(h,16); return ((n>>16)&255)+","+((n>>8)&255)+","+(n&255); }
     function size(){ W=innerWidth;H=innerHeight;DPR=Math.min(1.5,devicePixelRatio||1); cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
     size(); addEventListener("resize",size);
     addEventListener("pointermove",e=>{ if(e.pointerType==="touch") return; mx=e.clientX; my=e.clientY;
+      dot.style.transform="translate("+mx+"px,"+my+"px) translate(-50%,-50%)";
       const ts=e.timeStamp||0; if(ts-moved>14){ moved=ts; parts.push({x:mx,y:my,r:Math.random()*3+3,life:1,col:Math.random()<.78?rgb("--accent"):rgb("--accent-2")}); }
     },{passive:true});
     addEventListener("pointerdown",e=>{ if(e.pointerType==="touch") return; scale=.55;
