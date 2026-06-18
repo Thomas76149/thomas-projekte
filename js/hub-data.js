@@ -1,7 +1,12 @@
 // Zentrale Liste: hier fügst du neue Spiele/Tools hinzu.
 // Tags steuern Filter + Suche (z.B. "game", "test", "arcade", "puzzle", "mobile", "canvas", "strategy").
+// Optional: "cat" setzt die Abteilung fest (special|arcade|puzzle|online|strategy|data|tools).
+//   Ohne "cat" wird die Abteilung automatisch aus den Tags abgeleitet (siehe hub.js).
 
 window.THOMASFUN_ITEMS = [
+  // ⚽ Specials / Saisonales
+  { title:"WM 2026", href:"spiele/wm2026/index.html", emoji:"⚽", label:"Live · Fußball-WM", desc:"Die Fußball‑WM 2026 auf einen Blick: Live‑Countdown zum nächsten Spiel, Gruppen‑Tabellen, kompletter Spielplan mit Ergebnissen, Lieblingsteam markieren — und als App aufs Handy installierbar (PWA).", tags:["app","fussball","wm","live","featured","mobile","seasonal"], big:true, cat:"special", section:"games" },
+
   // Featured / große Games
   { title:"Survive the Horde", href:"spiele/survive-the-horde/index.html", emoji:"🧟", label:"Roblox · Survival", desc:"Mein Roblox‑Game: Base bauen, Zombies abknallen, Welle um Welle überleben — allein oder im Co‑op. Promo‑Seite mit direktem Spiel‑Link.", tags:["game","roblox","featured","mobile"], big:true, section:"games" },
   {
@@ -68,7 +73,7 @@ window.THOMASFUN_ITEMS = [
   // Tests & Tools
   { title:"CPS‑Tester", href:"spiele/cps/index.html", emoji:"🖱️", label:"Test", desc:"CPS messen: Zeit 0,1s–60s selbst wählen, Klicks beim Drücken, Bestwert.", tags:["test","tool","cps","mobile"], section:"tests" },
   { title:"Reflex‑Test", href:"spiele/reflex/index.html", emoji:"⚡", label:"Test", desc:"Drück so schnell du kannst, wenn es grün wird — mit Rating & Durchschnitt.", tags:["test","tool","reflex","mobile"], section:"tests" },
-  { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui"], section:"tests" },
+  { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui","seasonal"], cat:"special", section:"tests" },
   { title:"To‑Do Liste", href:"spiele/todo/index.html", emoji:"✅", label:"App", desc:"Filter, erledigt löschen — localStorage.", tags:["tool","mobile"], section:"tests" },
   { title:"Satelliten‑Ping", href:"spiele/spielchen/index.html", emoji:"🛰️", label:"Reflex", desc:"Kurz reagieren, wenn das Signal da ist.", tags:["game","reflex","mobile"], section:"tests" },
   { title:"Wirtschafts‑Race", href:"spiele/wirtschafts-race/index.html", emoji:"📊", label:"Daten · Zeitraffer", desc:"Länder‑Battle 1900–2026: Balken überholen sich, Flaggen, historische Events — mit Synthwave‑Musik. Umschaltbar PPP/Dollar.", tags:["tool","test","data","mobile"], section:"tests" },

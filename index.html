@@ -4,57 +4,50 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>thomas.fun · Kleine Web-Sachen</title>
-  <meta name="description" content="Spiele und Mini-Apps — anklicken und loslegen." />
-  <meta name="theme-color" content="#0c0c0f" />
+  <meta name="description" content="Spiele und Mini-Apps — anklicken und loslegen. Mit saisonalem Look und Fußball-Modus zur WM/EM." />
+  <meta name="theme-color" content="#0a0b0f" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hub.css?v=4" />
+  <link rel="stylesheet" href="css/hub.css?v=5" />
 </head>
 <body>
   <canvas id="bgfx" aria-hidden="true"></canvas>
+  <canvas id="confetti" aria-hidden="true"></canvas>
   <div class="noise" aria-hidden="true"></div>
   <div class="wrap">
+    <a class="topband" id="tband" href="#"></a>
+
     <header>
-      <p class="logo">thomas<span>.fun</span></p>
+      <div class="hrow">
+        <p class="logo">thomas<span>.fun</span> <span class="ball" id="logoBall" role="button" tabindex="0" title="Klick mich…" aria-label="Ball">⚽</span></p>
+        <button class="seasonbtn" id="seasonBtn" type="button">🔁 Auto</button>
+      </div>
       <p class="tagline">Kleine Dinge zum Anklicken — Vanilla HTML, CSS &amp; JS.</p>
-      <p class="subtag">Spiele, Mini‑Tools und Tests. Such dir was aus, klick drauf, fertig.</p>
+      <p class="subtag">Spiele, Mini‑Tools und Tests, ordentlich nach Abteilungen sortiert. Such dir was aus, klick drauf, fertig.</p>
       <a class="back" href="#" data-portfolio-link>Zum Portfolio</a>
     </header>
 
     <div class="toolbar" aria-label="Suche & Filter">
       <div class="search" role="search">
         <span aria-hidden="true">⌕</span>
-        <input id="q" type="search" placeholder="Suche… (z.B. pong, test, arcade)" autocomplete="off" />
+        <input id="q" type="search" placeholder="Suche… (z.B. pong, wm, online, puzzle)" autocomplete="off" />
         <button class="chip" id="btnClear" type="button" aria-pressed="false">Reset</button>
       </div>
       <div class="chips" role="group" aria-label="Filter">
         <button class="chip" type="button" data-filter="all" aria-pressed="true">Alle</button>
         <button class="chip" type="button" data-filter="game" aria-pressed="false">Spiele</button>
-        <button class="chip" type="button" data-filter="test" aria-pressed="false">Tests</button>
         <button class="chip" type="button" data-filter="online" aria-pressed="false">Online</button>
-        <button class="chip" type="button" data-filter="arcade" aria-pressed="false">Arcade</button>
         <button class="chip" type="button" data-filter="puzzle" aria-pressed="false">Puzzle</button>
+        <button class="chip" type="button" data-filter="data" aria-pressed="false">Daten</button>
+        <button class="chip" type="button" data-filter="test" aria-pressed="false">Tests</button>
         <button class="chip" type="button" data-filter="mobile" aria-pressed="false">Handy</button>
       </div>
     </div>
 
     <p class="mutedLine" id="countLine">—</p>
 
-    <div class="section" id="secGames">
-      <h2>Spiele</h2>
-      <div class="grid" id="gridGames"></div>
-    </div>
-
-    <div class="section" id="secOnline">
-      <h2>Online</h2>
-      <div class="grid" id="gridOnline"></div>
-    </div>
-
-    <div class="section" id="secTests">
-      <h2>Tests & Tools</h2>
-      <div class="grid" id="gridTests"></div>
-    </div>
+    <main id="cats"></main>
 
     <footer>
       Team-Projekt: <a href="https://orbitex-demo.pages.dev" target="_blank" rel="noopener noreferrer">Orbitex</a>
@@ -62,9 +55,19 @@
     </footer>
   </div>
 
+  <div class="toast" id="toast"></div>
+  <div class="takeover" id="takeover" aria-hidden="true">
+    <div class="inner">
+      <div class="big-emoji">🏆</div>
+      <h1>Titel</h1>
+      <p>Untertitel</p>
+      <button type="button">Schließen →</button>
+    </div>
+  </div>
+
   <script src="js/site-config.js?v=2"></script>
   <script src="js/portfolio-link.js?v=2"></script>
-  <script src="js/hub-data.js?v=16"></script>
-  <script src="js/hub.js?v=6"></script>
+  <script src="js/hub-data.js?v=17"></script>
+  <script src="js/hub.js?v=7"></script>
 </body>
 </html>
