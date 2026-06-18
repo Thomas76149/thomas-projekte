@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/hub.css?v=8" />
+  <link rel="stylesheet" href="css/hub.css?v=9" />
 </head>
 <body>
   <div id="aurora" aria-hidden="true"><span class="a1"></span><span class="a2"></span><span class="a3"></span></div>
@@ -79,11 +79,17 @@
           <circle class="f fh" cx="252" cy="528" r="40"/><circle class="f fh" cx="300" cy="556" r="46"/><circle class="f fh" cx="206" cy="588" r="30"/>
           <g class="blossom" fill="#ffe0f0"><circle cx="248" cy="520" r="7"/><circle cx="330" cy="520" r="7"/><circle cx="300" cy="492" r="7"/><circle cx="210" cy="600" r="6"/><circle cx="396" cy="598" r="6"/><circle cx="300" cy="640" r="7"/><circle cx="356" cy="556" r="6"/><circle cx="262" cy="588" r="6"/></g>
         </g>
-        <!-- Wind-Striche (Herbst) -->
-        <g class="wind" stroke="rgba(255,255,255,.45)" stroke-width="3.5" stroke-linecap="round" fill="none">
-          <path d="M150 470 q40 -10 90 0"/><path d="M120 540 q46 -12 100 0"/><path d="M170 610 q40 -10 86 0"/>
-          <path d="M360 500 q44 -12 96 0"/><path d="M380 575 q40 -10 88 0"/>
-        </g>
+      </g>
+      <!-- Wind-Striche im Zeichentrick-Stil: zeichnen sich selbst, driften, rollen ein -->
+      <g class="wind" stroke="rgba(238,246,255,.6)" stroke-width="3.4" stroke-linecap="round" fill="none">
+        <path d="M80 470 q46 -12 94 -3 q30 5 56 0 q22 -1 23 -17 q-1 -11 -12 -11 q-9 1 -6 10"/>
+        <path d="M60 548 q60 -15 120 -3 q28 4 52 0"/>
+        <path d="M120 612 q44 -11 90 -2 q26 6 30 -8 q4 -11 -7 -13"/>
+        <path d="M520 402 q46 -12 94 -3 q30 5 56 0 q22 -1 23 -17 q-1 -11 -12 -11 q-9 1 -6 10"/>
+        <path d="M650 500 q60 -15 120 -3 q28 4 52 0"/>
+        <path d="M980 360 q40 -10 84 -3 q24 5 28 -9"/>
+        <path d="M1060 560 q44 -11 90 -2 q26 6 30 -8 q4 -11 -7 -13"/>
+        <path d="M1180 460 q60 -15 118 -3 q28 4 52 0"/>
       </g>
     </svg>
   </div>
@@ -140,6 +146,6 @@
   <script src="js/site-config.js?v=2"></script>
   <script src="js/portfolio-link.js?v=2"></script>
   <script src="js/hub-data.js?v=18"></script>
-  <script src="js/hub.js?v=9"></script>
+  <script src="js/hub.js?v=10"></script>
 </body>
 </html>

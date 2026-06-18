@@ -52,7 +52,7 @@ body{
   background-attachment:fixed;
 }
 .hidden{ display:none !important; }
-#aurora{ position:fixed; inset:-15%; z-index:0; pointer-events:none; opacity:.6; filter:blur(64px) saturate(1.35); }
+#aurora{ position:fixed; inset:-15%; z-index:0; pointer-events:none; opacity:.5; filter:blur(46px) saturate(1.25); will-change:transform; }
 #aurora span{ position:absolute; display:block; border-radius:50%; mix-blend-mode:screen; }
 #aurora .a1{ width:58vw; height:58vw; left:-12vw; top:-12vh; background:radial-gradient(circle,#27e7ff,transparent 68%); animation:au1 24s ease-in-out infinite; }
 #aurora .a2{ width:52vw; height:52vw; right:-14vw; top:-6vh; background:radial-gradient(circle,#ff45e6,transparent 68%); animation:au2 29s ease-in-out infinite; }
@@ -653,16 +653,16 @@ function bindTilt(){ if(reduce||coarse) return;
 let toastT=null; function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2400); }
 
 /* ===================== Partikel-Netz ===================== */
-(function fx(){ if(reduce) return; const cv=$("#fx"); if(!cv) return; const ctx=cv.getContext("2d"); let W,H,DPR,nodes=[],orbs=[],t=0;
+(function fx(){ if(reduce) return; const cv=$("#fx"); if(!cv) return; const ctx=cv.getContext("2d"); let W,H,DPR,nodes=[],orbs=[],t=0,lt=0;
   const ORB=["39,231,255","255,69,230","139,92,255"];
-  function build(){ W=innerWidth;H=innerHeight;DPR=Math.min(2,devicePixelRatio||1); cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+  function build(){ W=innerWidth;H=innerHeight;DPR=Math.min(1.5,devicePixelRatio||1); cv.width=W*DPR;cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
     const n=Math.min(70,Math.round(W*H/24000)); nodes=[]; for(let i=0;i<n;i++) nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.18,vy:(Math.random()-.5)*.18,r:Math.random()*1.6+.6,c:Math.random()<.5});
     const on=Math.max(4,Math.min(7,Math.round(W/330))); orbs=[]; for(let i=0;i<on;i++) orbs.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.13,vy:(Math.random()-.5)*.13,r:Math.random()*95+70,c:ORB[i%ORB.length],ph:Math.random()*6.28}); }
   const MAXD=140,MAXD2=MAXD*MAXD;
-  function frame(){ t+=0.01; ctx.clearRect(0,0,W,H);
-    for(const o of orbs){ o.x+=o.vx;o.y+=o.vy; if(o.x<-o.r)o.x=W+o.r; if(o.x>W+o.r)o.x=-o.r; if(o.y<-o.r)o.y=H+o.r; if(o.y>H+o.r)o.y=-o.r;
+  function frame(ts){ const dt=lt?Math.min(2.5,(ts-lt)/16.667):1; lt=ts; t+=0.01*dt; ctx.clearRect(0,0,W,H);
+    for(const o of orbs){ o.x+=o.vx*dt;o.y+=o.vy*dt; if(o.x<-o.r)o.x=W+o.r; if(o.x>W+o.r)o.x=-o.r; if(o.y<-o.r)o.y=H+o.r; if(o.y>H+o.r)o.y=-o.r;
       const a=.05+.03*Math.sin(t+o.ph); const g=ctx.createRadialGradient(o.x,o.y,0,o.x,o.y,o.r); g.addColorStop(0,`rgba(${o.c},${a})`); g.addColorStop(1,`rgba(${o.c},0)`); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(o.x,o.y,o.r,0,6.283); ctx.fill(); }
-    for(const p of nodes){ p.x+=p.vx;p.y+=p.vy; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; }
+    for(const p of nodes){ p.x+=p.vx*dt;p.y+=p.vy*dt; if(p.x<0||p.x>W)p.vx*=-1; if(p.y<0||p.y>H)p.vy*=-1; }
     for(let i=0;i<nodes.length;i++){ const a=nodes[i]; for(let j=i+1;j<nodes.length;j++){ const b=nodes[j]; const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
       if(d2<MAXD2){ const al=(1-d2/MAXD2)*.15; ctx.strokeStyle=`rgba(39,231,255,${al})`; ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke(); } } }
     for(const p of nodes){ ctx.beginPath(); ctx.fillStyle=p.c?"rgba(39,231,255,.7)":"rgba(255,69,230,.6)"; ctx.arc(p.x,p.y,p.r,0,6.283); ctx.fill(); }
