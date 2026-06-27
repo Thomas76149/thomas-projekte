@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0b10">
+<title>Particle Life — Partikel, die von selbst leben</title>
+<meta name="description" content="Particle Life (Clusters): bunte Partikel ziehen sich an und stoßen sich ab — du stellst die Reaktions-Matrix ein und aus simplen Kräften entstehen zellartige, lebendige Muster. Performant dank Spatial-Grid.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0b10'/%3E%3Ccircle cx='22' cy='24' r='7' fill='%23ff5a5a'/%3E%3Ccircle cx='42' cy='20' r='6' fill='%234dd0ff'/%3E%3Ccircle cx='40' cy='42' r='7' fill='%2337e0a0'/%3E%3Ccircle cx='22' cy='44' r='5' fill='%23ffd166'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b10;
+  --panel:rgba(255,255,255,.04);
+  --stroke:rgba(255,255,255,.09);
+  --text:#eef1f7;
+  --muted:#99a2b3;
+  --accent:#37e0a0;
+  --accent2:#4dd0ff;
+  --accentA:rgba(55,224,160,.35);
+  --font-head:'Archivo Black','Arial Black',Impact,sans-serif;
+  --font-body:'Inter',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(46% 40% at 14% 8%, rgba(199,146,234,.08), transparent 60%),
+    radial-gradient(44% 44% at 90% 96%, rgba(77,208,255,.07), transparent 62%),
+    var(--bg);
+  color:var(--text); font-family:var(--font-body);
+  min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column; align-items:center;
+  padding:clamp(10px,2vw,22px); -webkit-font-smoothing:antialiased;
+}
+.wrap{width:min(1320px,100%)}
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:clamp(8px,1.4vh,14px)}
+.back{display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; letter-spacing:.06em;
+  color:var(--muted); text-decoration:none; border:1px solid var(--stroke); border-radius:99px; padding:6px 13px;
+  background:rgba(255,255,255,.04); transition:color .25s, border-color .25s, box-shadow .25s}
+.back:hover{color:var(--text); border-color:var(--accent); box-shadow:0 0 14px var(--accentA)}
+.titles{display:flex; flex-direction:column; gap:1px}
+.kicker{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.24em; color:var(--accent2); text-transform:uppercase}
+.kicker::before{content:"▸ "}
+h1{font-family:var(--font-head); font-weight:400; font-size:clamp(18px,2.6vw,26px); line-height:1.05}
+h1 .hl{background:linear-gradient(92deg, #ff5a5a, #ffd166 35%, #37e0a0 65%, #4dd0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+
+.gol{display:flex; gap:14px; align-items:flex-start}
+.board-area{flex:1 1 auto; min-width:0; display:flex; justify-content:center}
+.stage{position:relative; width:min(100%, 82vh); aspect-ratio:1/1; border-radius:18px; overflow:hidden;
+  background:#05060b; border:1px solid var(--stroke); box-shadow:0 22px 56px -30px rgba(0,0,0,.85)}
+#sim{display:block; width:100%; height:100%; touch-action:none}
+.hud{position:absolute; top:10px; left:10px; display:flex; gap:7px; flex-wrap:wrap; pointer-events:none}
+.chip{font-family:var(--font-mono); font-size:11px; color:var(--text); background:rgba(8,10,16,.6);
+  border:1px solid var(--stroke); border-radius:99px; padding:5px 11px; backdrop-filter:blur(7px)}
+.chip b{color:var(--accent)} .chip.fps b{color:var(--accent2)}
+
+.rail{width:236px; flex:0 0 236px; display:flex; flex-direction:column; gap:11px}
+.card{background:var(--panel); border:1px solid var(--stroke); border-radius:14px; padding:11px 12px; backdrop-filter:blur(9px)}
+.card-t{font-family:var(--font-mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:9px; display:flex; justify-content:space-between; align-items:center}
+.card-t .mini{font-size:9px; letter-spacing:.04em; color:var(--muted); cursor:pointer; border:1px solid var(--stroke); border-radius:6px; padding:2px 6px; background:rgba(255,255,255,.04)}
+.card-t .mini:hover{color:var(--text); border-color:var(--accent)}
+
+.btn-grid{display:grid; grid-template-columns:1fr 1fr; gap:7px}
+button{font-family:var(--font-body); font-weight:800; font-size:12px; color:var(--text); cursor:pointer;
+  background:rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius:9px; padding:9px 8px;
+  transition:border-color .18s, box-shadow .18s, background .18s, transform .1s, color .18s; -webkit-tap-highlight-color:transparent}
+button:hover{border-color:var(--accent); box-shadow:0 0 13px var(--accentA); background:rgba(255,255,255,.08)}
+button:active{transform:scale(.96)}
+#playBtn{grid-column:1/3; background:linear-gradient(135deg, var(--accent), #1fb37e); border-color:transparent; color:#04130d; box-shadow:0 6px 18px -8px var(--accentA); padding:11px 8px; font-size:13px}
+button.toggle-on{border-color:var(--accent); background:rgba(55,224,160,.14); color:var(--accent); box-shadow:0 0 13px var(--accentA)}
+
+.ctrl{margin-bottom:10px}
+.ctrl:last-child{margin-bottom:0}
+.ctrl label{display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; font-weight:600; margin-bottom:5px}
+.ctrl label .v{font-family:var(--font-mono); color:var(--text); background:rgba(255,255,255,.05); border:1px solid var(--stroke); border-radius:6px; padding:1px 6px; font-size:10.5px}
+input[type=range]{width:100%; accent-color:var(--accent); height:5px; cursor:pointer}
+
+/* Reaktions-Matrix */
+.matrix-help{font-size:10.5px; color:var(--muted); line-height:1.45; margin-bottom:9px}
+.matrix-help .a{color:var(--accent)} .matrix-help .r{color:#ff6b6b}
+.mwrap{overflow-x:auto}
+table.matrix{border-collapse:separate; border-spacing:3px; margin:0 auto}
+table.matrix td{padding:0}
+.mhead{width:18px; height:18px; border-radius:5px; box-shadow:0 0 0 1px rgba(255,255,255,.12) inset}
+.mcell{width:24px; height:24px; border-radius:6px; cursor:ns-resize; position:relative; border:1px solid rgba(255,255,255,.08); touch-action:none}
+.mcell:hover{box-shadow:0 0 0 2px var(--accentA)}
+.mcell .mv{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:8.5px; color:rgba(255,255,255,.82); pointer-events:none}
+
+.legend{display:flex; gap:9px; flex-wrap:wrap; margin-top:10px; font-size:11px; color:var(--muted)}
+.legend span{display:flex; align-items:center; gap:5px}
+.swatch{width:11px; height:11px; border-radius:50%; flex:0 0 auto}
+
+.foot{margin-top:clamp(10px,1.6vh,16px); font-family:var(--font-mono); font-size:10px; color:rgba(153,162,179,.7); line-height:1.7; text-align:center}
+.foot b{color:var(--muted); font-weight:700}
+
+@media (max-width:860px){
+  .gol{flex-direction:column}
+  .stage{width:100%; max-height:none}
+  .rail{width:auto; flex:1 1 auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <a class="back" href="../../index.html">← thomas.fun</a>
+    <div class="titles">
+      <div class="kicker">Emergenz · Clusters · Spatial-Grid</div>
+      <h1>Particle <span class="hl">Life</span></h1>
+    </div>
+  </div>
+
+  <div class="gol">
+    <div class="board-area">
+      <div class="stage" id="stage">
+        <canvas id="sim"></canvas>
+        <div class="hud">
+          <div class="chip">Partikel <b id="nN">0</b></div>
+          <div class="chip">Arten <b id="nK">0</b></div>
+          <div class="chip fps">FPS <b id="nFps">–</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rail">
+      <div class="card">
+        <div class="btn-grid">
+          <button id="playBtn">❚❚ Pause</button>
+          <button id="seedBtn">🌱 Neu</button>
+          <button id="matrixBtn">🎲 Matrix</button>
+          <button id="glowBtn">✨ Glühen</button>
+          <button id="symBtn">⇄ Symmetrie</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-t">Welt</div>
+        <div class="ctrl"><label>Partikel <span class="v" id="vN">1200</span></label><input type="range" id="sN" min="100" max="5000" step="100" value="1200"></div>
+        <div class="ctrl"><label>Arten (Farben) <span class="v" id="vK">5</span></label><input type="range" id="sK" min="1" max="8" step="1" value="5"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t">Physik</div>
+        <div class="ctrl"><label>Reichweite <span class="v" id="vR">0.10</span></label><input type="range" id="sR" min="0.03" max="0.25" step="0.005" value="0.10"></div>
+        <div class="ctrl"><label>Kraft <span class="v" id="vF">10</span></label><input type="range" id="sF" min="1" max="28" step="0.5" value="10"></div>
+        <div class="ctrl"><label>Reibung <span class="v" id="vFr">mittel</span></label><input type="range" id="sFr" min="10" max="200" step="5" value="45"></div>
+        <div class="ctrl"><label>Tempo <span class="v" id="vT">1.0×</span></label><input type="range" id="sT" min="20" max="220" step="5" value="100"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t">Reaktions-Matrix <span class="mini" id="zeroBtn">0 setzen</span></div>
+        <div class="matrix-help">Zeile = wer fühlt, Spalte = von wem. <span class="a">Grün = anziehen</span>, <span class="r">Rot = abstoßen</span>. Zelle <b>hoch/runter ziehen</b> (oder Mausrad) zum Ändern.</div>
+        <div class="mwrap"><table class="matrix" id="matrix"></table></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Idee:</b> jede Farbe zieht jede andere unterschiedlich stark an oder stößt sie ab — aus diesen simplen Kräften entstehen ganz von selbst Zellen, Würmer und Jäger-Beute-Muster. &nbsp;
+    <b>Tipp:</b> 🎲 Matrix mehrfach drücken, bis etwas Lebendiges entsteht.
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+
+/* ======================================================================
+   PARTICLE LIFE — Partikel in normiertem Torus-Raum [0,1)×[0,1).
+   Kräfte über eine K×K-Matrix; Nachbarsuche per Spatial-Grid (O(N)).
+   ====================================================================== */
+const COLORS = ['#ff5a5a','#4dd0ff','#ffd166','#37e0a0','#c792ea','#ff9f43','#5b8cff','#ff6ec7'];
+
+let N = 1200, K = 5;
+let px, py, vx, vy, type;        // Float32/Int8 Arrays
+let matrix = new Float32Array(K*K);
+
+// Physik-Parameter
+let rMax = 0.10, forceFactor = 10, frictionHalfLife = 0.045, dtBase = 0.016, tempo = 1.0;
+const BETA = 0.3;                // innere Abstoßungszone (Anteil von rMax)
+
+function alloc(n){
+  px=new Float32Array(n); py=new Float32Array(n);
+  vx=new Float32Array(n); vy=new Float32Array(n);
+  type=new Uint8Array(n);
+}
+function seed(){
+  alloc(N);
+  for(let i=0;i<N;i++){ px[i]=Math.random(); py[i]=Math.random(); vx[i]=0; vy[i]=0; type[i]=(Math.random()*K)|0; }
+}
+function randomMatrix(){
+  matrix=new Float32Array(K*K);
+  for(let i=0;i<K*K;i++) matrix[i]=Math.round((Math.random()*2-1)*10)/10;
+}
+function makeSymmetric(){
+  for(let a=0;a<K;a++) for(let b=a+1;b<K;b++){ const v=matrix[a*K+b]; matrix[b*K+a]=v; }
+  buildMatrixUI();
+}
+
+/* Kraftprofil: nahe = immer abstoßen, dann Dreieck nach Matrix-Wert */
+function force(r, a){
+  if(r < BETA) return r/BETA - 1;
+  if(r < 1)    return a * (1 - Math.abs(2*r - 1 - BETA)/(1 - BETA));
+  return 0;
+}
+
+/* ---- Spatial-Grid (allokationsfrei, wird je Step neu befüllt) ---- */
+let gridN=1, heads=new Int32Array(1), nxt=new Int32Array(1);
+function rebuildGridArrays(){
+  gridN = Math.max(1, Math.floor(1/rMax));
+  heads = new Int32Array(gridN*gridN);
+  nxt   = new Int32Array(N);
+}
+function step(){
+  const dt = dtBase * tempo;
+  const fric = Math.pow(0.5, dt/frictionHalfLife);
+  const r2 = rMax*rMax, cs = 1/gridN;
+
+  // Grid füllen
+  heads.fill(-1);
+  for(let i=0;i<N;i++){
+    let gx=(px[i]/cs)|0, gy=(py[i]/cs)|0;
+    if(gx>=gridN)gx=gridN-1; if(gy>=gridN)gy=gridN-1;
+    const c=gy*gridN+gx; nxt[i]=heads[c]; heads[c]=i;
+  }
+
+  // Kräfte → Geschwindigkeit (liest nur Positionen, daher in-place ok)
+  for(let i=0;i<N;i++){
+    const xi=px[i], yi=py[i], ti=type[i]*K;
+    let fx=0, fy=0;
+    const gx=Math.min(gridN-1,(xi/cs)|0), gy=Math.min(gridN-1,(yi/cs)|0);
+    for(let oy=-1;oy<=1;oy++){
+      let cy=gy+oy; if(cy<0)cy+=gridN; else if(cy>=gridN)cy-=gridN;
+      for(let ox=-1;ox<=1;ox++){
+        let cx=gx+ox; if(cx<0)cx+=gridN; else if(cx>=gridN)cx-=gridN;
+        for(let j=heads[cy*gridN+cx]; j!==-1; j=nxt[j]){
+          if(j===i) continue;
+          let dx=px[j]-xi; if(dx>0.5)dx-=1; else if(dx<-0.5)dx+=1;
+          let dy=py[j]-yi; if(dy>0.5)dy-=1; else if(dy<-0.5)dy+=1;
+          const d2=dx*dx+dy*dy;
+          if(d2>0 && d2<r2){
+            const d=Math.sqrt(d2);
+            const f=force(d/rMax, matrix[ti+type[j]]);
+            fx+=dx/d*f; fy+=dy/d*f;
+          }
+        }
+      }
+    }
+    fx*=rMax*forceFactor; fy*=rMax*forceFactor;
+    vx[i]=vx[i]*fric + fx*dt; vy[i]=vy[i]*fric + fy*dt;
+  }
+  // Positionen integrieren (zweiter Pass = simultan)
+  for(let i=0;i<N;i++){
+    let x=px[i]+vx[i]*dt, y=py[i]+vy[i]*dt;
+    x-=Math.floor(x); y-=Math.floor(y);    // Torus-Wrap
+    px[i]=x; py[i]=y;
+  }
+}
+
+/* ======================================================================
+   RENDER
+   ====================================================================== */
+const cv=$('sim'), ctx=cv.getContext('2d',{alpha:false});
+const DPR=Math.min(2, window.devicePixelRatio||1);
+let W=0,H=0;
+let glow=false;
+function fit(){
+  const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function render(){
+  ctx.fillStyle='#05060b'; ctx.fillRect(0,0,W,H);
+  const rad = Math.max(1.3, Math.min(3.2, W/430));
+  if(glow){ ctx.globalCompositeOperation='lighter'; }
+  // nach Typ gruppiert zeichnen → fillStyle nur K-mal setzen
+  for(let t=0;t<K;t++){
+    ctx.fillStyle=COLORS[t]; ctx.beginPath();
+    for(let i=0;i<N;i++){ if(type[i]!==t) continue; const x=px[i]*W, y=py[i]*H; ctx.moveTo(x+rad,y); ctx.arc(x,y,rad,0,6.283185); }
+    ctx.fill();
+  }
+  if(glow){ ctx.globalCompositeOperation='source-over'; }
+}
+
+/* ======================================================================
+   MATRIX-UI + LEGENDE
+   ====================================================================== */
+function mColor(v){
+  const zero=[35,38,48], neg=[226,74,74], pos=[55,224,160];
+  const t=Math.min(1,Math.abs(v)), to=v>=0?pos:neg;
+  const c=[0,1,2].map(k=>Math.round(zero[k]+(to[k]-zero[k])*t));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+function buildMatrixUI(){
+  const tbl=$('matrix'); tbl.innerHTML='';
+  // Kopfzeile (Spalten = von wem)
+  let head='<tr><td></td>';
+  for(let b=0;b<K;b++) head+=`<td><div class="mhead" style="background:${COLORS[b]}"></div></td>`;
+  head+='</tr>'; tbl.insertAdjacentHTML('beforeend', head);
+  for(let a=0;a<K;a++){
+    const tr=document.createElement('tr');
+    tr.insertAdjacentHTML('beforeend', `<td><div class="mhead" style="background:${COLORS[a]}"></div></td>`);
+    for(let b=0;b<K;b++){
+      const td=document.createElement('td');
+      const cell=document.createElement('div');
+      cell.className='mcell'; cell.dataset.a=a; cell.dataset.b=b;
+      paintCell(cell, matrix[a*K+b]);
+      td.appendChild(cell); tr.appendChild(td);
+    }
+    tbl.appendChild(tr);
+  }
+  buildLegend();
+}
+function paintCell(cell, v){
+  cell.style.background=mColor(v);
+  cell.innerHTML=`<span class="mv">${v>0?'+':''}${v.toFixed(1)}</span>`;
+}
+function setMatrix(a,b,v){
+  v=Math.max(-1,Math.min(1, Math.round(v*10)/10));
+  matrix[a*K+b]=v;
+  const cell=document.querySelector(`.mcell[data-a="${a}"][data-b="${b}"]`); if(cell) paintCell(cell,v);
+}
+function buildLegend(){
+  const L=$('legend'); L.innerHTML='';
+  for(let t=0;t<K;t++) L.insertAdjacentHTML('beforeend', `<span><span class="swatch" style="background:${COLORS[t]}"></span>Art ${t+1}</span>`);
+}
+// Matrix-Zellen: ziehen (vertikal) oder Mausrad ändert Wert
+let dragCell=null, dragStartY=0, dragStartV=0;
+$('matrix').addEventListener('pointerdown', e=>{
+  const cell=e.target.closest('.mcell'); if(!cell) return;
+  e.preventDefault(); try{cell.setPointerCapture(e.pointerId);}catch(_){}
+  dragCell=cell; dragStartY=e.clientY; dragStartV=matrix[cell.dataset.a*K+ +cell.dataset.b];
+});
+$('matrix').addEventListener('pointermove', e=>{
+  if(!dragCell) return;
+  const dv=(dragStartY-e.clientY)/90;   // 90px Zug = volle Spanne
+  setMatrix(+dragCell.dataset.a, +dragCell.dataset.b, dragStartV+dv*2);
+});
+window.addEventListener('pointerup', ()=>{ dragCell=null; });
+$('matrix').addEventListener('wheel', e=>{
+  const cell=e.target.closest('.mcell'); if(!cell) return; e.preventDefault();
+  setMatrix(+cell.dataset.a, +cell.dataset.b, matrix[cell.dataset.a*K+ +cell.dataset.b] - Math.sign(e.deltaY)*0.1);
+}, {passive:false});
+
+/* ======================================================================
+   STEUERUNG
+   ====================================================================== */
+let playing=true, rafId=null;
+const playBtn=$('playBtn');
+function setPlay(on){ playing=on; playBtn.textContent=on?'❚❚ Pause':'► Start'; if(on) wake(); }
+playBtn.onclick=()=>setPlay(!playing);
+$('seedBtn').onclick=()=>{ seed(); refreshHud(); markDirty(); };
+$('matrixBtn').onclick=()=>{ randomMatrix(); buildMatrixUI(); markDirty(); };
+$('symBtn').onclick=()=>makeSymmetric();
+$('zeroBtn').onclick=()=>{ matrix=new Float32Array(K*K); buildMatrixUI(); };
+$('glowBtn').onclick=()=>{ glow=!glow; $('glowBtn').classList.toggle('toggle-on',glow); markDirty(); };
+
+$('sN').oninput=e=>{ N=+e.target.value; $('vN').textContent=N; seed(); rebuildGridArrays(); refreshHud(); markDirty(); };
+$('sK').oninput=e=>{
+  const nk=+e.target.value; $('vK').textContent=nk;
+  const old=matrix, oldK=K; K=nk;
+  matrix=new Float32Array(K*K);
+  for(let a=0;a<K;a++) for(let b=0;b<K;b++) matrix[a*K+b] = (a<oldK&&b<oldK)? old[a*oldK+b] : Math.round((Math.random()*2-1)*10)/10;
+  for(let i=0;i<N;i++) if(type[i]>=K) type[i]=(Math.random()*K)|0;
+  buildMatrixUI(); refreshHud(); markDirty();
+};
+$('sR').oninput=e=>{ rMax=+e.target.value; $('vR').textContent=rMax.toFixed(2); rebuildGridArrays(); markDirty(); };
+$('sF').oninput=e=>{ forceFactor=+e.target.value; $('vF').textContent=forceFactor; };
+$('sFr').oninput=e=>{ frictionHalfLife=(+e.target.value)/1000; const lvl=+e.target.value; $('vFr').textContent = lvl<30?'stark':lvl<80?'mittel':lvl<140?'leicht':'kaum'; };
+$('sT').oninput=e=>{ tempo=(+e.target.value)/100; $('vT').textContent=tempo.toFixed(1)+'×'; };
+
+function refreshHud(){ $('nN').textContent=N; $('nK').textContent=K; }
+
+/* ======================================================================
+   LOOP — rechnet & rendert; schläft nur wenn pausiert
+   ====================================================================== */
+let dirty=true;
+function wake(){ if(rafId===null) rafId=requestAnimationFrame(frame); }
+function markDirty(){ dirty=true; wake(); }
+let fpsT=0, fpsN=0, lastFps=performance.now();
+function frame(t){
+  if(playing){ step(); dirty=true; }
+  if(dirty){ render(); dirty=false; }
+  // FPS-Anzeige
+  fpsN++; if(t-lastFps>=500){ $('nFps').textContent=Math.round(fpsN*1000/(t-lastFps)); fpsN=0; lastFps=t; }
+  if(playing){ rafId=requestAnimationFrame(frame); } else { rafId=null; }
+}
+
+/* ======================================================================
+   START
+   ====================================================================== */
+function init(){
+  fit(); seed(); randomMatrix(); rebuildGridArrays(); buildMatrixUI(); refreshHud();
+  wake();
+}
+const ro=new ResizeObserver(()=>{ fit(); markDirty(); });
+ro.observe(cv);
+init();
+
+// Debug-Hook (zum Testen, da rAF in versteckten Tabs einfriert)
+window.__pl = { step:(n=1)=>{ for(let k=0;k<n;k++) step(); render(); }, state:()=>({N,K,sample:[px[0],py[0],vx[0],vy[0]], inBounds:[...px.slice(0,N)].every(v=>v>=0&&v<1)}) };
+console.log('%c⚛ Particle Life','color:#4dd0ff;font-weight:bold;font-size:14px','· 🎲 Matrix drücken bis Leben entsteht. Spatial-Grid = trägt tausende Partikel.');
+</script>
+</body>
+</html>
