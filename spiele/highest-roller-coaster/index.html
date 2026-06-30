@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0815">
+<title>Highest Roller Coaster Ever — ride to the sky | Roblox</title>
+<meta name="description" content="Highest Roller Coaster Ever: climb a physics-driven coaster higher and higher until the world shrinks below you. Now on Roblox.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M6 50 Q20 10 36 30 T58 14' fill='none' stroke='%2322d3ee' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='36' cy='30' r='4' fill='%237c5cff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0815; --bg2:#100b22;
+  --panel:rgba(255,255,255,.04); --stroke:rgba(255,255,255,.1);
+  --text:#eef0ff; --muted:#a3a0c8;
+  --cyan:#22d3ee; --violet:#7c5cff; --pink:#ff7eb6; --cyanA:rgba(34,211,238,.4);
+  --font-head:'Archivo Black','Arial Black',Impact,sans-serif;
+  --font-body:'Inter',system-ui,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',Consolas,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg); color:var(--text); font-family:var(--font-body); -webkit-font-smoothing:antialiased; overflow-x:hidden}
+a{color:inherit}
+.back{position:fixed; top:14px; left:14px; z-index:30; display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono); font-size:12px; letter-spacing:.06em; color:var(--muted); text-decoration:none; border:1px solid var(--stroke); border-radius:99px; padding:7px 13px; background:rgba(10,8,21,.6); backdrop-filter:blur(6px); transition:color .25s, border-color .25s, box-shadow .25s}
+.back:hover{color:var(--text); border-color:var(--cyan); box-shadow:0 0 14px var(--cyanA)}
+
+.hero{position:relative; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:clamp(20px,5vw,40px); overflow:hidden}
+#fx{position:absolute; inset:0; width:100%; height:100%; z-index:0}
+.hero::after{content:""; position:absolute; inset:0; z-index:1; pointer-events:none; background:radial-gradient(120% 80% at 50% 16%, transparent 42%, rgba(0,0,0,.5) 100%), linear-gradient(180deg, rgba(10,8,21,.15) 0%, transparent 32%, transparent 60%, rgba(10,8,21,.95) 100%)}
+.hero-inner{position:relative; z-index:2; max-width:900px}
+.eyebrow{font-family:var(--font-mono); font-size:clamp(11px,1.5vw,13px); letter-spacing:.32em; text-transform:uppercase; color:var(--cyan); margin-bottom:18px; opacity:0; animation:fadeUp .8s .1s forwards}
+.eyebrow::before{content:"▲ "; color:var(--violet)}
+h1.title{font-family:var(--font-head); font-weight:400; line-height:.94; letter-spacing:.005em; font-size:clamp(38px,10vw,112px); text-transform:uppercase; color:#f3f2ff; text-shadow:0 0 40px rgba(124,92,255,.35), 0 4px 0 #160f2e, 0 6px 24px rgba(0,0,0,.8)}
+h1.title .hl{display:block; background:linear-gradient(178deg, var(--cyan) 0%, var(--violet) 60%, var(--pink) 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+.title-wrap{opacity:0; animation:fadeUp .9s .25s forwards}
+.tagline{margin:22px auto 0; max-width:48ch; color:#d4d2ec; font-size:clamp(15px,2.2vw,20px); line-height:1.55; font-weight:600; opacity:0; animation:fadeUp .9s .45s forwards}
+.cta-row{margin-top:34px; display:flex; gap:14px; flex-wrap:wrap; justify-content:center; opacity:0; animation:fadeUp .9s .6s forwards}
+.btn{font-family:var(--font-body); font-weight:800; font-size:clamp(15px,2vw,18px); cursor:pointer; text-decoration:none; border-radius:14px; padding:16px 28px; border:1px solid transparent; display:inline-flex; align-items:center; gap:10px; transition:transform .15s, box-shadow .3s, background .25s, border-color .25s; -webkit-tap-highlight-color:transparent}
+.btn-primary{background:linear-gradient(135deg, var(--cyan), var(--violet)); color:#0a0815; box-shadow:0 10px 34px -10px var(--cyanA), inset 0 1px 0 rgba(255,255,255,.25)}
+.btn-primary:hover{transform:translateY(-3px) scale(1.02); box-shadow:0 18px 44px -10px rgba(124,92,255,.5)}
+.btn-primary:active{transform:translateY(0) scale(.99)}
+.btn-primary .pulse{width:9px; height:9px; border-radius:50%; background:#0a0815; box-shadow:0 0 0 0 rgba(10,8,21,.6); animation:pulse 1.8s infinite}
+.btn-ghost{background:rgba(255,255,255,.05); border-color:var(--stroke); color:var(--text)}
+.btn-ghost:hover{border-color:var(--cyan); box-shadow:0 0 16px var(--cyanA); transform:translateY(-2px)}
+.chips{margin-top:26px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; opacity:0; animation:fadeUp .9s .75s forwards}
+.chip{font-family:var(--font-mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); border:1px solid var(--stroke); border-radius:99px; padding:7px 14px; background:rgba(255,255,255,.03)}
+.chip b{color:var(--text)}
+.scrollhint{position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:2; color:var(--muted); font-size:22px; animation:bob 1.8s ease-in-out infinite; opacity:.7}
+
+@keyframes fadeUp{from{opacity:0; transform:translateY(22px)} to{opacity:1; transform:none}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(10,8,21,.5)} 70%{box-shadow:0 0 0 11px rgba(10,8,21,0)} 100%{box-shadow:0 0 0 0 rgba(10,8,21,0)}}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)}}
+
+section.block{position:relative; padding:clamp(56px,9vw,110px) clamp(20px,5vw,40px); max-width:1080px; margin:0 auto}
+.kick{font-family:var(--font-mono); font-size:12px; letter-spacing:.26em; text-transform:uppercase; color:var(--violet); margin-bottom:12px}
+.kick::before{content:"// "}
+h2.sec{font-family:var(--font-head); font-weight:400; font-size:clamp(26px,5vw,46px); line-height:1.08; margin-bottom:14px}
+.lead{color:var(--muted); font-size:clamp(14px,1.8vw,17px); line-height:1.6; max-width:62ch}
+
+.features{display:grid; gap:16px; grid-template-columns:1fr; margin-top:40px}
+@media(min-width:640px){.features{grid-template-columns:repeat(2,1fr)}}
+.feature{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015)); border:1px solid var(--stroke); border-radius:18px; padding:26px 24px; position:relative; overflow:hidden; transition:transform .3s, border-color .3s, box-shadow .3s}
+.feature:hover{transform:translateY(-5px); border-color:rgba(124,92,255,.4); box-shadow:0 24px 50px -28px rgba(0,0,0,.9)}
+.feature .ic{width:54px; height:54px; margin-bottom:16px}
+.feature h3{font-family:var(--font-body); font-weight:900; font-size:19px; margin-bottom:8px}
+.feature p{color:var(--muted); font-size:14px; line-height:1.6}
+.feature::before{content:""; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--cyan), transparent); transform:scaleX(0); transform-origin:left; transition:transform .5s}
+.feature:hover::before{transform:scaleX(1)}
+
+.steps{display:grid; gap:16px; grid-template-columns:1fr; margin-top:40px}
+@media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+.step{background:rgba(255,255,255,.03); border:1px solid var(--stroke); border-radius:16px; padding:24px}
+.step .n{font-family:var(--font-head); font-size:34px; line-height:1; color:var(--cyan); -webkit-text-stroke:1px rgba(124,92,255,.4); margin-bottom:12px}
+.step h4{font-weight:800; font-size:16px; margin-bottom:7px}
+.step p{color:var(--muted); font-size:13.5px; line-height:1.6}
+
+.finalcta{position:relative; text-align:center; padding:clamp(60px,10vw,120px) 20px; margin-top:30px; overflow:hidden; background:radial-gradient(60% 100% at 50% 0%, rgba(124,92,255,.16), transparent 70%), var(--bg2); border-top:1px solid var(--stroke)}
+.finalcta h2{font-family:var(--font-head); font-weight:400; font-size:clamp(28px,6vw,56px); text-transform:uppercase; line-height:1; margin-bottom:18px}
+.finalcta h2 .hl{background:linear-gradient(178deg, var(--cyan), var(--violet)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
+.finalcta p{color:var(--muted); max-width:48ch; margin:0 auto 30px; font-size:clamp(14px,1.8vw,17px); line-height:1.6}
+
+.reveal{opacity:0; transform:translateY(34px); transition:opacity .7s ease, transform .7s cubic-bezier(.2,.8,.3,1)}
+.reveal.on{opacity:1; transform:none}
+footer{text-align:center; padding:30px 20px 40px; color:var(--muted); font-size:13px; border-top:1px solid var(--stroke)}
+footer a{color:var(--cyan); text-decoration:none}
+footer a:hover{text-decoration:underline}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01s !important; animation-delay:0s !important}.reveal{opacity:1; transform:none}.eyebrow,.title-wrap,.tagline,.cta-row,.chips{opacity:1 !important}}
+</style>
+</head>
+<body>
+<a class="back" href="../../index.html">← thomas.fun</a>
+
+<header class="hero">
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <div class="eyebrow">A Roblox physics ride</div>
+    <div class="title-wrap">
+      <h1 class="title">The Highest<span class="hl">Coaster Ever</span></h1>
+    </div>
+    <p class="tagline">Climb higher and higher on a physics-driven coaster until the whole world shrinks far below you. How high can you go?</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" id="playBtn" href="#" rel="noopener"><span class="pulse"></span>Play now on Roblox</a>
+      <a class="btn btn-ghost" href="#features">Learn more</a>
+    </div>
+    <div class="chips">
+      <span class="chip">Go <b>insanely high</b></span>
+      <span class="chip"><b>Physics</b>-driven ride</span>
+      <span class="chip"><b>Sky-high</b> views</span>
+      <span class="chip">Just <b>hop on</b></span>
+    </div>
+  </div>
+  <div class="scrollhint" aria-hidden="true">▾</div>
+</header>
+
+<section class="block reveal" id="features">
+  <div class="kick">What it's about</div>
+  <h2 class="sec">Up, and up, and up.</h2>
+  <p class="lead">A simple idea taken to the extreme: a roller coaster that just keeps climbing. Hop in the cart, feel the physics, and watch the ground disappear beneath you.</p>
+  <div class="features">
+    <div class="feature">
+      <svg class="ic" viewBox="0 0 48 48" fill="none"><path d="M6 40 Q18 6 30 26 T44 8" stroke="#22d3ee" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="30" cy="26" r="3.4" fill="#7c5cff"/></svg>
+      <h3>Climb to the sky</h3>
+      <p>The whole point is height. Ride the track up and up until everything below turns tiny.</p>
+    </div>
+    <div class="feature">
+      <svg class="ic" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="6" stroke="#7c5cff" stroke-width="2.4"/><path d="M24 8v6M24 34v6M8 24h6M34 24h6M13 13l4 4M35 35l-4-4M35 13l-4 4M13 35l4-4" stroke="#22d3ee" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <h3>Real physics</h3>
+      <p>The cart actually rolls, builds speed and reacts — it's the ride that makes it fun, not a script on rails.</p>
+    </div>
+    <div class="feature">
+      <svg class="ic" viewBox="0 0 48 48" fill="none"><rect x="9" y="9" width="30" height="30" rx="4" stroke="#22d3ee" stroke-width="2.4"/><path d="M9 30l8-8 6 6 6-9 10 11" stroke="#7c5cff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="17" r="2.4" fill="#ff7eb6"/></svg>
+      <h3>Sky-high views</h3>
+      <p>From the top you get a view you can't get anywhere else — the kind that makes you screenshot it.</p>
+    </div>
+    <div class="feature">
+      <svg class="ic" viewBox="0 0 48 48" fill="none"><path d="M14 30a8 8 0 1 1 2-15 9 9 0 0 1 17 3 6 6 0 0 1-1 12H16" stroke="#22d3ee" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 36v6M30 36v6" stroke="#7c5cff" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <h3>Easy to hop into</h3>
+      <p>No setup, no learning curve. Get in the cart and enjoy the ride — alone or with whoever's around.</p>
+    </div>
+  </div>
+</section>
+
+<section class="block reveal">
+  <div class="kick">In 30 seconds</div>
+  <h2 class="sec">How it works.</h2>
+  <div class="steps">
+    <div class="step"><div class="n">01</div><h4>Hop in</h4><p>Open Roblox, launch the game and climb into the coaster cart.</p></div>
+    <div class="step"><div class="n">02</div><h4>Ride up</h4><p>Let the physics carry you up the track, higher and higher.</p></div>
+    <div class="step"><div class="n">03</div><h4>Look down</h4><p>Reach the top, take in the view, and see just how far up you got.</p></div>
+  </div>
+</section>
+
+<section class="finalcta reveal">
+  <h2>How high can <span class="hl">you get?</span></h2>
+  <p>Hop in the cart and ride it all the way to the top.</p>
+  <a class="btn btn-primary" id="playBtn2" href="#" rel="noopener"><span class="pulse"></span>Play now on Roblox</a>
+</section>
+
+<footer>A game by Thomas · back to <a href="../../index.html">thomas.fun</a></footer>
+
+<script>
+'use strict';
+const ROBLOX_URL = "https://www.roblox.com/games/132692247694350/Highest-Roller-Coaster-Ever";
+(function(){
+  [document.getElementById('playBtn'), document.getElementById('playBtn2')].filter(Boolean).forEach(b=>{ b.href=ROBLOX_URL; b.target="_blank"; });
+})();
+(function(){const els=document.querySelectorAll('.reveal'); if(!('IntersectionObserver' in window)){els.forEach(e=>e.classList.add('on')); return;} const io=new IntersectionObserver((es)=>{es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('on');io.unobserve(en.target);}})},{threshold:.18}); els.forEach(e=>io.observe(e));})();
+/* hero canvas: rising sparkles + drifting clouds (sense of height) */
+(function(){
+  const REDUCED=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cv=document.getElementById('fx'), ctx=cv.getContext('2d');
+  let W=0,H=0,DPR=Math.min(2,devicePixelRatio||1), motes=[], clouds=[];
+  function resize(){const r=cv.getBoundingClientRect(); W=r.width; H=r.height; cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0); build();}
+  function build(){
+    motes=[]; const n=Math.round(W*H/12000); for(let i=0;i<n;i++) motes.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.4,vy:-(0.3+Math.random()*1.1),a:Math.random()*.6+.2,tw:Math.random()*6.28});
+    clouds=[]; for(let i=0;i<5;i++) clouds.push({x:Math.random()*W,y:Math.random()*H*0.7,r:90+Math.random()*150,vx:0.1+Math.random()*0.18,a:0.04+Math.random()*0.05,c:i%2?'124,92,255':'34,211,238'});
+  }
+  let t=0;
+  function frame(){
+    t++; ctx.clearRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'rgba(34,211,238,.06)'); g.addColorStop(.5,'rgba(124,92,255,.05)'); g.addColorStop(1,'rgba(10,8,21,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+    clouds.forEach(c=>{ c.x+=c.vx; if(c.x-c.r>W) c.x=-c.r; const rg=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r); rg.addColorStop(0,`rgba(${c.c},${c.a})`); rg.addColorStop(1,`rgba(${c.c},0)`); ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,6.283); ctx.fill(); });
+    motes.forEach(m=>{ m.y+=m.vy; m.tw+=.04; if(m.y<-6){m.y=H+6; m.x=Math.random()*W;} const fl=.5+.5*Math.sin(m.tw); ctx.fillStyle=`rgba(${fl>.6?'180,235,255':'200,180,255'},${m.a*fl})`; ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,6.283); ctx.fill(); });
+    if(!REDUCED) requestAnimationFrame(frame);
+  }
+  addEventListener('resize',()=>{DPR=Math.min(2,devicePixelRatio||1); resize();});
+  resize(); if(REDUCED) frame(); else requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
