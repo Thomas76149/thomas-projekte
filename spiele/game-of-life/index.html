@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#0a0b10">
-<title>Game of Life — unendlicher Zellulärer Automat</title>
-<meta name="description" content="Conways Game of Life auf einem unendlichen, scrollbaren Feld: Linksklick setzt, Rechtsklick löscht, Presets wie Gleiter & Gleiter-Kanone platzieren — performant dank Sparse-Engine.">
+<title>Game of Life — Infinite Cellular Automaton</title>
+<meta name="description" content="Conway's Game of Life on an infinite, scrollable field: left-click to place, right-click to erase, drop in presets like gliders & glider guns — fast thanks to a sparse engine.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230a0b10'/%3E%3Cg fill='%2337e0a0'%3E%3Crect x='30' y='12' width='10' height='10' rx='2'/%3E%3Crect x='42' y='24' width='10' height='10' rx='2'/%3E%3Crect x='18' y='36' width='10' height='10' rx='2'/%3E%3Crect x='30' y='36' width='10' height='10' rx='2'/%3E%3Crect x='42' y='36' width='10' height='10' rx='2'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -148,49 +148,49 @@ kbd{font-family:var(--font-mono); font-size:9.5px; background:rgba(255,255,255,.
   <div class="hud">
     <a class="back" href="../../index.html">← thomas.fun</a>
     <div class="chip">Gen <b id="nGen">0</b></div>
-    <div class="chip pop">Zellen <b id="nPop">0</b></div>
+    <div class="chip pop">Cells <b id="nPop">0</b></div>
     <div class="chip">x <b id="nX">0</b> · y <b id="nY">0</b></div>
     <div class="chip">Zoom <b id="nZ">14</b>px</div>
   </div>
-  <div class="hint" id="hint">Linksklick setzt · Rechtsklick löscht · Mausrad / 2 Finger scrollt · Strg+Rad zoomt</div>
+  <div class="hint" id="hint">Left-click to place · Right-click to erase · Scroll wheel / 2 fingers to pan · Ctrl+wheel to zoom</div>
 
-  <button class="gear" id="panelToggle" title="Einstellungen (H)">⚙</button>
+  <button class="gear" id="panelToggle" title="Settings (H)">⚙</button>
 
   <aside class="panel" id="panel">
-    <div class="panel-head"><b>Game of Life</b><button class="x" id="panelClose" title="Schließen">×</button></div>
+    <div class="panel-head"><b>Game of Life</b><button class="x" id="panelClose" title="Close">×</button></div>
     <div class="card">
       <div class="btn-grid">
         <button id="playBtn">► Start</button>
-        <button id="stepBtn">⏭ Schritt</button>
-        <button id="centerBtn">◎ Mitte</button>
-        <button id="randBtn">🎲 Zufall</button>
-        <button id="panBtn">✋ Bewegen</button>
-        <button id="clearBtn">⌫ Leeren</button>
+        <button id="stepBtn">⏭ Step</button>
+        <button id="centerBtn">◎ Center</button>
+        <button id="randBtn">🎲 Random</button>
+        <button id="panBtn">✋ Pan</button>
+        <button id="clearBtn">⌫ Clear</button>
       </div>
     </div>
     <div class="card">
-      <div class="card-t">Steuerung</div>
-      <div class="ctrl"><label>Tempo <span class="v" id="vSpeed">12 /s</span></label><input type="range" id="sSpeed" min="1" max="60" value="12"></div>
+      <div class="card-t">Controls</div>
+      <div class="ctrl"><label>Speed <span class="v" id="vSpeed">12 /s</span></label><input type="range" id="sSpeed" min="1" max="60" value="12"></div>
       <div class="ctrl"><label>Zoom <span class="v" id="vCell">14 px</span></label><input type="range" id="sCell" min="2" max="40" value="14"></div>
-      <div class="ctrl"><label>Zufallsdichte <span class="v" id="vDens">28 %</span></label><input type="range" id="sDens" min="3" max="80" value="28"></div>
+      <div class="ctrl"><label>Random density <span class="v" id="vDens">28 %</span></label><input type="range" id="sDens" min="3" max="80" value="28"></div>
       <div style="margin-top:11px">
-        <label class="toggle"><span>Gitter</span><input type="checkbox" id="tGrid" checked><span class="sw"></span></label>
-        <label class="toggle"><span>Alter färben</span><input type="checkbox" id="tAge"><span class="sw"></span></label>
+        <label class="toggle"><span>Grid</span><input type="checkbox" id="tGrid" checked><span class="sw"></span></label>
+        <label class="toggle"><span>Color by age</span><input type="checkbox" id="tAge"><span class="sw"></span></label>
       </div>
     </div>
     <div class="card">
-      <div class="card-t">Muster-Bibliothek</div>
-      <button id="lexBtn" style="width:100%; padding:11px 8px; font-size:13px">📖 Lexikon öffnen</button>
+      <div class="card-t">Pattern library</div>
+      <button id="lexBtn" style="width:100%; padding:11px 8px; font-size:13px">📖 Open library</button>
     </div>
-    <div class="hintbox"><b style="color:var(--muted)">Regeln:</b> 2–3 Nachbarn → überlebt · genau 3 → geboren.<br><kbd>Leer</kbd> Start · <kbd>→</kbd> Schritt · <kbd>R</kbd> Zufall · <kbd>C</kbd> Leeren · <kbd>F</kbd> Mitte · <kbd>H</kbd> Panel</div>
+    <div class="hintbox"><b style="color:var(--muted)">Rules:</b> 2–3 neighbors → survives · exactly 3 → born.<br><kbd>Space</kbd> Start · <kbd>→</kbd> Step · <kbd>R</kbd> Random · <kbd>C</kbd> Clear · <kbd>F</kbd> Center · <kbd>H</kbd> Panel</div>
   </aside>
 
   <div class="lexbg" id="lexbg">
     <div class="lexwin">
       <div class="lexhead">
-        <b>📖 Lexikon</b>
-        <input id="lexSearch" type="text" placeholder="Suchen… (z.B. acorn, kanone, schiff, oszillator)">
-        <button class="x" id="lexClose" title="Schließen (Esc)">×</button>
+        <b>📖 Library</b>
+        <input id="lexSearch" type="text" placeholder="Search… (e.g. acorn, gun, ship, oscillator)">
+        <button class="x" id="lexClose" title="Close (Esc)">×</button>
       </div>
       <div class="lexbody" id="lexBody"></div>
     </div>
@@ -325,43 +325,43 @@ function render(){
    ====================================================================== */
 // Bibliothek nach Kategorie. Jedes Muster: key, name, emoji, info, cells.
 const LEXICON = [
-  { cat:'🌱 Methuselahs', desc:'winzig → wächst zu Chaos', items:[
-    { key:'rpenta', name:'R-Pentomino', emoji:'🌱', info:'5 Zellen · tobt 1103 Generationen', cells:[[1,0],[2,0],[0,1],[1,1],[1,2]] },
-    { key:'acorn',  name:'Acorn',       emoji:'🌰', info:'7 Zellen · läuft 5206 Gen, wird riesig', cells:[[1,0],[3,1],[0,2],[1,2],[4,2],[5,2],[6,2]] },
-    { key:'diehard',name:'Diehard',     emoji:'💀', info:'verschwindet exakt nach 130 Gen', cells:[[6,0],[0,1],[1,1],[1,2],[5,2],[6,2],[7,2]] },
-    { key:'infinite',name:'Unendlich',  emoji:'🌌', info:'5×5 · wächst für immer', cells:[[0,0],[1,0],[2,0],[4,0],[0,1],[3,2],[4,2],[1,3],[2,3],[4,3],[0,4],[2,4],[4,4]] },
+  { cat:'🌱 Methuselahs', desc:'tiny → grows into chaos', items:[
+    { key:'rpenta', name:'R-Pentomino', emoji:'🌱', info:'5 cells · rages for 1103 generations', cells:[[1,0],[2,0],[0,1],[1,1],[1,2]] },
+    { key:'acorn',  name:'Acorn',       emoji:'🌰', info:'7 cells · runs 5206 gens, grows huge', cells:[[1,0],[3,1],[0,2],[1,2],[4,2],[5,2],[6,2]] },
+    { key:'diehard',name:'Diehard',     emoji:'💀', info:'vanishes exactly after 130 gens', cells:[[6,0],[0,1],[1,1],[1,2],[5,2],[6,2],[7,2]] },
+    { key:'infinite',name:'Infinite',   emoji:'🌌', info:'5×5 · grows forever', cells:[[0,0],[1,0],[2,0],[4,0],[0,1],[3,2],[4,2],[1,3],[2,3],[4,3],[0,4],[2,4],[4,4]] },
   ]},
-  { cat:'🛸 Raumschiffe', desc:'fliegen über das Feld', items:[
-    { key:'glider', name:'Gleiter',  emoji:'🛸', info:'das berühmteste Raumschiff', cells:[[1,0],[2,1],[0,2],[1,2],[2,2]] },
-    { key:'lwss',   name:'LWSS',      emoji:'🚀', info:'leichtes Raumschiff', cells:[[1,0],[4,0],[0,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3]] },
-    { key:'mwss',   name:'MWSS',      emoji:'🛰️', info:'mittelschweres Raumschiff', cells:[[3,0],[1,1],[5,1],[0,2],[0,3],[5,3],[0,4],[1,4],[2,4],[3,4],[4,4]] },
-    { key:'hwss',   name:'HWSS',      emoji:'✈️', info:'schweres Raumschiff', cells:[[4,0],[1,1],[6,1],[0,2],[0,3],[6,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4]] },
+  { cat:'🛸 Spaceships', desc:'fly across the field', items:[
+    { key:'glider', name:'Glider',   emoji:'🛸', info:'the most famous spaceship', cells:[[1,0],[2,1],[0,2],[1,2],[2,2]] },
+    { key:'lwss',   name:'LWSS',      emoji:'🚀', info:'lightweight spaceship', cells:[[1,0],[4,0],[0,1],[0,2],[4,2],[0,3],[1,3],[2,3],[3,3]] },
+    { key:'mwss',   name:'MWSS',      emoji:'🛰️', info:'midweight spaceship', cells:[[3,0],[1,1],[5,1],[0,2],[0,3],[5,3],[0,4],[1,4],[2,4],[3,4],[4,4]] },
+    { key:'hwss',   name:'HWSS',      emoji:'✈️', info:'heavyweight spaceship', cells:[[4,0],[1,1],[6,1],[0,2],[0,3],[6,3],[0,4],[1,4],[2,4],[3,4],[4,4],[5,4]] },
   ]},
-  { cat:'🔄 Oszillatoren', desc:'blinken endlos im Takt', items:[
-    { key:'blinker', name:'Blinker', emoji:'➖', info:'Periode 2 · der kleinste', cells:[[0,0],[1,0],[2,0]] },
-    { key:'toad',    name:'Toad',    emoji:'🐸', info:'Periode 2', cells:[[1,0],[2,0],[3,0],[0,1],[1,1],[2,1]] },
-    { key:'beacon',  name:'Beacon',  emoji:'🔆', info:'Periode 2', cells:[[0,0],[1,0],[0,1],[1,1],[2,2],[3,2],[2,3],[3,3]] },
-    { key:'pulsar',  name:'Pulsar',  emoji:'💠', info:'Periode 3 · groß & schön', cells:[
+  { cat:'🔄 Oscillators', desc:'blink endlessly in rhythm', items:[
+    { key:'blinker', name:'Blinker', emoji:'➖', info:'period 2 · the smallest', cells:[[0,0],[1,0],[2,0]] },
+    { key:'toad',    name:'Toad',    emoji:'🐸', info:'period 2', cells:[[1,0],[2,0],[3,0],[0,1],[1,1],[2,1]] },
+    { key:'beacon',  name:'Beacon',  emoji:'🔆', info:'period 2', cells:[[0,0],[1,0],[0,1],[1,1],[2,2],[3,2],[2,3],[3,3]] },
+    { key:'pulsar',  name:'Pulsar',  emoji:'💠', info:'period 3 · big & beautiful', cells:[
             [2,0],[3,0],[4,0],[8,0],[9,0],[10,0],
             [0,2],[5,2],[7,2],[12,2],[0,3],[5,3],[7,3],[12,3],[0,4],[5,4],[7,4],[12,4],
             [2,5],[3,5],[4,5],[8,5],[9,5],[10,5],[2,7],[3,7],[4,7],[8,7],[9,7],[10,7],
             [0,8],[5,8],[7,8],[12,8],[0,9],[5,9],[7,9],[12,9],[0,10],[5,10],[7,10],[12,10],
             [2,12],[3,12],[4,12],[8,12],[9,12],[10,12] ] },
-    { key:'penta',   name:'Pentadecathlon', emoji:'🪱', info:'Periode 15', cells:[[2,0],[7,0],[0,1],[1,1],[3,1],[4,1],[5,1],[6,1],[8,1],[9,1],[2,2],[7,2]] },
+    { key:'penta',   name:'Pentadecathlon', emoji:'🪱', info:'period 15', cells:[[2,0],[7,0],[0,1],[1,1],[3,1],[4,1],[5,1],[6,1],[8,1],[9,1],[2,2],[7,2]] },
   ]},
-  { cat:'🔫 Kanonen', desc:'feuern endlos Raumschiffe', items:[
-    { key:'gun', name:'Gleiter-Kanone', emoji:'🔫', info:'Gosper · spuckt ewig Gleiter aus', cells:[
+  { cat:'🔫 Guns', desc:'fire spaceships endlessly', items:[
+    { key:'gun', name:'Glider Gun', emoji:'🔫', info:'Gosper · spits out gliders forever', cells:[
             [0,4],[0,5],[1,4],[1,5],
             [10,4],[10,5],[10,6],[11,3],[11,7],[12,2],[12,8],[13,2],[13,8],[14,5],
             [15,3],[15,7],[16,4],[16,5],[16,6],[17,5],
             [20,2],[20,3],[20,4],[21,2],[21,3],[21,4],[22,1],[22,5],
             [24,0],[24,1],[24,5],[24,6],[34,2],[34,3],[35,2],[35,3] ] },
   ]},
-  { cat:'🧱 Stillleben', desc:'bewegen sich nie', items:[
-    { key:'block',   name:'Block',   emoji:'⬛', info:'stabilste Form', cells:[[0,0],[1,0],[0,1],[1,1]] },
-    { key:'beehive', name:'Bienenstock', emoji:'🍯', info:'stabil', cells:[[1,0],[2,0],[0,1],[3,1],[1,2],[2,2]] },
-    { key:'loaf',    name:'Laib',    emoji:'🍞', info:'stabil', cells:[[1,0],[2,0],[0,1],[3,1],[1,2],[3,2],[2,3]] },
-    { key:'boat',    name:'Boot',    emoji:'⛵', info:'stabil', cells:[[0,0],[1,0],[0,1],[2,1],[1,2]] },
+  { cat:'🧱 Still lifes', desc:'never move', items:[
+    { key:'block',   name:'Block',   emoji:'⬛', info:'most stable form', cells:[[0,0],[1,0],[0,1],[1,1]] },
+    { key:'beehive', name:'Beehive', emoji:'🍯', info:'stable', cells:[[1,0],[2,0],[0,1],[3,1],[1,2],[2,2]] },
+    { key:'loaf',    name:'Loaf',    emoji:'🍞', info:'stable', cells:[[1,0],[2,0],[0,1],[3,1],[1,2],[3,2],[2,3]] },
+    { key:'boat',    name:'Boat',    emoji:'⛵', info:'stable', cells:[[0,0],[1,0],[0,1],[2,1],[1,2]] },
   ]},
 ];
 
@@ -434,8 +434,8 @@ function arm(key){
   document.querySelectorAll('.pat').forEach(el=>el.classList.toggle('active', el.dataset.key===armed));
   stage.classList.toggle('stamp', !!armed && !panMode);
   $('hint').textContent = armed
-    ? `„${PATTERNS[armed].name}" — ins Feld klicken zum Setzen (Esc bricht ab)`
-    : 'Linksklick setzt · Rechtsklick löscht · Mausrad / 2 Finger scrollt · Strg+Rad zoomt';
+    ? `"${PATTERNS[armed].name}" — click on the field to place it (Esc cancels)`
+    : 'Left-click to place · Right-click to erase · Scroll wheel / 2 fingers to pan · Ctrl+wheel to zoom';
 }
 
 /* ======================================================================
@@ -537,7 +537,7 @@ function zoomAt(clientX, clientY, newCS){
 /* ======================================================================
    UI / STEUERUNG
    ====================================================================== */
-function refreshStats(){ $('nGen').textContent = gen.toLocaleString('de-DE'); $('nPop').textContent = live.size.toLocaleString('de-DE'); }
+function refreshStats(){ $('nGen').textContent = gen.toLocaleString('en-US'); $('nPop').textContent = live.size.toLocaleString('en-US'); }
 function updateCoords(clientX, clientY){
   const r = cv.getBoundingClientRect();
   $('nX').textContent = Math.floor(camX + (clientX-r.left)/cs);

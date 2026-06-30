@@ -16,12 +16,12 @@
      Abteilungen (Kategorien)
      ============================================================ */
   const CATS = [
-    { key:"special",  title:"Specials & Saisonales", icon:"✨" },
+    { key:"special",  title:"Specials & Seasonal",   icon:"✨" },
     { key:"arcade",   title:"Arcade & Action",       icon:"🕹️" },
-    { key:"puzzle",   title:"Puzzle & Köpfchen",      icon:"🧩" },
+    { key:"puzzle",   title:"Puzzle & Brains",        icon:"🧩" },
     { key:"online",   title:"Online & Multiplayer",   icon:"🌐" },
-    { key:"strategy", title:"Strategie",              icon:"🗺️" },
-    { key:"data",     title:"Daten & Simulationen",   icon:"📊" },
+    { key:"strategy", title:"Strategy",               icon:"🗺️" },
+    { key:"data",     title:"Data & Simulations",     icon:"📊" },
     { key:"tools",    title:"Tests & Tools",          icon:"🧪" },
   ];
   function categoryOf(it) {

@@ -4,30 +4,30 @@ const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").match
 
 /** @type {{ day: number, title: string, text: string }[]} */
 const DOORS = [
-  { day: 1, title: "Start", text: "Ich wünsche dir alles Gute für die Adventszeit." },
-  { day: 2, title: "Schule", text: "Bleib neugierig — Fleiß hilft, aber Pausen auch." },
-  { day: 3, title: "Bewegung", text: "Ein bisschen Sport tut Körper und Kopf gut." },
-  { day: 4, title: "Essen", text: "Gesund ernähren heißt nicht perfekt — eher bewusst." },
-  { day: 5, title: "Balance", text: "Nicht zu viel zocken — und wenn, dann mit Freude." },
-  { day: 6, title: "Team", text: "Ein gutes Projekt lebt von klaren Zielen und netten Menschen." },
-  { day: 7, title: "Code", text: "Kleine Schritte debuggen ist besser als große raten." },
-  { day: 8, title: "Orbit", text: "Träum groß — und plane die nächsten 3 konkreten Schritte." },
-  { day: 9, title: "Ruhe", text: "Heute: bewusst 10 Minuten ohne Bildschirm." },
-  { day: 10, title: "Musik", text: "Eine Playlist fürs Lernen kann Wunder wirken." },
-  { day: 11, title: "Freunde", text: "Schreib jemandem, dem du’s gönnt." },
-  { day: 12, title: "Mitte", text: "Halbzeit — du schaffst das. Hydrate." },
-  { day: 13, title: "Experiment", text: "Probier eine Sache, die du noch nie gebaut hast." },
-  { day: 14, title: "Lesen", text: "Ein gutes Tutorial spart Stunden Trial-and-Error." },
-  { day: 15, title: "Git", text: "Kleine Commits, klare Messages — zukünftiges du sagt Danke." },
-  { day: 16, title: "Design", text: "Whitespace ist kein Bug, sondern Atmen für’s UI." },
-  { day: 17, title: "Sicherheit", text: "Passwörter und Tokens nie ins Repo — .env bleibt lokal." },
-  { day: 18, title: "Speed", text: "Schnell fertig ist selten sauber — such die goldene Mitte." },
-  { day: 19, title: "Hilfe", text: "Fragen ist eine Superkraft, keine Schwäche." },
-  { day: 20, title: "Feuer", text: "Wenn’s brennt: erst reproduzieren, dann fixen." },
-  { day: 21, title: "Feinschliff", text: "Polish ist das, was aus „okay“ „wow“ macht." },
-  { day: 22, title: "Vorfreude", text: "Noch zwei Türchen — bleib dran." },
-  { day: 23, title: "Heiligabend", text: "Morgen ist großer Tag — heute: entspannt vorbereiten." },
-  { day: 24, title: "Frohe Weihnachten", text: "Danke, dass du durchgeklickt hast — genieß die Feiertage." },
+  { day: 1, title: "Start", text: "Wishing you all the best for the holiday season." },
+  { day: 2, title: "School", text: "Stay curious — hard work helps, but so do breaks." },
+  { day: 3, title: "Movement", text: "A bit of exercise does both body and mind good." },
+  { day: 4, title: "Food", text: "Eating healthy doesn't mean perfect — more like mindful." },
+  { day: 5, title: "Balance", text: "Don't game too much — and when you do, enjoy it." },
+  { day: 6, title: "Team", text: "A good project thrives on clear goals and kind people." },
+  { day: 7, title: "Code", text: "Debugging in small steps beats guessing in big ones." },
+  { day: 8, title: "Orbit", text: "Dream big — and plan the next 3 concrete steps." },
+  { day: 9, title: "Rest", text: "Today: 10 deliberate minutes without a screen." },
+  { day: 10, title: "Music", text: "A study playlist can work wonders." },
+  { day: 11, title: "Friends", text: "Message someone you're rooting for." },
+  { day: 12, title: "Midpoint", text: "Halftime — you've got this. Hydrate." },
+  { day: 13, title: "Experiment", text: "Try something you've never built before." },
+  { day: 14, title: "Reading", text: "A good tutorial saves hours of trial and error." },
+  { day: 15, title: "Git", text: "Small commits, clear messages — future you says thanks." },
+  { day: 16, title: "Design", text: "Whitespace isn't a bug, it's breathing room for the UI." },
+  { day: 17, title: "Security", text: "Never put passwords and tokens in the repo — .env stays local." },
+  { day: 18, title: "Speed", text: "Done fast is rarely clean — find the golden mean." },
+  { day: 19, title: "Help", text: "Asking is a superpower, not a weakness." },
+  { day: 20, title: "Fire", text: "When it's on fire: reproduce first, then fix." },
+  { day: 21, title: "Polish", text: "Polish is what turns “okay” into “wow”." },
+  { day: 22, title: "Anticipation", text: "Two doors left — keep going." },
+  { day: 23, title: "Christmas Eve", text: "Tomorrow's the big day — today: prepare in a relaxed way." },
+  { day: 24, title: "Merry Christmas", text: "Thanks for clicking all the way through — enjoy the holidays." },
 ];
 
 function loadOpened() {
@@ -58,10 +58,10 @@ function canOpenDay(dayNum) {
 }
 
 function seasonMessage() {
-  if (isDemoMode()) return "Demo aktiv — alle Türen frei.";
+  if (isDemoMode()) return "Demo active — all doors unlocked.";
   const now = new Date();
-  if (now.getMonth() !== 11) return "Kalender ist im Dezember aktiv — oder Demo-Modus nutzen.";
-  return `Heute ist der ${now.getDate()}. Dezember — Türchen bis ${now.getDate()} sind frei.`;
+  if (now.getMonth() !== 11) return "Calendar is active in December — or use demo mode.";
+  return `Today is December ${now.getDate()} — doors up to ${now.getDate()} are unlocked.`;
 }
 
 function doorRipple(btn, clientX, clientY, muted) {
@@ -79,7 +79,7 @@ function doorRipple(btn, clientX, clientY, muted) {
 function openModal(day, title, text) {
   const modal = document.getElementById("modal");
   const panel = modal.querySelector(".modal__panel");
-  document.getElementById("modalDay").textContent = `Türchen ${day}`;
+  document.getElementById("modalDay").textContent = `Door ${day}`;
   document.getElementById("modalTitle").textContent = title;
   document.getElementById("modalBody").textContent = text;
   modal.hidden = false;
@@ -138,12 +138,12 @@ function renderGrid(opened) {
       btn.textContent = String(day);
       if (!allowed) {
         btn.disabled = true;
-        btn.title = "Noch nicht verfügbar";
+        btn.title = "Not yet available";
       }
       btn.addEventListener("click", (e) => {
         if (!canOpenDay(day)) {
           doorRipple(btn, e.clientX, e.clientY, true);
-          openModal(day, "Geduld", "Dieses Türchen ist noch nicht dran — oder Demo-Modus aktivieren.");
+          openModal(day, "Patience", "This door isn't ready yet — or enable demo mode.");
           return;
         }
         doorRipple(btn, e.clientX, e.clientY, false);

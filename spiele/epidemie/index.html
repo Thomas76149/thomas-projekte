@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0a0b10">
-<title>Epidemie-Simulator — wie sich Krankheiten ausbreiten</title>
-<meta name="description" content="Interaktive Partikel-Sandbox: stell Ansteckung, Tödlichkeit, Impfquote und Lockdown ein und sieh live, wie sich eine Krankheit ausbreitet.">
+<title>Epidemic Simulator — how diseases spread</title>
+<meta name="description" content="Interactive particle sandbox: set infection rate, lethality, vaccination rate and lockdown, and watch live as a disease spreads.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='16' fill='%23ff4d4d'/%3E%3Cg stroke='%23ff4d4d' stroke-width='5' stroke-linecap='round'%3E%3Cpath d='M32 8v8M32 48v8M8 32h8M48 32h8M15 15l6 6M43 43l6 6M49 15l-6 6M21 43l-6 6'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -100,9 +100,9 @@ button:active{transform:scale(.96)}
 <div class="wrap">
   <a class="back" href="../../index.html">← thomas.fun</a>
   <header>
-    <div class="kicker">Partikel-Sandbox · SIR-Modell</div>
-    <h1>Epidemie-<span class="hl">Simulator</span></h1>
-    <div class="sub">Jeder Punkt ist ein Mensch. Rote stecken an, grüne sind genesen &amp; immun, graue sind leider gestorben. Dreh an den Reglern und sieh live, wie sich eine Krankheit ausbreitet — oder wie Impfen und Lockdown sie stoppen.</div>
+    <div class="kicker">Particle Sandbox · SIR Model</div>
+    <h1>Epidemic <span class="hl">Simulator</span></h1>
+    <div class="sub">Every dot is a person. Red ones are infectious, green ones have recovered &amp; are immune, grey ones have sadly died. Turn the sliders and watch live as a disease spreads — or how vaccination and lockdown stop it.</div>
   </header>
 
   <div class="layout">
@@ -113,43 +113,43 @@ button:active{transform:scale(.96)}
     <div class="side">
       <div class="panel">
         <div class="stats">
-          <div class="stat s"><div class="lab"><span class="dot s"></span>Gesund</div><div class="num" id="nS">0</div></div>
-          <div class="stat i"><div class="lab"><span class="dot i"></span>Infiziert</div><div class="num" id="nI">0</div></div>
-          <div class="stat r"><div class="lab"><span class="dot r"></span>Genesen</div><div class="num" id="nR">0</div></div>
-          <div class="stat d"><div class="lab"><span class="dot d"></span>Gestorben</div><div class="num" id="nD">0</div></div>
+          <div class="stat s"><div class="lab"><span class="dot s"></span>Healthy</div><div class="num" id="nS">0</div></div>
+          <div class="stat i"><div class="lab"><span class="dot i"></span>Infected</div><div class="num" id="nI">0</div></div>
+          <div class="stat r"><div class="lab"><span class="dot r"></span>Recovered</div><div class="num" id="nR">0</div></div>
+          <div class="stat d"><div class="lab"><span class="dot d"></span>Died</div><div class="num" id="nD">0</div></div>
         </div>
         <div class="curvebox" style="margin-top:14px">
-          <h3><span>Verlauf <span id="dayLab" class="peak" style="color:var(--muted)">· Tag 0</span></span><span class="peak" id="peakLab">Höhepunkt: –</span></h3>
+          <h3><span>Timeline <span id="dayLab" class="peak" style="color:var(--muted)">· Day 0</span></span><span class="peak" id="peakLab">Peak: –</span></h3>
           <canvas id="curve"></canvas>
         </div>
       </div>
 
       <div class="panel">
         <div class="sliders">
-          <div class="ctrl"><label>Ansteckungsrate <span class="v" id="vInf">60 %</span></label><input type="range" id="sInf" min="0" max="100" value="60"></div>
-          <div class="ctrl"><label>Krankheitsdauer <span class="v" id="vDur">14 Tage</span></label><input type="range" id="sDur" min="4" max="40" value="14"></div>
-          <div class="ctrl"><label>Tödlichkeit <span class="v" id="vLet">8 %</span></label><input type="range" id="sLet" min="0" max="60" value="8"></div>
-          <div class="ctrl"><label>Impfquote <span class="hint">wirkt ab Neustart</span> <span class="v" id="vVac">0 %</span></label><input type="range" id="sVac" min="0" max="95" value="0"></div>
-          <div class="ctrl"><label>Lockdown (Kontaktsperre) <span class="v" id="vLock">0 %</span></label><input type="range" id="sLock" min="0" max="95" value="0"></div>
+          <div class="ctrl"><label>Infection rate <span class="v" id="vInf">60 %</span></label><input type="range" id="sInf" min="0" max="100" value="60"></div>
+          <div class="ctrl"><label>Illness duration <span class="v" id="vDur">14 days</span></label><input type="range" id="sDur" min="4" max="40" value="14"></div>
+          <div class="ctrl"><label>Lethality <span class="v" id="vLet">8 %</span></label><input type="range" id="sLet" min="0" max="60" value="8"></div>
+          <div class="ctrl"><label>Vaccination rate <span class="hint">applies after restart</span> <span class="v" id="vVac">0 %</span></label><input type="range" id="sVac" min="0" max="95" value="0"></div>
+          <div class="ctrl"><label>Lockdown (contact restriction) <span class="v" id="vLock">0 %</span></label><input type="range" id="sLock" min="0" max="95" value="0"></div>
         </div>
         <div class="btns" style="margin-top:14px">
           <button id="playBtn">❚❚ Pause</button>
-          <button id="infectBtn">☣ Ausbruch</button>
-          <button id="resetBtn">⟲ Neustart</button>
+          <button id="infectBtn">☣ Outbreak</button>
+          <button id="resetBtn">⟲ Restart</button>
         </div>
         <div class="legend">
-          <span><span class="dot s"></span>anfällig</span>
-          <span><span class="dot i"></span>infiziert</span>
-          <span><span class="dot r"></span>immun</span>
-          <span><span class="dot d"></span>gestorben</span>
+          <span><span class="dot s"></span>susceptible</span>
+          <span><span class="dot i"></span>infected</span>
+          <span><span class="dot r"></span>immune</span>
+          <span><span class="dot d"></span>died</span>
         </div>
       </div>
     </div>
   </div>
 
   <div class="foot">
-    Vereinfachtes Agenten-Modell (SIR + Todesfälle) — zum Verstehen &amp; Ausprobieren, keine echte Vorhersage.<br>
-    Tipp: Schieb „Impfquote" hoch und starte neu — ab einer gewissen Quote bricht die Welle gar nicht erst aus (Herdenimmunität).
+    Simplified agent-based model (SIR + deaths) — for understanding &amp; experimenting, not a real prediction.<br>
+    Tip: Crank up the "Vaccination rate" and restart — above a certain rate the wave never even breaks out (herd immunity).
   </div>
 </div>
 
@@ -326,8 +326,8 @@ function updateStats(){
   document.getElementById('nI').textContent=c.i;
   document.getElementById('nR').textContent=c.r;
   document.getElementById('nD').textContent=c.d;
-  document.getElementById('dayLab').textContent='· Tag '+day;
-  document.getElementById('peakLab').textContent='Höhepunkt: '+peak+' krank';
+  document.getElementById('dayLab').textContent='· Day '+day;
+  document.getElementById('peakLab').textContent='Peak: '+peak+' sick';
 }
 
 /* ---------- Loop ---------- */
@@ -344,7 +344,7 @@ function frame(t){
 
 /* ---------- Steuerung ---------- */
 const playBtn=document.getElementById('playBtn');
-function setPlaying(p){ playing=p; playBtn.textContent = p? '❚❚ Pause':'▶ Weiter'; }
+function setPlaying(p){ playing=p; playBtn.textContent = p? '❚❚ Pause':'▶ Resume'; }
 playBtn.addEventListener('click', ()=>setPlaying(!playing));
 document.getElementById('resetBtn').addEventListener('click', ()=>{ reset(); setPlaying(true); });
 document.getElementById('infectBtn').addEventListener('click', ()=>{
@@ -360,7 +360,7 @@ function bind(id, valId, fmt, set){
   el.addEventListener('input', upd); upd();
 }
 bind('sInf','vInf', n=>n+' %',  n=>P.inf=n/100);
-bind('sDur','vDur', n=>n+' Tage', n=>P.durDays=n);
+bind('sDur','vDur', n=>n+' days', n=>P.durDays=n);
 bind('sLet','vLet', n=>n+' %',  n=>P.let=n/100);
 bind('sVac','vVac', n=>n+' %',  n=>P.vac=n/100);
 bind('sLock','vLock',n=>n+' %', n=>P.lock=n/100);

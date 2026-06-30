@@ -215,11 +215,11 @@ function resolveBoss(){
     burst(W/2, H*0.4, '#5dffb4', REDUCED?10:60, 11); shake = REDUCED?0:16; chordWin();
     if (count > best){ best = count; localStorage.setItem('mg_best', String(best)); }
     syncHUD();
-    showOverlay('Geschafft! 🎉', `Deine ${count} haben den Boss (${boss.thresh}) überrannt.`, 'Nochmal');
+    showOverlay('You made it! 🎉', `Your ${count} overran the boss (${boss.thresh}).`, 'Again');
   } else {
     state = 'lose';
     burst(W/2, H*0.45, '#ff6b6b', REDUCED?10:40, 9); shake = REDUCED?0:14; blip(200, 60, 0.6, 'sawtooth', 0.3);
-    showOverlay('Zu wenige …', `${count} gegen ${boss.thresh} — knapp nicht gereicht. Mehr gute Tore nehmen!`, 'Nochmal');
+    showOverlay('Too few …', `${count} against ${boss.thresh} — just not enough. Take more good gates!`, 'Again');
   }
 }
 function lose(){
@@ -227,7 +227,7 @@ function lose(){
   running = false; cancelAnimationFrame(raf);
   state = 'lose';
   shake = REDUCED ? 0 : 12; blip(220, 55, 0.5, 'sawtooth', 0.28);
-  showOverlay('Alle weg …', 'Deine Menge ist auf 0 geschrumpft. Achte auf die roten Tore!', 'Nochmal');
+  showOverlay('All gone …', 'Your crowd shrank to 0. Watch out for the red gates!', 'Again');
 }
 
 /* ---------- Update ---------- */
@@ -456,7 +456,7 @@ function draw(){
 function syncHUD(){
   countEl.textContent = '👥 ' + Math.round(state==='run'?shownCount:count);
   const pct = Math.max(0, Math.min(100, Math.round(traveled / trackLen * 100)));
-  stageEl.textContent = 'Strecke: ' + pct + '%';
+  stageEl.textContent = 'Distance: ' + pct + '%';
   bestEl.textContent = 'Best: ' + (best > 0 ? best : '—');
 }
 

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Jet-Kampf</title>
-  <meta name="description" content="Canvas-Arcade: Bosse alle 5 Wellen, Modi, Shop, Web-Audio, Effekte — 1920×1080." />
+  <title>Jet Combat</title>
+  <meta name="description" content="Canvas arcade: bosses every 5 waves, modes, shop, Web Audio, effects — 1920×1080." />
   <meta name="theme-color" content="#040814" />
   <link rel="manifest" href="jetspiel-manifest.webmanifest" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -16,22 +16,22 @@
 <body>
   <div class="soundRow">
     <label><input type="checkbox" id="soundOn" checked /> Sound</label>
-    <button type="button" class="hdrBtn" id="btnFsTop" style="border-radius:10px">Vollbild</button>
-    <button type="button" class="hdrBtn" id="btnInstallTop" hidden>App installieren</button>
+    <button type="button" class="hdrBtn" id="btnFsTop" style="border-radius:10px">Fullscreen</button>
+    <button type="button" class="hdrBtn" id="btnInstallTop" hidden>Install app</button>
   </div>
   <header>
     <div class="brand">
-      <h1>Jet-Kampf</h1>
-      <span class="wave-pill" id="wavePill">Welle 1</span>
+      <h1>Jet Combat</h1>
+      <span class="wave-pill" id="wavePill">Wave 1</span>
     </div>
-    <span class="upgrade-hud" id="upgradeHud" hidden>Hangar · kein Zeitlimit</span>
+    <span class="upgrade-hud" id="upgradeHud" hidden>Hangar · no time limit</span>
       <div class="hud" aria-live="polite">
       <span id="diffHud" hidden>—</span>
-      <span>Punkte <strong id="score">0</strong></span>
+      <span>Score <strong id="score">0</strong></span>
       <span class="gold">₡ <strong id="credits">0</strong></span>
-      <span><strong id="enemiesHud">Rest —</strong></span>
-      <span class="hudStat">Leben <strong id="lives">3</strong></span>
-      <span id="shieldTag" class="tag" hidden>Schild ×<span id="shieldNum">0</span></span>
+      <span><strong id="enemiesHud">Left —</strong></span>
+      <span class="hudStat">Lives <strong id="lives">3</strong></span>
+      <span id="shieldTag" class="tag" hidden>Shield ×<span id="shieldNum">0</span></span>
       <span id="rocketTag" class="tag">🚀 <strong id="rocketNum">0</strong></span>
       <span id="novaTag" class="tag" hidden>Nova <strong id="novaCd">—</strong></span>
       <span id="upTag" class="tag">—</span>
@@ -42,22 +42,22 @@
     <div class="canvasWrap" id="canvasWrap">
       <div class="topGameBar">
         <button type="button" class="hdrBtn" id="btnPause">Pause</button>
-        <button type="button" class="hdrBtn" id="btnFs">Vollbild</button>
-        <button type="button" class="hdrBtn" id="btnTouchToggle" title="Touch-Leiste ein/aus" aria-pressed="true" hidden>Touch</button>
+        <button type="button" class="hdrBtn" id="btnFs">Fullscreen</button>
+        <button type="button" class="hdrBtn" id="btnTouchToggle" title="Toggle touch bar" aria-pressed="true" hidden>Touch</button>
       </div>
-      <canvas id="game" width="1920" height="1080" aria-label="Spielfeld"></canvas>
+      <canvas id="game" width="1920" height="1080" aria-label="Playfield"></canvas>
       <div class="combatFieldHud" id="combatFieldHud" hidden>
         <div class="combatFieldHud__inner">
           <div class="combatFieldHud__row">
-            <span class="combatFieldHud__label">Leben</span>
+            <span class="combatFieldHud__label">Lives</span>
             <span class="combatFieldHud__val" id="fieldLives">3</span>
           </div>
           <div class="combatFieldHud__row">
-            <span class="combatFieldHud__label">Raketen</span>
+            <span class="combatFieldHud__label">Rockets</span>
             <span class="combatFieldHud__val" id="fieldRockets">0</span>
           </div>
           <div class="combatFieldHud__row combatFieldHud__row--shield" id="fieldShieldRow" hidden>
-            <span class="combatFieldHud__label">Schild</span>
+            <span class="combatFieldHud__label">Shield</span>
             <span class="combatFieldHud__val combatFieldHud__val--mint" id="fieldShield">0</span>
           </div>
         </div>
@@ -71,13 +71,13 @@
         aria-atomic="true"
       >
         <div class="heatDock__top">
-          <span class="heatDock__title" id="heatLabel">Wärme</span>
+          <span class="heatDock__title" id="heatLabel">Heat</span>
           <span class="heatDock__pct" id="heatPct">0%</span>
         </div>
         <div class="heatDock__track"><div class="heatDock__fill" id="heatFill"></div></div>
       </div>
       <div class="comboStage" id="comboStage" hidden aria-live="polite">
-        <div class="comboLabel">KOMBO</div>
+        <div class="comboLabel">COMBO</div>
         <div class="comboBigNum" id="comboBigNum">0</div>
         <div class="comboBar"><span id="comboBarFill"></span></div>
       </div>
@@ -85,52 +85,52 @@
       <div class="voiceBubble" id="voiceBubble" hidden><span class="who">Tower</span><span id="voiceText"></span></div>
       <div class="overlay" id="startOverlay">
         <div class="card">
-          <p><strong>PC:</strong> <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> steuern vertikal · <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> seitlich ausweichen · <kbd>Leertaste</kbd> Feuer · <kbd>E</kbd> Rakete · <kbd>Q</kbd> Nova (wenn freigeschaltet)</p>
-          <p><strong>Handy:</strong> Links am Feld wischen = hoch/runter und seitlich · Buttons unten inkl. Links/Rechts</p>
+          <p><strong>PC:</strong> <kbd>↑</kbd><kbd>↓</kbd> / <kbd>W</kbd><kbd>S</kbd> steer vertically · <kbd>←</kbd><kbd>→</kbd> / <kbd>A</kbd><kbd>D</kbd> dodge sideways · <kbd>Space</kbd> fire · <kbd>E</kbd> rocket · <kbd>Q</kbd> Nova (once unlocked)</p>
+          <p><strong>Mobile:</strong> Swipe on the left of the field = up/down and sideways · buttons below incl. left/right</p>
           <ul>
-            <li>Pro <strong>Welle</strong> feste Anzahl Gegner — wenn leer: <strong>Hangar</strong> ohne Zeitlimit, dann mit <strong>Weiter</strong> in die nächste Welle.</li>
-            <li><strong>Credits</strong> sammeln — Angebote passen zum gewählten <strong>Schiff</strong> (Puls vs. Strahl).</li>
-            <li><strong>Sound</strong>: Schüsse und Effekte per Web Audio (nach Klick auf Start) — ohne Dauer-Hintergrundton.</li>
-            <li>Alle <strong>5 Wellen</strong> ein <strong>Boss</strong> — acht verschiedene Muster im Rotationszyklus.</li>
-            <li><strong>Elite</strong>-Gegner (goldener Ring), <strong>Kombo</strong>-Bonus, <strong>Hitstop</strong> bei schweren Treffern.</li>
-            <li><kbd>ESC</kbd> oder <strong>Pause</strong> im Kampf · <strong>Taktikmodule</strong> je Schiff und Meta-Freischaltungen (Trail, Strahl, Rumpf) über Fortschritt.</li>
+            <li>Each <strong>wave</strong> has a fixed number of enemies — once clear: <strong>Hangar</strong> with no time limit, then hit <strong>Continue</strong> for the next wave.</li>
+            <li>Collect <strong>credits</strong> — offers match your chosen <strong>ship</strong> (Pulse vs. Beam).</li>
+            <li><strong>Sound</strong>: shots and effects via Web Audio (after clicking Start) — no constant background hum.</li>
+            <li>Every <strong>5 waves</strong> a <strong>boss</strong> — eight different patterns in a rotating cycle.</li>
+            <li><strong>Elite</strong> enemies (golden ring), <strong>combo</strong> bonus, <strong>hitstop</strong> on heavy hits.</li>
+            <li><kbd>ESC</kbd> or <strong>Pause</strong> in combat · <strong>tactical modules</strong> per ship and meta unlocks (trail, beam, hull) through progress.</li>
           </ul>
-          <div class="difficultyRow" role="radiogroup" aria-label="Schwierigkeit">
-            <span>Modus</span>
+          <div class="difficultyRow" role="radiogroup" aria-label="Difficulty">
+            <span>Mode</span>
             <div class="chips">
-              <button type="button" class="diffChip" data-diff="easy" aria-pressed="false">Leicht</button>
-              <button type="button" class="diffChip" data-diff="medium" aria-pressed="false">Mittel</button>
-              <button type="button" class="diffChip" data-diff="hard" aria-pressed="false">Schwer</button>
+              <button type="button" class="diffChip" data-diff="easy" aria-pressed="false">Easy</button>
+              <button type="button" class="diffChip" data-diff="medium" aria-pressed="false">Medium</button>
+              <button type="button" class="diffChip" data-diff="hard" aria-pressed="false">Hard</button>
             </div>
           </div>
           <p class="diffHint" id="diffHint"></p>
-          <div class="difficultyRow" role="radiogroup" aria-label="Schiff">
-            <span>Schiff</span>
+          <div class="difficultyRow" role="radiogroup" aria-label="Ship">
+            <span>Ship</span>
             <div class="chips">
-              <button type="button" class="diffChip shipChip" data-ship="pulse" aria-pressed="false">Pulsjäger</button>
-              <button type="button" class="diffChip shipChip" data-ship="beam" aria-pressed="false">Strahljäger</button>
+              <button type="button" class="diffChip shipChip" data-ship="pulse" aria-pressed="false">Pulse Fighter</button>
+              <button type="button" class="diffChip shipChip" data-ship="beam" aria-pressed="false">Beam Fighter</button>
             </div>
           </div>
           <div class="shipPreviewBox">
             <canvas id="shipPreviewCanvas" width="400" height="220" aria-hidden="true"></canvas>
           </div>
           <p class="diffHint" id="shipHint"></p>
-          <div class="difficultyRow" role="radiogroup" aria-label="Taktik Pulsjäger" id="modRowPulse">
-            <span>Taktik (Pulsjäger)</span>
+          <div class="difficultyRow" role="radiogroup" aria-label="Tactic Pulse Fighter" id="modRowPulse">
+            <span>Tactic (Pulse Fighter)</span>
             <div class="chips">
               <button type="button" class="diffChip modChip" data-mod="standard" aria-pressed="false">Standard</button>
-              <button type="button" class="diffChip modChip" data-mod="pbreach" aria-pressed="false">Panzerbrecher</button>
-              <button type="button" class="diffChip modChip" data-mod="psalve" aria-pressed="false">Salve</button>
-              <button type="button" class="diffChip modChip" data-mod="pwolke" aria-pressed="false">Wolke</button>
+              <button type="button" class="diffChip modChip" data-mod="pbreach" aria-pressed="false">Armor Breaker</button>
+              <button type="button" class="diffChip modChip" data-mod="psalve" aria-pressed="false">Salvo</button>
+              <button type="button" class="diffChip modChip" data-mod="pwolke" aria-pressed="false">Cloud</button>
             </div>
           </div>
-          <div class="difficultyRow" role="radiogroup" aria-label="Taktik Strahljäger" id="modRowBeam" hidden>
-            <span>Taktik (Strahljäger)</span>
+          <div class="difficultyRow" role="radiogroup" aria-label="Tactic Beam Fighter" id="modRowBeam" hidden>
+            <span>Tactic (Beam Fighter)</span>
             <div class="chips">
               <button type="button" class="diffChip modChip" data-mod="standard" aria-pressed="false">Standard</button>
-              <button type="button" class="diffChip modChip" data-mod="bbreach" aria-pressed="false">Panzerbrecher</button>
+              <button type="button" class="diffChip modChip" data-mod="bbreach" aria-pressed="false">Armor Breaker</button>
               <button type="button" class="diffChip modChip" data-mod="bflux" aria-pressed="false">Flux</button>
-              <button type="button" class="diffChip modChip" data-mod="bbulk" aria-pressed="false">Bollwerk</button>
+              <button type="button" class="diffChip modChip" data-mod="bbulk" aria-pressed="false">Bulwark</button>
             </div>
           </div>
           <p class="diffHint modHint" id="modHint"></p>
@@ -140,16 +140,16 @@
       <div class="overlay" id="gameOverOverlay" hidden>
         <div class="card">
           <p id="goText">Game Over</p>
-          <button type="button" class="btn-primary" id="btnRestart">Nochmal</button>
-          <button type="button" class="btn-secondary" id="btnMenu">Zurück</button>
+          <button type="button" class="btn-primary" id="btnRestart">Again</button>
+          <button type="button" class="btn-secondary" id="btnMenu">Back</button>
         </div>
       </div>
       <div class="overlay pauseOverlay" id="pauseOverlay" hidden>
         <div class="card">
           <h2>Pause</h2>
-          <p><kbd>ESC</kbd> oder Weiter — Sound und Modul wie im Menü.</p>
-          <button type="button" class="btn-primary" id="btnResume">Weiter</button>
-          <button type="button" class="btn-secondary" id="btnPauseMenu">Zum Menü</button>
+          <p><kbd>ESC</kbd> or Resume — sound and module as in the menu.</p>
+          <button type="button" class="btn-primary" id="btnResume">Resume</button>
+          <button type="button" class="btn-secondary" id="btnPauseMenu">To menu</button>
         </div>
       </div>
     </div>
@@ -158,19 +158,19 @@
       <div class="shopHead">
         <div>
           <h2>Hangar</h2>
-          <p class="shopSub" id="shopSubline">Nur in der Upgrade-Phase — Credits ausgeben, dann weiter.</p>
+          <p class="shopSub" id="shopSubline">Only during the upgrade phase — spend credits, then continue.</p>
         </div>
         <div class="shopCreditsPill" aria-live="polite"><span id="shopCreditsVal">0</span><small>₡</small></div>
       </div>
       <div class="shopControls" id="shopControls">
-        <button type="button" class="shopChip" data-shop-filter="all" aria-pressed="true">Alle</button>
-        <button type="button" class="shopChip" data-shop-filter="affordable" aria-pressed="false">Kaufbar</button>
-        <button type="button" class="shopChip" data-shop-filter="Waffe" aria-pressed="false">Waffe</button>
-        <button type="button" class="shopChip" data-shop-filter="Abwehr" aria-pressed="false">Abwehr</button>
-        <button type="button" class="shopChip" data-shop-filter="Mobilität" aria-pressed="false">Mobilität</button>
-        <button type="button" class="shopChip" data-shop-filter="Ökonomie" aria-pressed="false">Ökonomie</button>
-        <button type="button" class="shopChip" data-shop-filter="Taktik" aria-pressed="false">Taktik</button>
-        <button type="button" class="shopChip" data-shop-filter="epic" aria-pressed="false">Episch</button>
+        <button type="button" class="shopChip" data-shop-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="shopChip" data-shop-filter="affordable" aria-pressed="false">Affordable</button>
+        <button type="button" class="shopChip" data-shop-filter="Waffe" aria-pressed="false">Weapon</button>
+        <button type="button" class="shopChip" data-shop-filter="Abwehr" aria-pressed="false">Defense</button>
+        <button type="button" class="shopChip" data-shop-filter="Mobilität" aria-pressed="false">Mobility</button>
+        <button type="button" class="shopChip" data-shop-filter="Ökonomie" aria-pressed="false">Economy</button>
+        <button type="button" class="shopChip" data-shop-filter="Taktik" aria-pressed="false">Tactic</button>
+        <button type="button" class="shopChip" data-shop-filter="epic" aria-pressed="false">Epic</button>
       </div>
       <div class="shopLayout">
         <div class="shopGrid" id="shopGrid" aria-label="Upgrade-Auswahl"></div>

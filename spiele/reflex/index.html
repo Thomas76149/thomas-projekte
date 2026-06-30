@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
-  <title>Reflex‑Test · thomas.fun</title>
-  <meta name="description" content="Reflex-Test: Drück so schnell du kannst, wenn es grün wird. Mit Bewertung & Durchschnitt." />
+  <title>Reflex Test · thomas.fun</title>
+  <meta name="description" content="Reflex test: tap as fast as you can when it turns green. With rating & average." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -65,8 +65,8 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Reflex‑Test</h1>
-      <a href="../../index.html">← zurück</a>
+      <h1>Reflex Test</h1>
+      <a href="../../index.html">← back</a>
     </header>
     <div class="card">
       <div class="top">
@@ -74,26 +74,26 @@
           <button class="primary" id="btnStart">Start</button>
           <button id="btnReset">Reset</button>
           <select id="rounds">
-            <option value="5" selected>5 Runden</option>
-            <option value="10">10 Runden</option>
+            <option value="5" selected>5 rounds</option>
+            <option value="10">10 rounds</option>
           </select>
         </div>
         <div class="meta">
-          <span class="pill" id="r">Runde: —</span>
+          <span class="pill" id="r">Round: —</span>
           <span class="pill" id="avg">Ø: —</span>
           <span class="pill" id="best">Best: —</span>
         </div>
       </div>
 
       <div class="big" id="msBig">— ms</div>
-      <div class="sub" id="rating">Drück Start.</div>
+      <div class="sub" id="rating">Press Start.</div>
 
-      <div class="pad" id="pad" role="button" tabindex="0" aria-label="Reflex-Fläche">
-        <div class="state" id="state">WARTEN</div>
+      <div class="pad" id="pad" role="button" tabindex="0" aria-label="Reflex area">
+        <div class="state" id="state">WAIT</div>
         <!-- Balken entfernt: sonst kann man das Grün "ablesen" -->
-        <div class="hint" id="padHint">Wenn es GRÜN wird: klicken/Space drücken.</div>
+        <div class="hint" id="padHint">When it turns GREEN: click / press Space.</div>
       </div>
-      <div class="hint">Zu früh drücken zählt als Fehlstart.</div>
+      <div class="hint">Pressing too early counts as a false start.</div>
     </div>
   </div>
 
@@ -147,14 +147,14 @@
     function avg(arr){ return arr.reduce((a,b)=>a+b,0)/Math.max(1,arr.length); }
     function rank(ms){
       if (ms < 80) return {t:"WOW", col:"var(--gold)"};
-      if (ms < 120) return {t:"sehr schnell", col:"var(--good)"};
-      if (ms < 160) return {t:"schnell", col:"var(--accent2)"};
+      if (ms < 120) return {t:"very fast", col:"var(--good)"};
+      if (ms < 160) return {t:"fast", col:"var(--accent2)"};
       if (ms < 220) return {t:"ok", col:"rgba(200,220,255,.9)"};
-      return {t:"langsam", col:"var(--bad)"};
+      return {t:"slow", col:"var(--bad)"};
     }
 
     function sync(){
-      rEl.textContent = i ? `Runde: ${i}/${rounds}` : "Runde: —";
+      rEl.textContent = i ? `Round: ${i}/${rounds}` : "Round: —";
       if (times.length){
         const a = avg(times);
         avgEl.textContent = `Ø: ${fmtMs(a)}`;
@@ -168,20 +168,20 @@
     function setPad(kind){
       if (kind==="wait"){
         pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(34,211,238,.12), rgba(0,0,0,.22))";
-        stateEl.textContent = "WARTEN";
-        padHint.textContent = "Wenn es GRÜN wird: klicken/Space.";
+        stateEl.textContent = "WAIT";
+        padHint.textContent = "When it turns GREEN: click / Space.";
       } else if (kind==="go"){
         pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(93,255,180,.22), rgba(0,0,0,.22))";
-        stateEl.textContent = "JETZT!";
-        padHint.textContent = "DRÜCK!";
+        stateEl.textContent = "NOW!";
+        padHint.textContent = "PRESS!";
       } else if (kind==="false"){
         pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(255,107,107,.18), rgba(0,0,0,.22))";
-        stateEl.textContent = "ZU FRÜH";
-        padHint.textContent = "Fehlstart. Nächste Runde.";
+        stateEl.textContent = "TOO EARLY";
+        padHint.textContent = "False start. Next round.";
       } else {
         pad.style.background = "radial-gradient(700px 280px at 50% 10%, rgba(255,215,106,.16), rgba(0,0,0,.22))";
-        stateEl.textContent = "FERTIG";
-        padHint.textContent = "Start für neue Session.";
+        stateEl.textContent = "DONE";
+        padHint.textContent = "Press Start for a new session.";
       }
     }
 
@@ -201,7 +201,7 @@
       waiting = false;
       go = false;
       msBig.textContent = "— ms";
-      ratingEl.textContent = "Warte auf Grün…";
+      ratingEl.textContent = "Wait for green…";
       btnStart.blur();   // sonst löst Space (zum Reagieren) zusätzlich den fokussierten Start-Button aus -> Neustart
       nextRound();
     }
@@ -249,7 +249,7 @@
       times.push(ms);
       msBig.textContent = fmtMs(ms);
       const r = rank(ms);
-      ratingEl.innerHTML = `Du: <span style="color:${r.col};font-weight:1000">${fmtMs(ms)} · ${r.t}</span>`;
+      ratingEl.innerHTML = `You: <span style="color:${r.col};font-weight:1000">${fmtMs(ms)} · ${r.t}</span>`;
       if (!best || ms < best){
         best = ms;
         try { localStorage.setItem(LSK, String(best)); } catch {}
@@ -267,8 +267,8 @@
       const rr = rank(a);
       msBig.textContent = times.length ? fmtMs(a) : "— ms";
       ratingEl.innerHTML = times.length
-        ? `Durchschnitt: <span style="color:${rr.col};font-weight:1000">${fmtMs(a)} · ${rr.t}</span> · Best: ${fmtMs(best)}`
-        : "Keine validen Runden (nur Fehlstarts).";
+        ? `Average: <span style="color:${rr.col};font-weight:1000">${fmtMs(a)} · ${rr.t}</span> · Best: ${fmtMs(best)}`
+        : "No valid rounds (false starts only).";
       tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60);
       vibr([20,20,20,50]);
       sync();
@@ -278,7 +278,7 @@
       clearTimers();
       i = 0; times = []; waiting=false; go=false;
       msBig.textContent = "— ms";
-      ratingEl.textContent = "Drück Start.";
+      ratingEl.textContent = "Press Start.";
       setPad("wait");
       sync();
     }

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <title>Minesweeper · thomas.fun</title>
-  <meta name="description" content="Minesweeper im Browser — Touch/Mouse, Bestzeiten, First‑Click‑Safe." />
+  <meta name="description" content="Minesweeper in the browser — touch/mouse, best times, first-click-safe." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -124,33 +124,33 @@
   <div class="wrap">
     <header>
       <h1>Minesweeper</h1>
-      <a href="../../index.html">← zurück</a>
+      <a href="../../index.html">← back</a>
     </header>
 
     <div class="card">
       <div class="top">
         <div class="controls">
-          <button class="primary" id="btnNew">Neues Spiel</button>
-          <select id="selDiff" aria-label="Schwierigkeit">
+          <button class="primary" id="btnNew">New game</button>
+          <select id="selDiff" aria-label="Difficulty">
             <option value="easy">Easy · 9×9 · 10</option>
             <option value="med">Medium · 16×16 · 40</option>
             <option value="hard">Hard · 30×16 · 99</option>
           </select>
-          <button id="btnFlag" type="button" aria-pressed="false" title="Flag‑Mode (hilft auf Handy)">🚩 Flag‑Mode</button>
+          <button id="btnFlag" type="button" aria-pressed="false" title="Flag mode (helps on mobile)">🚩 Flag mode</button>
         </div>
         <div class="meta">
-          <span class="pill" id="mLeft">Minen: —</span>
-          <span class="pill" id="time">Zeit: 0.0s</span>
+          <span class="pill" id="mLeft">Mines: —</span>
+          <span class="pill" id="time">Time: 0.0s</span>
           <span class="pill" id="best">Best: —</span>
         </div>
       </div>
 
       <div class="boardWrap">
         <div class="board" id="board">
-          <div class="grid" id="grid" role="grid" aria-label="Minesweeper Feld"></div>
+          <div class="grid" id="grid" role="grid" aria-label="Minesweeper board"></div>
         </div>
         <div class="hint" id="hint">
-          Links: aufdecken · Rechts/Long‑Press: Flagge · Zahl antippen (wenn Flags passen): öffnet Nachbarn
+          Left: reveal · Right/long-press: flag · Tap a number (when flags match): opens neighbors
         </div>
       </div>
     </div>
@@ -161,8 +161,8 @@
       <h2 id="ovTitle">—</h2>
       <p id="ovText">—</p>
       <div class="cta">
-        <button class="primary" id="btnAgain">Nochmal</button>
-        <button id="btnClose">Schließen</button>
+        <button class="primary" id="btnAgain">Again</button>
+        <button id="btnClose">Close</button>
       </div>
     </div>
   </div>
@@ -265,7 +265,7 @@
       function tick(){
         if (!started || ended) return;
         const now = performance.now();
-        timeEl.textContent = `Zeit: ${((now - t0)/1000).toFixed(1)}s`;
+        timeEl.textContent = `Time: ${((now - t0)/1000).toFixed(1)}s`;
         tHandle = requestAnimationFrame(tick);
       }
       function startTimer(){
@@ -296,7 +296,7 @@
             b.setAttribute("role","gridcell");
             b.dataset.x = x;
             b.dataset.y = y;
-            b.setAttribute("aria-label", `Zelle ${x+1}/${y+1}`);
+            b.setAttribute("aria-label", `Cell ${x+1}/${y+1}`);
             gridEl.appendChild(b);
           }
         }
@@ -339,8 +339,8 @@
         return Math.max(0, MINES - flags);
       }
       function updateMeta(){
-        mLeftEl.textContent = `Minen: ${minesLeft()}`;
-        if (!started) timeEl.textContent = "Zeit: 0.0s";
+        mLeftEl.textContent = `Mines: ${minesLeft()}`;
+        if (!started) timeEl.textContent = "Time: 0.0s";
         updateBestUI();
       }
 
@@ -419,13 +419,13 @@
           if (!prev || t < prev){
             localStorage.setItem(bestKey(), String(Math.round(t)));
           }
-          ovTitle.textContent = "Gewonnen!";
-          ovText.textContent = `Zeit: ${fmtTime(t)} · Nice.`;
+          ovTitle.textContent = "You won!";
+          ovText.textContent = `Time: ${fmtTime(t)} · Nice.`;
         } else {
           tone(140, 0.12, "sawtooth", 0.09);
           vib(40);
           ovTitle.textContent = "Boom.";
-          ovText.textContent = "Du hast eine Mine erwischt.";
+          ovText.textContent = "You hit a mine.";
         }
         updateMeta();
         setOverlay(true);

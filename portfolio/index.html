@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thomas Halbach · Roblox Scripter</title>
+<meta name="description" content="Thomas Halbach — Roblox / Luau scripter. Weapon systems, enemy & boss AI, viewmodels, tower defense and saved player data. Three published Roblox games." />
+<meta name="theme-color" content="#05060c" />
+<meta name="color-scheme" content="dark" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#05060c; --bg2:#0a0d1a;
+    --ink:#eef2ff; --muted:#9aa6c8; --faint:#5e6488;
+    --card:rgba(255,255,255,.04); --line:rgba(255,255,255,.09);
+    --c1:#22d3ee; --c2:#7c5cff; --c3:#ff5d8f; --c4:#2dd4a7;
+    --glow1:rgba(34,211,238,.5); --glow2:rgba(124,92,255,.5);
+    --font-head:'Outfit',system-ui,sans-serif; --font-body:'Space Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--font-body); background:var(--bg); color:var(--ink);
+    overflow-x:hidden; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;text-decoration:none}
+  canvas#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+  /* aurora blobs */
+  .aurora{position:fixed;inset:-20% -10%;z-index:0;pointer-events:none;filter:blur(80px);opacity:.55}
+  .aurora span{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:drift 22s ease-in-out infinite}
+  .aurora .b1{width:46vw;height:46vw;left:-6vw;top:-8vw;background:radial-gradient(circle,var(--c1),transparent 65%)}
+  .aurora .b2{width:42vw;height:42vw;right:-8vw;top:10vh;background:radial-gradient(circle,var(--c2),transparent 65%);animation-delay:-7s}
+  .aurora .b3{width:40vw;height:40vw;left:25vw;bottom:-14vw;background:radial-gradient(circle,var(--c3),transparent 65%);animation-delay:-13s}
+  @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4vw,3vh) scale(1.1)}66%{transform:translate(-3vw,-2vh) scale(.95)}}
+  .wrap{position:relative;z-index:2;max-width:1120px;margin:0 auto;padding:0 22px}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:linear-gradient(to bottom,rgba(5,6,12,.85),rgba(5,6,12,.35));border-bottom:1px solid var(--line)}
+  .nav__in{max-width:1120px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .brand{font-family:var(--font-head);font-weight:900;letter-spacing:.5px;font-size:19px;display:flex;align-items:center;gap:9px}
+  .brand i{width:11px;height:11px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 0 14px var(--glow1)}
+  .nav__links{display:flex;gap:22px;font-size:14px;color:var(--muted)}
+  .nav__links a{transition:color .2s}
+  .nav__links a:hover{color:var(--ink)}
+  .nav__cta{font-family:var(--font-head);font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#05060c;box-shadow:0 6px 24px -6px var(--glow2);transition:transform .15s,box-shadow .2s}
+  .nav__cta:hover{transform:translateY(-2px);box-shadow:0 10px 30px -6px var(--glow2)}
+  @media(max-width:720px){.nav__links{display:none}}
+
+  /* hero */
+  header.hero{position:relative;padding:clamp(70px,13vw,150px) 0 clamp(50px,8vw,90px)}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:var(--font-head);font-weight:700;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;color:var(--c1);padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+  .eyebrow b{width:7px;height:7px;border-radius:50%;background:var(--c1);box-shadow:0 0 12px var(--c1);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  h1.title{font-family:var(--font-head);font-weight:900;font-size:clamp(44px,9vw,98px);line-height:.98;letter-spacing:-2px;margin:22px 0 0}
+  h1.title .grad{background:linear-gradient(110deg,var(--c1),var(--c2) 45%,var(--c3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{max-width:640px;margin:24px 0 0;font-size:clamp(16px,2.2vw,20px);color:var(--muted)}
+  .lead strong{color:var(--ink);font-weight:700}
+  .cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:34px}
+  .btn{font-family:var(--font-head);font-weight:700;font-size:15px;padding:14px 24px;border-radius:14px;transition:transform .15s,box-shadow .2s,border-color .2s;border:1px solid transparent}
+  .btn--p{background:linear-gradient(135deg,var(--c1),var(--c2));color:#05060c;box-shadow:0 10px 34px -10px var(--glow2)}
+  .btn--p:hover{transform:translateY(-3px);box-shadow:0 16px 40px -10px var(--glow2)}
+  .btn--g{background:var(--card);border-color:var(--line);color:var(--ink)}
+  .btn--g:hover{transform:translateY(-3px);border-color:var(--c1)}
+  .stats{display:flex;flex-wrap:wrap;gap:30px;margin-top:48px}
+  .stat .k{font-family:var(--font-head);font-weight:900;font-size:30px;background:linear-gradient(120deg,var(--c1),var(--c4));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .stat .v{font-size:13px;color:var(--muted);letter-spacing:.4px}
+
+  /* sections */
+  section{padding:clamp(56px,9vw,96px) 0}
+  .head{margin-bottom:42px}
+  .kick{font-family:var(--font-head);font-weight:700;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--c2)}
+  .head h2{font-family:var(--font-head);font-weight:900;font-size:clamp(30px,5vw,46px);letter-spacing:-1px;margin-top:8px}
+  .head p{color:var(--muted);max-width:620px;margin-top:12px;font-size:16px}
+
+  /* roblox game cards */
+  .games{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:860px){.games{grid-template-columns:1fr}}
+  .game{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:var(--bg2);min-height:330px;display:flex;flex-direction:column;justify-content:flex-end;padding:24px;transition:transform .25s,border-color .25s,box-shadow .25s;isolation:isolate}
+  .game:hover{transform:translateY(-7px);border-color:rgba(255,255,255,.22);box-shadow:0 26px 60px -24px var(--gc,var(--glow1))}
+  .game__art{position:absolute;inset:0;z-index:-1;opacity:.92}
+  .game__art::before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,transparent 30%,rgba(5,6,12,.55) 65%,rgba(5,6,12,.95))}
+  .game__emoji{position:absolute;top:18px;left:20px;font-size:40px;filter:drop-shadow(0 4px 14px rgba(0,0,0,.5));transition:transform .3s}
+  .game:hover .game__emoji{transform:scale(1.15) rotate(-6deg)}
+  .game__tag{position:absolute;top:24px;right:20px;font-family:var(--font-head);font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:6px 11px;border-radius:999px;background:rgba(0,0,0,.45);border:1px solid var(--line);color:var(--ink)}
+  .game h3{font-family:var(--font-head);font-weight:900;font-size:24px;letter-spacing:-.5px}
+  .game p{color:#c4cce6;font-size:14px;margin-top:9px}
+  .game__go{margin-top:16px;font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--ink);display:inline-flex;align-items:center;gap:7px}
+  .game__go span{transition:transform .2s}
+  .game:hover .game__go span{transform:translateX(5px)}
+  /* art gradients */
+  .art-horde{background:radial-gradient(120% 90% at 30% 10%,#1f3a2a,#0a1410 60%),linear-gradient(135deg,#16351f,#3a1414)}
+  .art-weapon{background:radial-gradient(120% 90% at 70% 10%,#2a2f45,#0c0f1a 60%),linear-gradient(135deg,#1a2340,#402038)}
+  .art-coaster{background:radial-gradient(120% 90% at 50% 0%,#3a2a52,#120c1a 60%),linear-gradient(135deg,#2a1f52,#143a44)}
+
+  /* systems grid */
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media(max-width:860px){.grid4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:520px){.grid4{grid-template-columns:1fr}}
+  .sys{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:22px;transition:transform .2s,border-color .2s,background .2s}
+  .sys:hover{transform:translateY(-5px);border-color:var(--c1);background:rgba(34,211,238,.06)}
+  .sys .ic{font-size:30px}
+  .sys h3{font-family:var(--font-head);font-weight:800;font-size:17px;margin-top:14px}
+  .sys p{color:var(--muted);font-size:13.5px;margin-top:7px}
+
+  /* web row */
+  .web{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:720px){.web{grid-template-columns:1fr}}
+  .wcard{border:1px solid var(--line);background:var(--card);border-radius:18px;padding:26px;transition:transform .2s,border-color .2s}
+  .wcard:hover{transform:translateY(-5px);border-color:var(--c2)}
+  .wcard .ic{font-size:34px}
+  .wcard h3{font-family:var(--font-head);font-weight:900;font-size:22px;margin-top:12px}
+  .wcard p{color:var(--muted);font-size:14px;margin-top:8px}
+  .wcard .go{margin-top:14px;font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--c1)}
+
+  /* contact */
+  .contact{text-align:center;border:1px solid var(--line);border-radius:24px;padding:clamp(40px,7vw,72px);background:linear-gradient(160deg,rgba(34,211,238,.06),rgba(124,92,255,.06));position:relative;overflow:hidden}
+  .contact h2{font-family:var(--font-head);font-weight:900;font-size:clamp(28px,5vw,44px);letter-spacing:-1px}
+  .contact p{color:var(--muted);max-width:480px;margin:14px auto 0}
+  .contact .cta{justify-content:center}
+
+  footer{border-top:1px solid var(--line);padding:30px 0;margin-top:40px}
+  .foot{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;color:var(--muted);font-size:13px}
+  .foot a:hover{color:var(--ink)}
+
+  /* reveal */
+  [data-reveal]{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  [data-reveal].in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none}.aurora span{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="stars" aria-hidden="true"></canvas>
+<div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+
+<nav>
+  <div class="nav__in">
+    <a class="brand" href="#top"><i></i>THOMAS</a>
+    <div class="nav__links">
+      <a href="#games">Games</a>
+      <a href="#systems">Systems</a>
+      <a href="#web">Web</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a class="nav__cta" href="https://www.roblox.com/games/138764709689858/Survive-the-Horde" target="_blank" rel="noreferrer">Play my game →</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow" data-reveal><b></b>Roblox · Luau · Scripter</p>
+    <h1 class="title" data-reveal>I build the <span class="grad">systems</span><br>behind the game.</h1>
+    <p class="lead" data-reveal>I'm <strong>Thomas</strong> — a Roblox scripter working in Luau. Weapons that feel good, enemy &amp; boss AI, first-person viewmodels, tower-defense waves and safe player-data saving. <strong>Three published games</strong> to show for it.</p>
+    <div class="cta" data-reveal>
+      <a class="btn btn--p" href="#games">See my games</a>
+      <a class="btn btn--g" href="#contact">Hire me</a>
+    </div>
+    <div class="stats" data-reveal>
+      <div class="stat"><div class="k">3</div><div class="v">published games</div></div>
+      <div class="stat"><div class="k">Luau</div><div class="v">main language</div></div>
+      <div class="stat"><div class="k">Web</div><div class="v">JS · Python too</div></div>
+    </div>
+  </div>
+</header>
+
+<section id="games">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="kick">Published on Roblox</p>
+      <h2>My games</h2>
+      <p>Live games I scripted. Each card opens the real thing on Roblox.</p>
+    </div>
+    <div class="games">
+      <a class="game" data-reveal style="--gc:rgba(45,212,167,.5)" href="https://www.roblox.com/games/138764709689858/Survive-the-Horde" target="_blank" rel="noreferrer">
+        <div class="game__art art-horde"></div>
+        <div class="game__emoji">🧟</div>
+        <div class="game__tag">Survival FPS</div>
+        <h3>Survive the Horde</h3>
+        <p>First-person zombie survival. Weapon feel (recoil, spread, ADS, sounds), Motor6D viewmodels, special &amp; boss zombie AI, and an extendable settings menu.</p>
+        <div class="game__go">Play on Roblox <span>→</span></div>
+      </a>
+      <a class="game" data-reveal style="--gc:rgba(124,92,255,.5)" href="https://www.roblox.com/games/78537817592438/Realistic-Weapon-Test" target="_blank" rel="noreferrer">
+        <div class="game__art art-weapon"></div>
+        <div class="game__emoji">🔫</div>
+        <div class="game__tag">Sandbox</div>
+        <h3>Realistic Weapon Test</h3>
+        <p>A sandbox for tuning weapon &amp; projectile behaviour — server-authoritative shots, ballistics and feedback. Where I dial in how guns handle.</p>
+        <div class="game__go">Play on Roblox <span>→</span></div>
+      </a>
+      <a class="game" data-reveal style="--gc:rgba(34,211,238,.5)" href="https://www.roblox.com/games/132692247694350/Highest-Roller-Coaster-Ever" target="_blank" rel="noreferrer">
+        <div class="game__art art-coaster"></div>
+        <div class="game__emoji">🎢</div>
+        <div class="game__tag">Physics</div>
+        <h3>Highest Roller Coaster Ever</h3>
+        <p>A physics-driven coaster build — an experiment in movement, scale and Roblox physics.</p>
+        <div class="game__go">Play on Roblox <span>→</span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="systems">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="kick">What I script</p>
+      <h2>Systems I build</h2>
+      <p>The gameplay tech that makes a Roblox game feel finished — built server-first and exploit-aware.</p>
+    </div>
+    <div class="grid4">
+      <div class="sys" data-reveal><div class="ic">🔫</div><h3>Weapons &amp; viewmodels</h3><p>Recoil, spread, ADS, sounds and Motor6D first-person viewmodels that feel tight.</p></div>
+      <div class="sys" data-reveal><div class="ic">🧟</div><h3>Enemy &amp; boss AI</h3><p>Pathing, waves and special enemies — exploders, throwers and bosses with their own behaviour.</p></div>
+      <div class="sys" data-reveal><div class="ic">🛡️</div><h3>Server &amp; anti-exploit</h3><p>RemoteEvents done right: server-authoritative logic so clients can't cheat.</p></div>
+      <div class="sys" data-reveal><div class="ic">💾</div><h3>Data saving</h3><p>Safe persistence with ProfileStore (session locking) synced cleanly to the UI.</p></div>
+    </div>
+    <p data-reveal style="margin-top:24px;text-align:center;color:var(--muted);font-size:15px;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:18px 22px">⚡ I work with an <strong style="color:var(--ink)">AI-assisted workflow</strong> (Claude Code + Codex) to build and iterate fast — but I understand, test and own every system I ship.</p>
+  </div>
+</section>
+
+<section id="web">
+  <div class="wrap">
+    <div class="head" data-reveal>
+      <p class="kick">Outside Roblox</p>
+      <h2>Web work</h2>
+      <p>I also build for the web in plain HTML / CSS / JS — and a bit of Python.</p>
+    </div>
+    <div class="web">
+      <a class="wcard" data-reveal href="https://thomas-projekte.pages.dev" target="_blank" rel="noreferrer">
+        <div class="ic">✨</div>
+        <h3>thomas.fun</h3>
+        <p>My own neal.fun-style hub: ~30 mini games and tools I built from scratch — arcade, puzzles, online multiplayer and data visualisations, with seasonal themes and effects.</p>
+        <div class="go">Open the site →</div>
+      </a>
+      <a class="wcard" data-reveal href="https://thomas-projekte.pages.dev" target="_blank" rel="noreferrer">
+        <div class="ic">🐍</div>
+        <h3>Python &amp; more</h3>
+        <p>A Discord bot, small tools and experiments. I like taking a big idea apart into small, working pieces.</p>
+        <div class="go">See thomas.fun →</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="contact" data-reveal>
+      <p class="kick">Open for work</p>
+      <h2>Need a Roblox scripter?</h2>
+      <p>Tell me about your game and what you need built. I reply fast.</p>
+      <div class="cta">
+        <a class="btn btn--p" href="mailto:Thomaso.halbach@gmail.com?subject=Roblox%20scripting%20%E2%80%93%20Thomas">Email me</a>
+        <a class="btn btn--g" href="https://www.roblox.com/games/138764709689858/Survive-the-Horde" target="_blank" rel="noreferrer">Play my game</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>© <span id="year">2026</span> Thomas Halbach · Roblox scripter</span>
+    <span><a href="https://thomas-projekte.pages.dev" target="_blank" rel="noreferrer">thomas.fun</a> · <a href="mailto:Thomaso.halbach@gmail.com">Email</a></span>
+  </div>
+</footer>
+
+<script>
+  // year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // reveal on scroll
+  const io = new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+  document.querySelectorAll('[data-reveal]').forEach((el,i)=>{el.style.transitionDelay=(Math.min(i,6)*60)+'ms';io.observe(el);});
+
+  // starfield
+  (function(){
+    const cv=document.getElementById('stars'), ctx=cv.getContext('2d');
+    let W,H,DPR,stars=[];
+    function size(){W=innerWidth;H=innerHeight;DPR=Math.min(2,devicePixelRatio||1);cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+      const n=Math.min(140,Math.round(W*H/14000));stars=[];for(let i=0;i<n;i++)stars.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.4+.3,a:Math.random(),s:Math.random()*.02+.004,vy:Math.random()*.12+.02});}
+    size();addEventListener('resize',size);
+    let t=0;
+    (function frame(){t+=1;ctx.clearRect(0,0,W,H);
+      for(const st of stars){st.y+=st.vy;if(st.y>H)st.y=0;const tw=.5+.5*Math.sin(t*st.s+st.a*6.28);ctx.globalAlpha=.25+tw*.65;ctx.fillStyle=tw>.7?'#bfe9ff':'#ffffff';ctx.beginPath();ctx.arc(st.x,st.y,st.r,0,6.283);ctx.fill();}
+      ctx.globalAlpha=1;requestAnimationFrame(frame);})();
+  })();
+</script>
+</body>
+</html>

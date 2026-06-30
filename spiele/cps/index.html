@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <title>CPS‑Tester · thomas.fun</title>
-  <meta name="description" content="CPS Tester: eigene Zeit 0,1s–60s, Klicks zählen beim Drücken, Bestwert." />
+  <meta name="description" content="CPS Tester: custom time 0.1s–60s, clicks count on press, best score." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -115,35 +115,35 @@
   <div class="wrap">
     <header>
       <h1>CPS‑Tester</h1>
-      <a href="../../index.html">← zurück</a>
+      <a href="../../index.html">← back</a>
     </header>
     <div class="card">
       <div class="top">
         <div class="controls">
           <button type="button" id="btnReset">Reset</button>
           <div class="durRow">
-            <label for="durSec">Zeit (s)</label>
+            <label for="durSec">Time (s)</label>
             <input id="durSec" type="number" inputmode="decimal" min="0.1" max="60" step="0.1" value="5" />
-            <input id="durRng" type="range" min="0.1" max="60" step="0.1" value="5" aria-label="Zeit Slider" />
+            <input id="durRng" type="range" min="0.1" max="60" step="0.1" value="5" aria-label="Time slider" />
           </div>
         </div>
         <div class="meta">
-          <span class="pill" id="t">Zeit: —</span>
+          <span class="pill" id="t">Time: —</span>
           <span class="pill" id="clicks">Clicks: 0</span>
           <span class="pill" id="best">Best: 0.00</span>
         </div>
       </div>
 
       <div class="big" id="cpsBig">0.00 CPS</div>
-      <div class="sub" id="rating">Klick ins Feld – der erste Druck startet.</div>
+      <div class="sub" id="rating">Click the field – the first press starts it.</div>
 
-      <div class="zone pulse" id="zone" role="button" tabindex="0" aria-label="Klickbereich">
-        <strong>HIER DRÜCKEN</strong>
-        <small id="zoneHint">Jeder Druck zählt (nicht beim Loslassen).</small>
+      <div class="zone pulse" id="zone" role="button" tabindex="0" aria-label="Click area">
+        <strong>PRESS HERE</strong>
+        <small id="zoneHint">Every press counts (not on release).</small>
         <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
       </div>
 
-      <div class="hint">Tipp: gleichmäßige Klicks sind oft besser als komplett random Spam.</div>
+      <div class="hint">Tip: steady clicks are often better than completely random spam.</div>
     </div>
   </div>
 
@@ -211,8 +211,8 @@
 
     function cpsRating(cps){
       if (cps >= 10.5) return {t:"WTF", col:"var(--gold)"};
-      if (cps >= 8.5) return {t:"sehr stark", col:"var(--good)"};
-      if (cps >= 6.5) return {t:"stark", col:"var(--accent2)"};
+      if (cps >= 8.5) return {t:"very strong", col:"var(--good)"};
+      if (cps >= 6.5) return {t:"strong", col:"var(--accent2)"};
       if (cps >= 5.0) return {t:"ok", col:"rgba(200,220,255,.9)"};
       return {t:"slow", col:"var(--bad)"};
     }
@@ -223,7 +223,7 @@
       const prog = running ? (1 - left / durMs) : 0;
       barFill.style.width = `${Math.max(0, Math.min(100, prog * 100))}%`;
 
-      tEl.textContent = running ? `Zeit: ${(left/1000).toFixed(2)}s` : `Zeit: ${(durMs/1000).toFixed(1)}s`;
+      tEl.textContent = running ? `Time: ${(left/1000).toFixed(2)}s` : `Time: ${(durMs/1000).toFixed(1)}s`;
       clicksEl.textContent = `Clicks: ${clicks}`;
       bestEl.textContent = `Best: ${fmt(best)}`;
 
@@ -244,7 +244,7 @@
       tone(520,0.08,"triangle",0.05);
       vibr(12);
       ratingEl.textContent = "Go!";
-      zoneHint.textContent = "Weiter drücken – jeder Druck zählt.";
+      zoneHint.textContent = "Keep pressing – every press counts.";
       loop();
     }
 
@@ -259,10 +259,10 @@
         try { localStorage.setItem(LSK, String(best)); } catch {}
       }
       const r = cpsRating(cps);
-      ratingEl.innerHTML = `Ergebnis: <span style="color:${r.col};font-weight:1000">${fmt(cps)} CPS · ${r.t}</span>`;
+      ratingEl.innerHTML = `Result: <span style="color:${r.col};font-weight:1000">${fmt(cps)} CPS · ${r.t}</span>`;
       tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60);
       vibr([18,18,18,45]);
-      zoneHint.textContent = "Nochmal: einfach wieder ins Feld drücken.";
+      zoneHint.textContent = "Again: just press the field once more.";
       zone.classList.remove("running");
       zone.classList.add("pulse");
       durSec.disabled = false;
@@ -306,8 +306,8 @@
       durMs = readDurMs();
       durSec.disabled = false;
       durRng.disabled = false;
-      ratingEl.textContent = "Klick ins Feld – der erste Druck startet.";
-      zoneHint.textContent = "Jeder Druck zählt (nicht beim Loslassen).";
+      ratingEl.textContent = "Click the field – the first press starts it.";
+      zoneHint.textContent = "Every press counts (not on release).";
       zone.classList.remove("running");
       zone.classList.add("pulse");
       barFill.style.width = "0%";

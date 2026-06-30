@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
-  <title>Stein‑Schere‑Papier · thomas.fun</title>
-  <meta name="description" content="Stein-Schere-Papier mit Effekten, Streak und Bestscore." />
+  <title>Rock Paper Scissors · thomas.fun</title>
+  <meta name="description" content="Rock Paper Scissors with effects, streak and best score." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -55,8 +55,8 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>Stein‑Schere‑Papier</h1>
-      <a href="../../index.html">← zurück</a>
+      <h1>Rock Paper Scissors</h1>
+      <a href="../../index.html">← back</a>
     </header>
     <div class="card">
       <div class="top">
@@ -67,7 +67,7 @@
           <span class="pill" id="wld">W/L/D: 0/0/0</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
-          <input id="room" placeholder="Room (z.B. SCHULE1)" style="width:170px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:900;letter-spacing:.12em;text-transform:uppercase" />
+          <input id="room" placeholder="Room (e.g. SCHOOL1)" style="width:170px;padding:10px 12px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);font-weight:900;letter-spacing:.12em;text-transform:uppercase" />
           <button id="btnHost" type="button" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Host</button>
           <button id="btnJoin" type="button" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Join</button>
           <button id="reset" style="font:inherit;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.25);color:var(--text);padding:10px 14px;cursor:pointer;font-weight:900;min-height:44px;touch-action:manipulation">Reset</button>
@@ -84,7 +84,7 @@
           <div class="pick">
             <div>
               <div class="big" id="meBig">❔</div>
-              <div class="small">Du</div>
+              <div class="small">You</div>
             </div>
           </div>
           <div style="text-align:center">
@@ -99,11 +99,11 @@
           </div>
         </div>
         <div class="choices">
-          <button class="choice" data-m="r"><span class="emo">🪨</span><span class="lab">Stein</span></button>
-          <button class="choice" data-m="p"><span class="emo">📄</span><span class="lab">Papier</span></button>
-          <button class="choice" data-m="s"><span class="emo">✂️</span><span class="lab">Schere</span></button>
+          <button class="choice" data-m="r"><span class="emo">🪨</span><span class="lab">Rock</span></button>
+          <button class="choice" data-m="p"><span class="emo">📄</span><span class="lab">Paper</span></button>
+          <button class="choice" data-m="s"><span class="emo">✂️</span><span class="lab">Scissors</span></button>
         </div>
-        <div class="hint" id="hint">Klick eine Wahl. Ziel: hohe Streak.</div>
+        <div class="hint" id="hint">Click a choice. Goal: a high streak.</div>
       </div>
     </div>
   </div>
@@ -211,15 +211,15 @@
     }
     function play(me){
       if (online){
-        if (!ws || ws.readyState !== 1){ hint.textContent = "Nicht verbunden."; return; }
-        if (!netAcceptPicks){ hint.textContent = "Beide müssen Ready drücken."; return; }
-        if (pickLocked){ hint.textContent = "Warte auf Gegner…"; return; }
+        if (!ws || ws.readyState !== 1){ hint.textContent = "Not connected."; return; }
+        if (!netAcceptPicks){ hint.textContent = "Both players must press Ready."; return; }
+        if (pickLocked){ hint.textContent = "Waiting for opponent…"; return; }
         pickLocked = true;
         meBig.textContent = emo[me] || "❔";
         botBig.textContent = "❔";
         resEl.className = "badge draw";
         resEl.textContent = "…";
-        hint.textContent = "Gesendet… warte auf Gegner.";
+        hint.textContent = "Sent… waiting for opponent.";
         ws.send(JSON.stringify({t:"pick", m: me}));
         return;
       }
@@ -228,7 +228,7 @@
       meBig.textContent = emo[me];
       botBig.textContent = emo[bot];
       resEl.className = "badge " + out;
-      resEl.textContent = out === "win" ? "SIEG" : out === "lose" ? "LOSE" : "DRAW";
+      resEl.textContent = out === "win" ? "WIN" : out === "lose" ? "LOSE" : "DRAW";
       if (out==="win"){
         streak++;
         w++;
@@ -249,7 +249,7 @@
         try { localStorage.setItem(LSK, String(best)); } catch {}
       }
       burst(out);
-      hint.textContent = out==="win" ? "Nice. Weiter!" : out==="lose" ? "Aua. Reset deiner Streak." : "Unentschieden.";
+      hint.textContent = out==="win" ? "Nice. Keep going!" : out==="lose" ? "Ouch. Streak reset." : "Draw.";
       sync();
     }
     function reset(){
@@ -258,7 +258,7 @@
       botBig.textContent = "❔";
       resEl.className = "badge draw";
       resEl.textContent = "—";
-      hint.textContent = "Klick eine Wahl. Ziel: hohe Streak.";
+      hint.textContent = "Click a choice. Goal: a high streak.";
       sync();
     }
     document.querySelectorAll("[data-m]").forEach(btn=>{
@@ -307,8 +307,8 @@
       ws = null;
       online = true;
       setConnecting(true);
-      setNetLabel("Verbinden…");
-      enemyLabel.textContent = "Gegner";
+      setNetLabel("Connecting…");
+      enemyLabel.textContent = "Opponent";
 
       ws = new WebSocket(url);
       ws.addEventListener("open", ()=>{

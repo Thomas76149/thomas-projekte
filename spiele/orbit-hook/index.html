@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <title>Spider‑Swing · thomas.fun</title>
-  <meta name="description" content="Spider‑Ball: An Felsen schwingen, Physik + Gravitation, Ziel erreichen." />
+  <meta name="description" content="Spider-Ball: swing from rocks, physics + gravity, reach the goal." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -77,7 +77,7 @@
   <div class="wrap">
     <header>
       <h1>Spider‑Swing</h1>
-      <a href="../../index.html">← zurück</a>
+      <a href="../../index.html">← back</a>
     </header>
 
     <div class="card">
@@ -87,13 +87,13 @@
           <button id="btnReset">Reset</button>
         </div>
         <div class="meta">
-          <span class="pill" id="score">Zeit: 0.0s</span>
+          <span class="pill" id="score">Time: 0.0s</span>
           <span class="pill" id="dist">Dist: —</span>
           <span class="pill" id="best">Best: —</span>
         </div>
       </div>
-      <canvas id="c" width="960" height="540" aria-label="Spider‑Swing Spielfeld"></canvas>
-      <div class="hint">Halten = am nächsten Felsen festhalten · Loslassen = fliegen. Ziel rechts erreichen. (Space geht auch)</div>
+      <canvas id="c" width="960" height="540" aria-label="Spider-Swing playfield"></canvas>
+      <div class="hint">Hold = grab the nearest rock · Release = fly. Reach the goal on the right. (Space works too)</div>
     </div>
   </div>
 
@@ -102,8 +102,8 @@
       <h2 id="ovTitle">—</h2>
       <p id="ovText">—</p>
       <div class="cta">
-        <button class="primary" id="ovAgain">Nochmal</button>
-        <button id="ovClose">Schließen</button>
+        <button class="primary" id="ovAgain">Again</button>
+        <button id="ovClose">Close</button>
       </div>
     </div>
   </div>
@@ -253,8 +253,8 @@
     }
 
     function syncUI(){
-      if (!running) scoreEl.textContent = "Zeit: 0.0s";
-      else scoreEl.textContent = `Zeit: ${((performance.now()-t0)/1000).toFixed(1)}s`;
+      if (!running) scoreEl.textContent = "Time: 0.0s";
+      else scoreEl.textContent = `Time: ${((performance.now()-t0)/1000).toFixed(1)}s`;
       const d = Math.max(0, goal.x - px);
       distEl.textContent = `Dist: ${Math.max(0, Math.round(d))}`;
       syncBest();
@@ -300,7 +300,7 @@
       running=false;
       const t = t0 ? (performance.now() - t0) : 0;
       syncUI();
-      showOverlay("Crash!", `Zeit: ${(t/1000).toFixed(1)}s · Best: ${loadBest() ? (loadBest()/1000).toFixed(1)+"s" : "—"}`);
+      showOverlay("Crash!", `Time: ${(t/1000).toFixed(1)}s · Best: ${loadBest() ? (loadBest()/1000).toFixed(1)+"s" : "—"}`);
       tone(140,0.12,"sawtooth",0.06);
       vibr(30);
     }
@@ -438,7 +438,7 @@
         tone(880,0.06,"triangle",0.06);
         setTimeout(()=>tone(1100,0.08,"triangle",0.06), 80);
         vibr(18);
-        showOverlay("Geschafft!", `Zeit: ${(t/1000).toFixed(1)}s · Best: ${(loadBest()/1000).toFixed(1)}s`);
+        showOverlay("You made it!", `Time: ${(t/1000).toFixed(1)}s · Best: ${(loadBest()/1000).toFixed(1)}s`);
       }
 
       // sparkle trail
@@ -582,7 +582,7 @@
       ctx.save();
       ctx.fillStyle = "rgba(200,220,255,0.75)";
       ctx.font = "800 14px system-ui,Segoe UI,Roboto";
-      ctx.fillText(hold ? "HOOK" : "FREI", 16, 24);
+      ctx.fillText(hold ? "HOOK" : "FREE", 16, 24);
       ctx.restore();
     }
 

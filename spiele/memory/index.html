@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <title>Memory · thomas.fun</title>
-  <meta name="description" content="Mini Memory: Paare finden, Bestzeit jagen." />
+  <meta name="description" content="Mini Memory: find pairs, chase your best time." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -81,37 +81,37 @@
   <div class="wrap">
     <header>
       <h1>Memory</h1>
-      <a href="../../index.html">← zurück</a>
+      <a href="../../index.html">← back</a>
     </header>
 
     <div class="card">
       <div class="top">
         <div class="controls">
-          <button class="primary" id="btnNew">Neues Spiel</button>
+          <button class="primary" id="btnNew">New game</button>
           <select id="size">
-            <option value="4">4×4 (leicht)</option>
+            <option value="4">4×4 (easy)</option>
             <option value="5">5×4 (medium)</option>
             <option value="6" selected>6×4 (normal)</option>
           </select>
         </div>
         <div class="meta">
-          <span class="pill" id="moves">Züge: 0</span>
-          <span class="pill" id="time">Zeit: 0.0s</span>
+          <span class="pill" id="moves">Moves: 0</span>
+          <span class="pill" id="time">Time: 0.0s</span>
           <span class="pill" id="best">Best: —</span>
         </div>
       </div>
       <div class="grid g6" id="grid"></div>
-      <div class="hint" id="hint">Finde alle Paare.</div>
+      <div class="hint" id="hint">Find all the pairs.</div>
     </div>
   </div>
 
   <div class="overlay" id="ov" aria-hidden="true">
     <div class="panel">
-      <h2 id="ovTitle">Fertig!</h2>
+      <h2 id="ovTitle">Done!</h2>
       <p id="ovText">—</p>
       <div class="cta">
-        <button class="primary" id="ovAgain">Nochmal</button>
-        <button id="ovClose">Schließen</button>
+        <button class="primary" id="ovAgain">Again</button>
+        <button id="ovClose">Close</button>
       </div>
     </div>
   </div>
@@ -203,7 +203,7 @@
     function showOverlay(text){
       ov.classList.add("show");
       ov.setAttribute("aria-hidden","false");
-      ovTitle.textContent = "Fertig!";
+      ovTitle.textContent = "Done!";
       ovText.textContent = text;
       burst();
       tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60); setTimeout(()=>tone(1244,0.14,"triangle",0.04),130);
@@ -240,7 +240,7 @@
       t0 = performance.now();
       timer = setInterval(()=> {
         const sec = (performance.now()-t0)/1000;
-        timeEl.textContent = `Zeit: ${sec.toFixed(1)}s`;
+        timeEl.textContent = `Time: ${sec.toFixed(1)}s`;
       }, 80);
     }
     function stopTimer(){
@@ -257,11 +257,11 @@
       tiles = shuffle([...picked, ...picked]).map((sym, idx)=>({sym, idx, matched:false, up:false}));
       first = null; lock = false;
       moves = 0; matched = 0;
-      movesEl.textContent = "Züge: 0";
-      timeEl.textContent = "Zeit: 0.0s";
+      movesEl.textContent = "Moves: 0";
+      timeEl.textContent = "Time: 0.0s";
       const best = loadBest(cols);
       bestEl.textContent = best ? `Best: ${best.toFixed(1)}s` : "Best: —";
-      hint.textContent = "Finde alle Paare.";
+      hint.textContent = "Find all the pairs.";
       render();
       startTimer();
     }
@@ -295,7 +295,7 @@
         return;
       }
       moves++;
-      movesEl.textContent = `Züge: ${moves}`;
+      movesEl.textContent = `Moves: ${moves}`;
       render();
       if (t.sym === first.sym){
         t.matched = true;
@@ -312,8 +312,8 @@
           const best = loadBest(cols);
           if (!best || sec < best) saveBest(cols, sec);
           bestEl.textContent = `Best: ${Math.min(sec, best||sec).toFixed(1)}s`;
-          hint.textContent = `Fertig! ${moves} Züge · ${sec.toFixed(1)}s`;
-          showOverlay(`${moves} Züge · ${sec.toFixed(1)}s`);
+          hint.textContent = `Done! ${moves} moves · ${sec.toFixed(1)}s`;
+          showOverlay(`${moves} moves · ${sec.toFixed(1)}s`);
         }
         return;
       }

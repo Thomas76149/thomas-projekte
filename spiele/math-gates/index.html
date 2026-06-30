@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <title>Math Gates · thomas.fun</title>
-  <meta name="description" content="Runner ohne Werbung: Mathe‑Gates, Hindernisse, Boss am Ende." />
+  <meta name="description" content="Ad-free runner: math gates, obstacles, boss at the end." />
   <meta name="theme-color" content="#0c0c0f" />
   <link rel="stylesheet" href="style.css" />
   <script defer src="game.js?v=10"></script>
@@ -15,29 +15,29 @@
   <div class="wrap">
     <header>
       <h1>Math Gates</h1>
-      <a href="../../index.html">← zurück</a>
+      <a href="../../index.html">← back</a>
     </header>
 
     <div class="card">
       <div class="top">
         <div class="controls">
           <button class="primary" id="btnStart">Start</button>
-          <button id="btnRestart">Neu</button>
-          <div class="mode" role="group" aria-label="Schwierigkeit">
-            <button class="chip active" id="btnEasy" type="button" title="Einfacher: mehr gute Gates, weniger Gegner">Easy</button>
-            <button class="chip" id="btnHard" type="button" title="Schwerer: fiesere Gates, mehr Gegner, Boss stärker">Hard</button>
+          <button id="btnRestart">New</button>
+          <div class="mode" role="group" aria-label="Difficulty">
+            <button class="chip active" id="btnEasy" type="button" title="Easier: more good gates, fewer enemies">Easy</button>
+            <button class="chip" id="btnHard" type="button" title="Harder: nastier gates, more enemies, stronger boss">Hard</button>
           </div>
         </div>
         <div class="meta">
           <span class="pill" id="count">👥 1</span>
-          <span class="pill" id="stage">Strecke: 0%</span>
+          <span class="pill" id="stage">Distance: 0%</span>
           <span class="pill" id="best">Best: —</span>
         </div>
       </div>
 
       <canvas id="c" width="1200" height="720" aria-label="Math Gates"></canvas>
       <div class="hint">
-        <b>Steuerung:</b> A/D oder ←/→ · Auf Handy: wischen · Ziel: am Boss genug Leute haben.
+        <b>Controls:</b> A/D or ←/→ · On mobile: swipe · Goal: have enough people at the boss.
       </div>
     </div>
   </div>
@@ -47,8 +47,8 @@
       <h2 id="ovTitle">—</h2>
       <p id="ovText">—</p>
       <div class="cta">
-        <button class="primary" id="ovAgain">Nochmal</button>
-        <button id="ovClose">Schließen</button>
+        <button class="primary" id="ovAgain">Again</button>
+        <button id="ovClose">Close</button>
       </div>
     </div>
   </div>

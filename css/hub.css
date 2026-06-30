@@ -125,7 +125,7 @@ body[data-weather="storm"] #lightning{ animation:flash 8s linear infinite; }
 @media(max-width:680px){ .topctl{ top:8px; right:8px; } }
 
 /* Custom-Cursor (nur Desktop, per JS erzeugt) */
-#cursorfx{ position:fixed; inset:0; z-index:69; pointer-events:none; }
+#cursorfx{ position:fixed; inset:0; width:100%; height:100%; z-index:69; pointer-events:none; }
 #curring{ position:fixed; left:0; top:0; width:30px; height:30px; border:2px solid var(--accent); border-radius:50%; pointer-events:none; z-index:70;
   mix-blend-mode:screen; box-shadow:0 0 12px -1px var(--accent-glow), inset 0 0 8px -2px var(--accent-glow); will-change:transform; transition:border-color .5s ease, box-shadow .5s ease; }
 #curdot{ position:fixed; left:0; top:0; width:8px; height:8px; border-radius:50%; background:var(--accent); pointer-events:none; z-index:71; box-shadow:0 0 8px -1px var(--accent-glow); will-change:transform; }

@@ -123,29 +123,29 @@ function refreshReadyButton() {
   const ico = btnReady.querySelector(".btn-ready__ico");
   if (!connected) {
     btnReady.classList.add("btn-ready--idle");
-    if (label) label.textContent = "Ich bin bereit";
+    if (label) label.textContent = "I'm ready";
     if (ico) ico.textContent = "◎";
     if (readyStripHint) {
       readyStripHint.innerHTML =
-        "Mit <strong>Host</strong> oder <strong>Join</strong> verbinden — dann hier <strong>bereit</strong> schalten.";
+        "Connect with <strong>Host</strong> or <strong>Join</strong> — then set yourself <strong>ready</strong> here.";
     }
     return;
   }
   if (imReady) {
     btnReady.classList.add("btn-ready--on");
-    if (label) label.textContent = "Bereit ✓ — antippen zum Zurücknehmen";
+    if (label) label.textContent = "Ready ✓ — tap to undo";
     if (ico) ico.textContent = "✓";
     if (readyStripHint) {
       readyStripHint.innerHTML =
-        "Du bist <strong>bereit</strong>. Sind alle ✓ in der Raumzeile, kann der Host <strong>Quiz starten</strong> wählen.";
+        "You are <strong>ready</strong>. Once everyone is ✓ in the room line, the host can choose <strong>Start quiz</strong>.";
     }
   } else {
     btnReady.classList.add("btn-ready--off");
-    if (label) label.textContent = "Tippen: Ich bin bereit";
+    if (label) label.textContent = "Tap: I'm ready";
     if (ico) ico.textContent = "○";
     if (readyStripHint) {
       readyStripHint.innerHTML =
-        "Alle Spieler müssen <strong>bereit</strong> sein (Status siehst du in der Zeile darunter: ✓ oder …).";
+        "All players must be <strong>ready</strong> (you can see the status in the line below: ✓ or …).";
     }
   }
 }
@@ -197,9 +197,9 @@ function catLabel(id) {
 }
 
 function diffLabel(d) {
-  if (d === "easy") return "leicht";
-  if (d === "medium") return "mittel";
-  if (d === "hard") return "schwer";
+  if (d === "easy") return "easy";
+  if (d === "medium") return "medium";
+  if (d === "hard") return "hard";
   return d || "—";
 }
 
@@ -207,7 +207,7 @@ function renderScoreboard(s) {
   if (!scoreBoardBody) return;
   const roster = s?.roster;
   if (!roster || !roster.length) {
-    scoreBoardBody.innerHTML = `<div class="scorePlaceholder">${online ? "Warte…" : "Offline"}</div>`;
+    scoreBoardBody.innerHTML = `<div class="scorePlaceholder">${online ? "Waiting…" : "Offline"}</div>`;
     return;
   }
   const sorted = [...roster].sort((a, b) => (b.score || 0) - (a.score || 0));
@@ -296,10 +296,10 @@ function syncUiFromState(s) {
         .map((r, i) => {
           const place = i + 1;
           const isMe = String(r.side) === String(mySlot);
-          return `<div class="podium__card podium__card--${place} ${isMe ? "podium__card--me" : ""}"><span class="podium__medal" aria-hidden="true">${medals[i]}</span><span class="podium__name">${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span class="podium__pts">${r.score ?? 0} Pkt</span></div>`;
+          return `<div class="podium__card podium__card--${place} ${isMe ? "podium__card--me" : ""}"><span class="podium__medal" aria-hidden="true">${medals[i]}</span><span class="podium__name">${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span class="podium__pts">${r.score ?? 0} pts</span></div>`;
         })
         .join("");
-      podiumEl.innerHTML = `<p class="podium__you">Dein Platz: <strong class="podium__rankNum">${myRank}</strong> <span class="podium__of">von ${n}</span></p><div class="podium__row">${top3}</div>`;
+      podiumEl.innerHTML = `<p class="podium__you">Your place: <strong class="podium__rankNum">${myRank}</strong> <span class="podium__of">of ${n}</span></p><div class="podium__row">${top3}</div>`;
       if (justEnded) {
         podiumEl.classList.remove("podium--in");
         void podiumEl.offsetWidth;
@@ -309,7 +309,7 @@ function syncUiFromState(s) {
     leaderBoard.innerHTML = sorted
       .map(
         (r, i) =>
-          `<div class="${String(r.side) === String(mySlot) ? "leader__me" : ""}"><span>${i + 1}. ${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span>${r.score ?? 0} Pkt</span></div>`,
+          `<div class="${String(r.side) === String(mySlot) ? "leader__me" : ""}"><span>${i + 1}. ${escapeHtml(r.name || "P" + (Number(r.side) + 1))}</span><span>${r.score ?? 0} pts</span></div>`,
       )
       .join("");
   } else {
@@ -326,8 +326,8 @@ function syncUiFromState(s) {
 
     if (needFullBuild) {
       lastBuiltAnswersQKey = questionKey;
-      const modePill = mode === "text" ? "Freitext" : "A·B·C·D";
-      qmeta.innerHTML = `<span class="pill">${escapeHtml(modePill)}</span><span class="pill">Runde ${s.q.round}/${s.q.totalRounds}</span><span class="pill">${escapeHtml(catLabel(s.q.cat))}</span><span class="pill">${escapeHtml(diffLabel(s.q.diff))}</span><span class="pill timer" id="qTimer">⏱ …</span>`;
+      const modePill = mode === "text" ? "Free text" : "A·B·C·D";
+      qmeta.innerHTML = `<span class="pill">${escapeHtml(modePill)}</span><span class="pill">Round ${s.q.round}/${s.q.totalRounds}</span><span class="pill">${escapeHtml(catLabel(s.q.cat))}</span><span class="pill">${escapeHtml(diffLabel(s.q.diff))}</span><span class="pill timer" id="qTimer">⏱ …</span>`;
       qtext.textContent = s.q.q;
       answersEl.innerHTML = "";
 
@@ -337,12 +337,12 @@ function syncUiFromState(s) {
         const inp = document.createElement("input");
         inp.type = "text";
         inp.maxLength = 140;
-        inp.placeholder = "Antwort eingeben…";
+        inp.placeholder = "Enter answer…";
         inp.autocomplete = "off";
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "sendText";
-        btn.textContent = "Antwort senden";
+        btn.textContent = "Send answer";
         const answered = typeof s.myAnswer === "string" && s.myAnswer.length > 0;
         if (answered) {
           inp.value = s.myAnswer;
@@ -437,10 +437,10 @@ function syncUiFromState(s) {
     const r = s.reveal;
     let head = "";
     if (r.mode === "text") {
-      head = `<h3>Richtige Antwort</h3><p class="revealAns">${escapeHtml(r.correctText || "")}</p>`;
+      head = `<h3>Correct answer</h3><p class="revealAns">${escapeHtml(r.correctText || "")}</p>`;
     } else {
       const letter = r.correct != null ? String.fromCharCode(65 + r.correct) : "?";
-      head = `<h3>Lösung: ${escapeHtml(letter)}</h3><p class="revealAns">${escapeHtml(r.correctText || "")}</p>`;
+      head = `<h3>Answer: ${escapeHtml(letter)}</h3><p class="revealAns">${escapeHtml(r.correctText || "")}</p>`;
     }
     const lines = r.breakdown
       .slice()

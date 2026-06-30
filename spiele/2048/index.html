@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="thomasfun-fit">
+<html lang="en" class="thomasfun-fit">
 <head>
   <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 
   <title>2048 · thomas.fun</title>
-  <meta name="description" content="2048 im Browser — Keyboard & Touch, Bestscore, Juice." />
+  <meta name="description" content="2048 in your browser — keyboard & touch, best score, juice." />
   <meta name="theme-color" content="#0c0c0f" />
   <style>
     :root{
@@ -112,24 +112,24 @@
   <div class="wrap">
     <header>
       <h1>2048</h1>
-      <a href="../../index.html">← zurück</a>
+      <a href="../../index.html">← back</a>
     </header>
 
     <div class="card">
       <div class="top">
         <div class="controls">
-          <button class="primary" id="btnNew">Neues Spiel</button>
+          <button class="primary" id="btnNew">New Game</button>
           <button id="btnUndo" disabled>Undo</button>
         </div>
         <div class="meta">
           <span class="pill" id="score">Score: 0</span>
           <span class="pill" id="best">Best: 0</span>
-          <span class="pill" id="goal">Ziel: 2048</span>
+          <span class="pill" id="goal">Goal: 2048</span>
         </div>
       </div>
 
       <div class="boardWrap">
-        <div class="board" id="board" aria-label="2048 Spielbrett" tabindex="0">
+        <div class="board" id="board" aria-label="2048 game board" tabindex="0">
           <div class="grid" aria-hidden="true" id="grid"></div>
           <div class="tiles" id="tiles"></div>
           <div class="overlay" id="ov" aria-hidden="true">
@@ -137,13 +137,13 @@
               <h2 id="ovTitle">—</h2>
               <p id="ovText">—</p>
               <div class="cta">
-                <button class="primary" id="ovAgain">Nochmal</button>
-                <button id="ovClose">Weiter</button>
+                <button class="primary" id="ovAgain">Again</button>
+                <button id="ovClose">Continue</button>
               </div>
             </div>
           </div>
         </div>
-        <div class="hint">Pfeile/WASD oder wischen. Kombiniere gleiche Zahlen.</div>
+        <div class="hint">Arrow keys/WASD or swipe. Combine matching numbers.</div>
       </div>
     </div>
   </div>
@@ -463,15 +463,15 @@
         // win / lose
         if (!won && tiles.some(t=>t.v>=2048)){
           won = true;
-          setOverlay(true, "2048!", "Nice. Du hast 2048 erreicht.");
+          setOverlay(true, "2048!", "Nice. You reached 2048.");
           tone(740,0.09,"sine",0.06); setTimeout(()=>tone(988,0.12,"sine",0.05),60); setTimeout(()=>tone(1244,0.14,"triangle",0.04),130);
           vibr([30,40,30,70]);
         }
 
-        // Classic 2048: verloren nur wenn wirklich kein Zug mehr möglich ist.
+        // Classic 2048: lost only when truly no move is possible anymore.
         if (!canMoveClassic()){
           over = true;
-          setOverlay(true, "Game Over", `Keine Züge mehr · Score ${score} · Best ${best}`);
+          setOverlay(true, "Game Over", `No moves left · Score ${score} · Best ${best}`);
           tone(180,0.16,"sawtooth",0.07); setTimeout(()=>tone(120,0.18,"square",0.05),70);
           vibr([60,40,80]);
         }

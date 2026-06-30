@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0c0b16">
-<title>Frequenz · Wellenlänge — thomas.fun</title>
-<meta name="description" content="Frequenz: Online-Partyspiel mit Freunden. Ein Hinweisgeber, ein verstecktes Ziel auf einem Spektrum — errate per Regler die Wellenlänge. Room-Code teilen, lospielen.">
+<title>Frequency · Wavelength — thomas.fun</title>
+<meta name="description" content="Frequency: an online party game with friends. One clue-giver, one hidden target on a spectrum — guess the wavelength with a slider. Share a room code and play.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230c0b16'/%3E%3Cpath d='M6 40 Q18 12 30 40 T54 40' fill='none' stroke='%23a78bfa' stroke-width='4'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,39 +89,39 @@ button:disabled{opacity:.45; cursor:not-allowed}
 <div class="wrap">
   <a class="back" href="../../index.html">← thomas.fun</a>
   <header>
-    <h1>FRE<span class="w">QUENZ</span></h1>
-    <div class="tag">Wellenlänge mit Freunden · ein Hinweis, ein verstecktes Ziel — trefft die Frequenz.</div>
+    <h1>FRE<span class="w">QUENCY</span></h1>
+    <div class="tag">Wavelength with friends · one clue, one hidden target — hit the frequency.</div>
   </header>
 
-  <!-- Verbinden -->
+  <!-- Connect -->
   <div class="card" id="scConnect">
-    <label>Dein Name</label>
-    <input id="inName" maxlength="18" placeholder="z. B. Alex" autocomplete="off">
+    <label>Your name</label>
+    <input id="inName" maxlength="18" placeholder="e.g. Alex" autocomplete="off">
     <div style="height:12px"></div>
-    <label>Raum-Code (leer = neuen Raum erstellen)</label>
+    <label>Room code (empty = create a new room)</label>
     <div class="row">
-      <input id="inCode" maxlength="8" placeholder="z. B. AB12C" autocomplete="off" style="text-transform:uppercase">
-      <button class="btn-primary" id="btnJoin" style="flex:0 0 auto; min-width:130px">Beitreten</button>
+      <input id="inCode" maxlength="8" placeholder="e.g. AB12C" autocomplete="off" style="text-transform:uppercase">
+      <button class="btn-primary" id="btnJoin" style="flex:0 0 auto; min-width:130px">Join</button>
     </div>
-    <div class="hintline" id="connHint">Server kann nach Pause ~20–30 s zum Aufwachen brauchen.</div>
+    <div class="hintline" id="connHint">After a pause, the server may take ~20–30 s to wake up.</div>
   </div>
 
   <!-- Lobby -->
   <div class="card hidden" id="scLobby">
-    <label style="text-align:center">Raum-Code — teilen zum Mitspielen</label>
+    <label style="text-align:center">Room code — share it to play together</label>
     <div class="roomcode" id="lobbyCode">—</div>
-    <div style="text-align:center;margin-top:8px"><button id="btnShare" style="padding:8px 14px;font-size:13px">🔗 Einladungs-Link kopieren</button></div>
+    <div style="text-align:center;margin-top:8px"><button id="btnShare" style="padding:8px 14px;font-size:13px">🔗 Copy invite link</button></div>
     <div class="players" id="lobbyPlayers"></div>
     <div class="row">
-      <button id="btnReady">Bereit ✓</button>
-      <button class="btn-go" id="btnStart" disabled>Spiel starten</button>
+      <button id="btnReady">Ready ✓</button>
+      <button class="btn-go" id="btnStart" disabled>Start game</button>
     </div>
-    <div class="hintline" id="lobbyHint">Mind. 2 Spieler. Wenn alle bereit sind, kann gestartet werden.</div>
+    <div class="hintline" id="lobbyHint">At least 2 players. Once everyone is ready, you can start.</div>
   </div>
 
   <!-- Spiel -->
   <div class="card hidden" id="scGame">
-    <div class="ghead"><span>Runde <b id="gRound">1</b>/<b id="gTotal">8</b></span><span id="gScores"></span></div>
+    <div class="ghead"><span>Round <b id="gRound">1</b>/<b id="gTotal">8</b></span><span id="gScores"></span></div>
     <div class="role" id="gRole">—</div>
     <div class="clue" id="gClue"></div>
 
@@ -132,14 +132,14 @@ button:disabled{opacity:.45; cursor:not-allowed}
     </div>
     <div class="valbubble" id="valBubble"></div>
 
-    <!-- Geber: Hinweis -->
+    <!-- Giver: clue -->
     <div class="row hidden" id="clueRow">
-      <input id="inClue" maxlength="60" placeholder="EIN Hinweiswort (z. B. „Sauna“)" autocomplete="off">
-      <button class="btn-primary" id="btnClue" style="flex:0 0 auto; min-width:120px">Senden</button>
+      <input id="inClue" maxlength="60" placeholder="ONE clue word (e.g. “Sauna”)" autocomplete="off">
+      <button class="btn-primary" id="btnClue" style="flex:0 0 auto; min-width:120px">Send</button>
     </div>
-    <!-- Rater: festlegen -->
+    <!-- Guesser: lock in -->
     <div class="hidden" id="guessRow">
-      <button class="btn-go" id="btnGuess" style="width:100%">Festlegen</button>
+      <button class="btn-go" id="btnGuess" style="width:100%">Lock in</button>
     </div>
     <div class="hintline" id="gHint"></div>
   </div>
@@ -148,7 +148,7 @@ button:disabled{opacity:.45; cursor:not-allowed}
   <div class="card hidden" id="scEnd">
     <div class="winner" id="endWinner">—</div>
     <div class="players" id="endScores"></div>
-    <button class="btn-primary" id="btnAgain" style="width:100%">Nochmal spielen</button>
+    <button class="btn-primary" id="btnAgain" style="width:100%">Play again</button>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -173,22 +173,22 @@ function toast(m){ const el=$("toast"); el.textContent=m; el.classList.add("on")
 
 /* ---------- Verbindung ---------- */
 function connect(){
-  const name=($("inName").value||"").trim().slice(0,18)||"Spieler";
+  const name=($("inName").value||"").trim().slice(0,18)||"Player";
   code=($("inCode").value||"").trim().toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
   localStorage.setItem("freq_name", name);
-  $("btnJoin").disabled=true; $("connHint").textContent="Verbinde…";
-  try{ ws=new WebSocket(WS_URL); }catch(e){ $("connHint").textContent="Verbindung fehlgeschlagen."; $("btnJoin").disabled=false; return; }
+  $("btnJoin").disabled=true; $("connHint").textContent="Connecting…";
+  try{ ws=new WebSocket(WS_URL); }catch(e){ $("connHint").textContent="Connection failed."; $("btnJoin").disabled=false; return; }
   ws.addEventListener("open", ()=>{ ws.send(JSON.stringify({t:"join", game:"frequenz", code, name})); });
   ws.addEventListener("message", e=>{ let m; try{m=JSON.parse(e.data);}catch{return;} onMsg(m); });
-  ws.addEventListener("close", ()=>{ toast("Verbindung getrennt."); $("btnJoin").disabled=false; show("scConnect"); });
-  ws.addEventListener("error", ()=>{ $("connHint").textContent="Server nicht erreichbar (vielleicht im Aufwachen — nochmal versuchen)."; $("btnJoin").disabled=false; });
+  ws.addEventListener("close", ()=>{ toast("Connection lost."); $("btnJoin").disabled=false; show("scConnect"); });
+  ws.addEventListener("error", ()=>{ $("connHint").textContent="Server unreachable (maybe still waking up — try again)."; $("btnJoin").disabled=false; });
 }
 function send(o){ if(ws && ws.readyState===1) ws.send(JSON.stringify(o)); }
 
 function onMsg(m){
   if(m.t==="joined"){ mySide=String(m.side); code=m.code; $("lobbyCode").textContent=code; show("scLobby");
     try{ history.replaceState(null,"", "?room="+code); }catch{} return; }
-  if(m.t==="err"){ toast(m.m||"Fehler"); $("btnJoin").disabled=false; return; }
+  if(m.t==="err"){ toast(m.m||"Error"); $("btnJoin").disabled=false; return; }
   if(m.t==="lobby"){ roster=m.roster||[]; allReady=!!m.allReady; renderLobby(); return; }
   if(m.t==="reset"){ guessLocked=false; return; }
   if(m.t==="state" && m.game==="frequenz"){ state=m.s; renderState(); return; }
@@ -200,11 +200,11 @@ function renderLobby(){
   if(state && state.phase!=="lobby" && !state.sessionOver) return;
   const box=$("lobbyPlayers"); box.innerHTML="";
   roster.forEach(r=>{ const d=document.createElement("div"); d.className="pl"+(r.ready?" ready":"");
-    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(r.name)||("Spieler "+(Number(r.side)+1))}</span>`+
-      (String(r.side)===mySide?'<span class="me">DU</span>':'');
+    d.innerHTML=`<span class="dot"></span><span class="nm">${esc(r.name)||("Player "+(Number(r.side)+1))}</span>`+
+      (String(r.side)===mySide?'<span class="me">YOU</span>':'');
     box.appendChild(d); });
   $("btnStart").disabled=!allReady;
-  $("lobbyHint").textContent = roster.length<2 ? "Warte auf Mitspieler… (Code teilen!)" : (allReady? "Alle bereit — los geht's!" : "Mind. 2 Spieler, alle müssen auf Bereit drücken.");
+  $("lobbyHint").textContent = roster.length<2 ? "Waiting for players… (share the code!)" : (allReady? "Everyone's ready — let's go!" : "At least 2 players, and everyone must hit Ready.");
 }
 function setReady(){ const me=roster.find(r=>String(r.side)===mySide); send({t:"ready", v: !(me&&me.ready)}); }
 
@@ -221,18 +221,18 @@ function renderState(){
   $("gScores").textContent = s.roster.map(r=>`${(esc(r.name)||"P"+(Number(r.side)+1)).slice(0,6)} ${r.score}`).join(" · ");
   $("poleL").textContent=s.spectrum?s.spectrum[0]:"—"; $("poleR").textContent=s.spectrum?s.spectrum[1]:"—";
 
-  const giverName = (s.roster.find(r=>String(r.side)===String(s.giver))||{}).name || "Spieler";
+  const giverName = (s.roster.find(r=>String(r.side)===String(s.giver))||{}).name || "Player";
   const phaseChanged = s.phase!==lastPhase; lastPhase=s.phase;
 
   // Rollen-/Hinweistext
   if(s.phase==="clue"){
-    if(s.isGiver){ $("gRole").innerHTML='Du bist <span class="who">Hinweisgeber</span> — sieh das Ziel, gib EIN Wort'; $("gClue").innerHTML='<span class="q">Welches Wort liegt genau auf dem Ziel?</span>'; }
-    else { $("gRole").innerHTML='<span class="who">'+esc(giverName)+'</span> überlegt einen Hinweis…'; $("gClue").innerHTML='<span class="q">gleich gibt es ein Hinweiswort</span>'; }
+    if(s.isGiver){ $("gRole").innerHTML='You are the <span class="who">clue-giver</span> — see the target, give ONE word'; $("gClue").innerHTML='<span class="q">Which word lands exactly on the target?</span>'; }
+    else { $("gRole").innerHTML='<span class="who">'+esc(giverName)+'</span> is thinking of a clue…'; $("gClue").innerHTML='<span class="q">a clue word is coming up</span>'; }
   } else if(s.phase==="guess"){
-    $("gRole").innerHTML = s.isGiver? 'Dein Hinweis ist raus — warte auf die Rätenden ('+s.guessedCount+'/'+s.needGuesses+')' : 'Wohin gehört der Hinweis von <span class="who">'+esc(giverName)+'</span>?';
-    $("gClue").innerHTML='<span class="q">Hinweis</span>'+esc(s.clue);
+    $("gRole").innerHTML = s.isGiver? 'Your clue is out — waiting on the guessers ('+s.guessedCount+'/'+s.needGuesses+')' : 'Where does <span class="who">'+esc(giverName)+'</span>\'s clue belong?';
+    $("gClue").innerHTML='<span class="q">Clue</span>'+esc(s.clue);
   } else if(s.phase==="reveal"){
-    $("gRole").innerHTML='Auflösung'; $("gClue").innerHTML='<span class="q">Hinweis war</span>'+esc(s.clue||"—");
+    $("gRole").innerHTML='Reveal'; $("gClue").innerHTML='<span class="q">The clue was</span>'+esc(s.clue||"—");
   }
 
   // Zielzone (Geber während clue/guess; alle im reveal)
@@ -259,13 +259,13 @@ function renderState(){
   const showGuessRow = s.phase==="guess" && !s.isGiver;
   $("guessRow").classList.toggle("hidden", !showGuessRow);
   if(phaseChanged && s.phase==="guess") guessLocked = (s.myGuess!=null);
-  const gb=$("btnGuess"); gb.disabled=guessLocked; gb.textContent=guessLocked?"Festgelegt ✓":"Festlegen";
+  const gb=$("btnGuess"); gb.disabled=guessLocked; gb.textContent=guessLocked?"Locked in ✓":"Lock in";
 
   // Bubble
-  $("valBubble").textContent = amGuesser ? ("Dein Tipp: "+Math.round(dialPos)) : (s.phase==="reveal"&&s.reveal? ("Ziel war "+s.reveal.target+" · "+(s.reveal.giverName||"Geber")+" +"+s.reveal.giverPts):"");
+  $("valBubble").textContent = amGuesser ? ("Your guess: "+Math.round(dialPos)) : (s.phase==="reveal"&&s.reveal? ("Target was "+s.reveal.target+" · "+(s.reveal.giverName||"Giver")+" +"+s.reveal.giverPts):"");
 
   // Hint
-  $("gHint").textContent = s.phase==="reveal" ? "Nächste Runde gleich…" : (s.isGiver&&s.phase==="clue" ? "Tipp: ein Wort, das die anderen genau auf das Ziel führt." : "");
+  $("gHint").textContent = s.phase==="reveal" ? "Next round coming up…" : (s.isGiver&&s.phase==="clue" ? "Tip: a word that points the others exactly at the target." : "");
 }
 
 /* ---------- Spektrum-Zeichnen ---------- */

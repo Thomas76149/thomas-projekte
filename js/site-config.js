@@ -1,5 +1,6 @@
 /**
- * Öffentliche Basis-URL deines Portfolios, ohne Slash am Ende.
- * Steuert „Zum Portfolio“ / Footer-Link auf dem thomas.fun-Hub.
+ * Public base URL of your portfolio, without a trailing slash.
+ * Controls the "Portfolio" / footer link on the thomas.fun hub.
+ * Now lives inside this repo at /portfolio (deployed together with thomas.fun).
  */
-window.PORTFOLIO_SITE_URL = "https://thomaswebsite.thomaso-halbach.workers.dev";
+window.PORTFOLIO_SITE_URL = "/portfolio";
