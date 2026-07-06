@@ -71,6 +71,7 @@ window.THOMASFUN_ITEMS = [
   { title:"UNO Online", href:"spiele/uno/index.html", emoji:"🃏", label:"Online · Cards", desc:"UNO (2–8 Spieler) im Browser: Room teilen, starten, Karten spielen.", tags:["game","cards","online","mobile"], section:"online" },
 
   // Tests & Tools
+  { title:"Routine", href:"routine/", emoji:"📈", label:"App · Tracker", desc:"Dein täglicher Selbst‑Tracker mit eigenem Login: Gewohnheiten eintragen (kalt duschen, Training, Stimmung …), Wochenübersicht, Streaks und Charts. Bau dir deine eigenen Felder — Ja/Nein, Zahl, Skala, Uhrzeit oder Text.", tags:["tool","app","mobile","tracker"], cat:"tools", section:"tests" },
   { title:"CPS‑Tester", href:"spiele/cps/index.html", emoji:"🖱️", label:"Test", desc:"CPS messen: Zeit 0,1s–60s selbst wählen, Klicks beim Drücken, Bestwert.", tags:["test","tool","cps","mobile"], section:"tests" },
   { title:"Reflex‑Test", href:"spiele/reflex/index.html", emoji:"⚡", label:"Test", desc:"Drück so schnell du kannst, wenn es grün wird — mit Rating & Durchschnitt.", tags:["test","tool","reflex","mobile"], section:"tests" },
   { title:"Adventskalender", href:"spiele/adventskalender/index.html", emoji:"🎁", label:"UI · Dezember", desc:"24 Türchen, Speicherstand, Demo‑Modus.", tags:["tool","ui","seasonal"], cat:"special", section:"tests" },
