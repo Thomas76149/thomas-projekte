@@ -516,6 +516,21 @@ body.light .stat-card:hover { border-color: #cfc8bd; box-shadow: 0 8px 24px rgba
 /* Textfelder: angenehme Mindesthöhe (auch bei Auto-Wachstum) */
 textarea.fi { min-height: 58px; }
 
+/* Onboarding-Banner */
+.welcome { display: flex; align-items: flex-start; gap: 12px; background: rgba(217, 119, 87, 0.1); border: 1px solid rgba(217, 119, 87, 0.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
+.welcome-txt { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.welcome-txt strong { color: var(--text); font-size: 14px; }
+.welcome-txt b { color: var(--text); font-weight: 600; }
+.welcome-x { border: 0; background: transparent; color: var(--text-dim); font-size: 15px; cursor: pointer; padding: 2px 6px; line-height: 1; }
+.welcome-x:hover { color: var(--text); }
+
+/* Verlauf-Kennzahlen */
+.chart-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); gap: 8px; margin-top: 16px; }
+.cs-item { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 10px; padding: 10px 8px; text-align: center; }
+.cs-k { font-size: 11px; color: var(--text-dim); font-family: var(--mono); margin-bottom: 4px; }
+.cs-v { font-size: 16px; font-weight: 600; }
+body.light .cs-item { background: rgba(0, 0, 0, 0.02); }
+
 /* Streak-Chips */
 .streak-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .chip { background: rgba(217, 119, 87, 0.14); border: 1px solid rgba(217, 119, 87, 0.35); color: var(--text); border-radius: 99px; padding: 6px 12px; font-size: 12.5px; white-space: nowrap; }

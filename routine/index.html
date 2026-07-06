@@ -51,6 +51,14 @@
         </div>
       </div>
 
+      <div id="welcome" class="welcome hidden">
+        <div class="welcome-txt">
+          <strong>Willkommen bei Routine 👋</strong>
+          <span>Trag täglich deine Gewohnheiten ein. Eigene Felder legst du im <b>Tracker</b>-Tab an; deinen Fortschritt siehst du unter <b>Woche</b> &amp; <b>Verlauf</b>.</span>
+        </div>
+        <button id="welcome-close" class="welcome-x" aria-label="schließen">✕</button>
+      </div>
+
       <nav class="nav">
         <button class="nav-btn active" data-view="heute">Heute</button>
         <button class="nav-btn" data-view="woche">Woche</button>
@@ -104,6 +112,7 @@
           </select>
         </div>
         <div class="chart-box"><canvas id="chart-canvas"></canvas></div>
+        <div id="chart-summary" class="chart-summary"></div>
         <p id="chart-empty" class="hint hidden">Für diesen Zeitraum gibt es noch keine Daten.</p>
       </div>
 

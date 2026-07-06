@@ -503,7 +503,7 @@ el("chart-range").addEventListener("change", renderChart);
 
 async function renderChart() {
   const t = trackers.find((x) => x.id === el("chart-tracker").value);
-  if (!t) { if (chart) { chart.destroy(); chart = null; } return; }
+  if (!t) { if (chart) { chart.destroy(); chart = null; } el("chart-summary").innerHTML = ""; return; }
   const days = parseInt(el("chart-range").value, 10);
   const from = addDays(todayStr(), -(days - 1));
   const rows = await ladeRange(from, todayStr());
@@ -519,6 +519,30 @@ async function renderChart() {
   const hasData = data.some((x) => x != null);
   el("chart-empty").classList.toggle("hidden", hasData);
   drawChart(t, labels, data);
+  renderChartSummary(t, data);
+}
+
+// Kennzahlen unter dem Chart
+function renderChartSummary(t, data) {
+  const box = el("chart-summary");
+  const vals = data.filter((x) => x != null);
+  if (!vals.length) { box.innerHTML = ""; return; }
+  const fmtV = (x) => (t.type === "time" ? minToTime(x) : round1(x));
+  let items;
+  if (t.type === "boolean") {
+    const yes = vals.filter((x) => x === 1).length;
+    items = [["Ja-Tage", `${yes} / ${vals.length}`], ["Quote", `${Math.round((yes / vals.length) * 100)}%`]];
+  } else {
+    const u = t.type === "number" && t.unit ? " " + t.unit : "";
+    const suf = t.type === "time" ? "" : u;
+    items = [
+      ["Ø", fmtV(avg(vals)) + suf],
+      ["Höchst", fmtV(Math.max(...vals)) + suf],
+      ["Tiefst", fmtV(Math.min(...vals)) + suf],
+      ["Einträge", String(vals.length)],
+    ];
+  }
+  box.innerHTML = items.map(([k, v]) => `<div class="cs-item"><div class="cs-k">${k}</div><div class="cs-v">${v}</div></div>`).join("");
 }
 function valForChart(t, v) {
   if (!v) return null;
@@ -691,6 +715,11 @@ document.querySelectorAll("#theme-seg .seg-btn").forEach((b) => {
   b.addEventListener("click", () => setTheme(b.dataset.theme));
 });
 
+el("welcome-close").addEventListener("click", () => {
+  el("welcome").classList.add("hidden");
+  localStorage.setItem("routine-welcomed", "1");
+});
+
 el("export-csv").addEventListener("click", exportCSV);
 async function exportCSV() {
   const rows = await ladeRange("0001-01-01", "9999-12-31");
@@ -777,6 +806,7 @@ async function initApp(user) {
   currentUser = user;
   el("who").textContent = user.email;
   show("app");
+  if (!localStorage.getItem("routine-welcomed")) el("welcome").classList.remove("hidden");
   await ladeTracker();
   currentDate = todayStr();
   currentWeek = todayStr();
