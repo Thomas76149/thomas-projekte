@@ -513,6 +513,10 @@ body.light .stat-card:hover { border-color: #cfc8bd; box-shadow: 0 8px 24px rgba
 .toast.in { opacity: 1; transform: translateY(0) scale(1); }
 .toast.err { border-left-color: var(--err); }
 
+/* Streak-Chips */
+.streak-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip { background: rgba(217, 119, 87, 0.14); border: 1px solid rgba(217, 119, 87, 0.35); color: var(--text); border-radius: 99px; padding: 6px 12px; font-size: 12.5px; white-space: nowrap; }
+
 /* Heute-Fortschritt */
 .today-progress { margin-bottom: 18px; }
 .tp-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }

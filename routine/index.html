@@ -68,6 +68,7 @@
           <button id="date-next" class="btn ghost" title="Tag vor">▶</button>
           <button id="date-today" class="btn ghost">Heute</button>
         </div>
+        <div id="streak-chips" class="streak-chips hidden"></div>
         <div id="today-progress" class="today-progress hidden"></div>
         <form id="entry-form" class="entry-form"></form>
         <div class="save-row">
@@ -133,7 +134,7 @@
             <input type="text" id="tf-unit" class="fi" placeholder="z.B. min, kg, l" maxlength="10" />
           </label>
           <label id="tf-target-wrap">Wochenziel (optional)
-            <input type="number" id="tf-target" class="fi" step="any" placeholder="z.B. 5" />
+            <input type="number" id="tf-target" class="fi" step="any" inputmode="decimal" placeholder="z.B. 5" />
           </label>
           <label>Symbol (optional)
             <div class="emoji-picker">

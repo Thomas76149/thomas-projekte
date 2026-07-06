@@ -10,6 +10,7 @@ let fields = [];
 let chart = null;
 let editingTrackerId = null;
 let selectedIcon = null;
+let dirty = false; // ungespeicherte Änderungen im Heute-Formular
 
 // ---------- Datums-Helfer ----------
 function fmt(d) {
@@ -109,16 +110,25 @@ function fehlerText(err) {
   if (m.includes("at least 6")) return "Passwort muss mindestens 6 Zeichen haben.";
   return m;
 }
-el("logout").addEventListener("click", () => db.auth.signOut());
+el("logout").addEventListener("click", () => { if (confirmDiscard()) db.auth.signOut(); });
 
 // ============================================================
 //  NAVIGATION
 // ============================================================
 const VIEWS = ["heute", "woche", "verlauf", "tracker", "mehr"];
+// Schutz vor Datenverlust: nur nachfragen, wenn wirklich ungespeicherte Änderungen da sind
+function confirmDiscard() {
+  if (!dirty) return true;
+  return confirm("Du hast ungespeicherte Änderungen. Wirklich verwerfen?");
+}
+window.addEventListener("beforeunload", (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ""; }
+});
 document.querySelectorAll(".nav-btn").forEach((b) => {
   b.addEventListener("click", () => openView(b.dataset.view));
 });
 function openView(view) {
+  if (!confirmDiscard()) return;
   document.querySelectorAll(".nav-btn").forEach((x) => x.classList.toggle("active", x.dataset.view === view));
   VIEWS.forEach((v) => el("view-" + v).classList.toggle("hidden", v !== view));
   if (view === "woche") ladeWoche();
@@ -157,7 +167,10 @@ el("date-prev").addEventListener("click", () => gotoDate(addDays(currentDate, -1
 el("date-next").addEventListener("click", () => gotoDate(addDays(currentDate, 1)));
 el("date-today").addEventListener("click", () => gotoDate(todayStr()));
 el("date-input").addEventListener("change", (e) => gotoDate(e.target.value));
-function gotoDate(date) { el("date-input").value = date; ladeEintrag(date); }
+function gotoDate(date) {
+  if (!confirmDiscard()) { el("date-input").value = currentDate; return; }
+  el("date-input").value = date; ladeEintrag(date);
+}
 
 async function ladeEintrag(date) {
   currentDate = date;
@@ -176,6 +189,7 @@ function renderForm(map) {
   const form = el("entry-form");
   form.innerHTML = "";
   fields = [];
+  dirty = false; // frisch geladen = sauber
   const active = trackers.filter((t) => t.active);
   if (!active.length) {
     el("today-progress").classList.add("hidden");
@@ -199,8 +213,8 @@ function renderForm(map) {
       const seg = document.createElement("div"); seg.className = "seg";
       const bNein = mkSeg("Nein", state === false);
       const bJa = mkSeg("Ja", state === true);
-      bNein.onclick = () => { state = false; setSeg(bNein, bJa); };
-      bJa.onclick = () => { state = true; setSeg(bJa, bNein); };
+      bNein.onclick = () => { state = false; setSeg(bNein, bJa); dirty = true; };
+      bJa.onclick = () => { state = true; setSeg(bJa, bNein); dirty = true; };
       seg.append(bNein, bJa); row.appendChild(seg);
       get = () => ({ value_bool: state });
 
@@ -216,7 +230,7 @@ function renderForm(map) {
       for (let i = 1; i <= 10; i++) {
         const b = document.createElement("button");
         b.type = "button"; b.className = "scale-btn"; b.textContent = i;
-        b.onclick = () => { sel = i; paint(); };
+        b.onclick = () => { sel = i; paint(); dirty = true; };
         btns.push(b); wrap.appendChild(b);
       }
       paint();
@@ -229,7 +243,7 @@ function renderForm(map) {
 
     } else if (t.type === "number") {
       const inp = document.createElement("input");
-      inp.type = "number"; inp.step = "any"; inp.className = "fi"; inp.placeholder = t.unit || "";
+      inp.type = "number"; inp.step = "any"; inp.inputMode = "decimal"; inp.className = "fi"; inp.placeholder = t.unit || "";
       if (v && v.value_num != null) inp.value = v.value_num;
       row.appendChild(inp);
       get = () => (inp.value === "" ? null : { value_num: parseFloat(inp.value) });
@@ -256,6 +270,7 @@ function mkSeg(text, on) { const b = document.createElement("button"); b.type = 
 function setSeg(on, off) { on.classList.add("on"); off.classList.remove("on"); }
 
 el("save-entry").addEventListener("click", saveEintrag);
+el("entry-form").addEventListener("input", () => { dirty = true; });
 async function saveEintrag() {
   el("save-entry").disabled = true;
   saveMsg("Speichere…");
@@ -281,6 +296,7 @@ async function saveEintrag() {
     saveMsg("");
     toast("Gespeichert ✓");
     await ladeEintrag(currentDate); // Fortschritt aktualisieren
+    renderStreakChips();            // Serien könnten sich geändert haben
   } catch (err) { saveMsg("Fehler: " + (err.message || err), "err"); }
   finally { el("save-entry").disabled = false; }
 }
@@ -315,6 +331,24 @@ function renderTodayProgress(active, map) {
   box.innerHTML =
     `<div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div></div>
      <div class="tp-txt"><span>${done ? "Alles eingetragen 🎉" : filled + " von " + total + " eingetragen"}</span><span>${pct}%</span></div>`;
+}
+
+// Aktive 🔥-Serien oben im Heute-Tab
+async function renderStreakChips() {
+  const box = el("streak-chips");
+  const bools = trackers.filter((t) => t.active && t.type === "boolean");
+  if (!bools.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  const rows = await ladeRange(addDays(todayStr(), -59), todayStr());
+  const byDate = Object.fromEntries(rows.map((r) => [r.date, r.values]));
+  const chips = bools
+    .map((t) => ({ t, s: streak(t.id, byDate) }))
+    .filter((x) => x.s > 0)
+    .sort((a, b) => b.s - a.s);
+  if (!chips.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  box.classList.remove("hidden");
+  box.innerHTML = chips
+    .map((x) => `<span class="chip">${x.t.icon || "🔥"} ${escapeHtml(x.t.name)} · 🔥 ${x.s}</span>`)
+    .join("");
 }
 
 // ============================================================
@@ -731,6 +765,7 @@ async function initApp(user) {
   currentWeek = todayStr();
   el("date-input").value = currentDate;
   await ladeEintrag(currentDate);
+  renderStreakChips();
   openView("heute");
 }
 
