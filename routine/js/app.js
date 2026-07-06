@@ -124,6 +124,15 @@ function confirmDiscard() {
 window.addEventListener("beforeunload", (e) => {
   if (dirty) { e.preventDefault(); e.returnValue = ""; }
 });
+// Strg/Cmd+S speichert den Tag (nur im Heute-Tab)
+window.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+    if (!el("app-view").classList.contains("hidden") && !el("view-heute").classList.contains("hidden")) {
+      e.preventDefault();
+      saveEintrag();
+    }
+  }
+});
 document.querySelectorAll(".nav-btn").forEach((b) => {
   b.addEventListener("click", () => openView(b.dataset.view));
 });
@@ -259,7 +268,12 @@ function renderForm(map) {
       const ta = document.createElement("textarea");
       ta.className = "fi"; ta.rows = t.name.toLowerCase().includes("reflex") ? 3 : 2;
       if (v && v.value_text) ta.value = v.value_text;
+      // automatisch mitwachsen beim Tippen
+      const grow = () => { ta.style.height = "auto"; ta.style.height = ta.scrollHeight + "px"; };
+      ta.style.overflow = "hidden";
+      ta.addEventListener("input", grow);
       row.appendChild(ta);
+      requestAnimationFrame(grow);
       get = () => (ta.value.trim() === "" ? null : { value_text: ta.value.trim() });
     }
     fields.push({ tracker_id: t.id, get });
@@ -397,6 +411,9 @@ async function ladeWoche() {
       `<div class="stat-top"><span class="ico">${t.icon || "•"}</span><span class="stat-name">${escapeHtml(t.name)}</span>${extra}</div>
        <div class="stat-main">${a.main}</div>
        <div class="stat-sub">${a.sub || ""}</div>${bar}`;
+    card.style.cursor = "pointer";
+    card.title = "Im Verlauf ansehen";
+    card.onclick = () => { openView("verlauf"); el("chart-tracker").value = t.id; renderChart(); };
     box.appendChild(card);
   });
 }
