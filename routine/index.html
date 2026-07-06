@@ -68,6 +68,7 @@
           <button id="date-next" class="btn ghost" title="Tag vor">▶</button>
           <button id="date-today" class="btn ghost">Heute</button>
         </div>
+        <div id="today-progress" class="today-progress hidden"></div>
         <form id="entry-form" class="entry-form"></form>
         <div class="save-row">
           <button id="save-entry" class="btn">Speichern</button>
@@ -82,6 +83,11 @@
           <span id="week-label" class="week-label"></span>
           <button id="week-next" class="btn ghost" title="Woche vor">▶</button>
           <button id="week-now" class="btn ghost">Diese Woche</button>
+        </div>
+        <div class="heatmap">
+          <div class="hm-title">Aktivität · letzte 5 Wochen</div>
+          <div class="hm-head"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+          <div id="week-heatmap"></div>
         </div>
         <div id="week-stats" class="week-stats"></div>
       </div>

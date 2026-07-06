@@ -178,9 +178,11 @@ function renderForm(map) {
   fields = [];
   const active = trackers.filter((t) => t.active);
   if (!active.length) {
+    el("today-progress").classList.add("hidden");
     form.innerHTML = `<p class="hint">Noch keine Tracker. Leg unter „Tracker" welche an.</p>`;
     return;
   }
+  renderTodayProgress(active, map);
   active.forEach((t) => {
     const v = map[t.id];
     const row = document.createElement("div");
@@ -278,6 +280,7 @@ async function saveEintrag() {
     }
     saveMsg("");
     toast("Gespeichert ✓");
+    await ladeEintrag(currentDate); // Fortschritt aktualisieren
   } catch (err) { saveMsg("Fehler: " + (err.message || err), "err"); }
   finally { el("save-entry").disabled = false; }
 }
@@ -300,6 +303,20 @@ function setDateHeading(date) {
   h.textContent = prefix + wd;
 }
 
+// Fortschritt: wie viele Tracker sind heute schon eingetragen
+function renderTodayProgress(active, map) {
+  const box = el("today-progress");
+  const filled = active.filter((t) => map[t.id] != null).length;
+  const total = active.length;
+  const pct = total ? Math.round((filled / total) * 100) : 0;
+  box.classList.remove("hidden");
+  box.classList.toggle("complete", filled === total && total > 0);
+  const done = filled === total;
+  box.innerHTML =
+    `<div class="tp-bar"><div class="tp-fill" style="width:${pct}%"></div></div>
+     <div class="tp-txt"><span>${done ? "Alles eingetragen 🎉" : filled + " von " + total + " eingetragen"}</span><span>${pct}%</span></div>`;
+}
+
 // ============================================================
 //  WOCHE — Übersicht + Streaks
 // ============================================================
@@ -317,6 +334,11 @@ async function ladeWoche() {
   // Für Streaks: letzte 60 Tage (relativ zu heute)
   const streakRows = await ladeRange(addDays(todayStr(), -59), todayStr());
   const byDate = Object.fromEntries(streakRows.map((r) => [r.date, r.values]));
+
+  // Aktivitäts-Heatmap: 5 Wochen bis zum Sonntag der angezeigten Woche
+  const hmStart = addDays(to, -34);
+  const hmRows = await ladeRange(hmStart, to);
+  renderHeatmap(Object.fromEntries(hmRows.map((r) => [r.date, r.values])), hmStart);
 
   box.innerHTML = "";
   const active = trackers.filter((t) => t.active && t.type !== "text");
@@ -368,6 +390,21 @@ function aggregate(t, rows) {
     return { main: `Ø ${minToTime(avg(m))}`, sub: "Uhr" };
   }
   return { main: "–" };
+}
+
+function renderHeatmap(byDate, start) {
+  const wrap = el("week-heatmap");
+  const today = todayStr();
+  let html = "";
+  for (let i = 0; i < 35; i++) {
+    const k = addDays(start, i);
+    const cnt = byDate[k] ? Object.keys(byDate[k]).length : 0;
+    const lvl = cnt === 0 ? 0 : cnt <= 1 ? 1 : cnt <= 3 ? 2 : cnt <= 5 ? 3 : 4;
+    const future = k > today ? " future" : "";
+    const isToday = k === today ? " today" : "";
+    html += `<div class="hm-cell l${lvl}${future}${isToday}" title="${deLabel(k)}: ${cnt} eingetragen"></div>`;
+  }
+  wrap.innerHTML = `<div class="hm-grid">${html}</div>`;
 }
 
 function streak(trackerId, byDate) {
