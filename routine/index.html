@@ -208,6 +208,17 @@
 
     <div id="loading" class="loading">lädt…</div>
     <div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
+
+    <!-- Bestätigungs-Dialog -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-card">
+        <p id="modal-msg" class="modal-msg"></p>
+        <div class="modal-actions">
+          <button id="modal-cancel" class="btn ghost">Abbrechen</button>
+          <button id="modal-ok" class="btn danger-btn">Löschen</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

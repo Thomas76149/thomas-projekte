@@ -554,6 +554,14 @@ body.light .cs-item { background: rgba(0, 0, 0, 0.02); }
 .streak-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .chip { background: rgba(217, 119, 87, 0.14); border: 1px solid rgba(217, 119, 87, 0.35); color: var(--text); border-radius: 99px; padding: 6px 12px; font-size: 12.5px; white-space: nowrap; }
 
+/* Bestätigungs-Dialog */
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; animation: fadeUp 0.18s ease; }
+.modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; max-width: 380px; width: 100%; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5); }
+.modal-msg { margin: 0 0 20px; font-size: 15px; line-height: 1.55; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.danger-btn { background: var(--err); color: #fff; }
+.danger-btn:hover { background: #e85555; box-shadow: 0 6px 20px rgba(224, 108, 108, 0.35); }
+
 /* Gesamt-Serie (Woche) */
 .week-streak { display: flex; align-items: center; gap: 10px; background: rgba(217, 119, 87, 0.1); border: 1px solid rgba(217, 119, 87, 0.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; font-size: 15px; }
 .week-streak strong { font-size: 20px; color: var(--accent); margin-right: 2px; }

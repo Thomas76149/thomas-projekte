@@ -736,7 +736,8 @@ async function saveTracker() {
 }
 
 async function deleteTracker(t) {
-  if (!confirm(`„${t.name}" wirklich löschen? Alle bisher eingetragenen Werte dieses Trackers gehen dabei verloren.`)) return;
+  const ok = await askConfirm(`„${t.name}" wirklich löschen? Alle bisher eingetragenen Werte dieses Trackers gehen dabei verloren.`);
+  if (!ok) return;
   const { error } = await db.from("trackers").delete().eq("id", t.id);
   if (error) { alert("Fehler beim Löschen: " + error.message); return; }
   await ladeTracker();
@@ -819,6 +820,27 @@ function csvCell(t, v) {
   return v.value_num != null ? String(v.value_num) : "";
 }
 function csvEsc(s) { s = String(s ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
+
+// ============================================================
+//  BESTÄTIGUNGS-DIALOG (schöner als confirm())
+// ============================================================
+function askConfirm(message, okLabel = "Löschen") {
+  return new Promise((resolve) => {
+    el("modal-msg").textContent = message;
+    el("modal-ok").textContent = okLabel;
+    el("modal").classList.remove("hidden");
+    const done = (val) => {
+      el("modal").classList.add("hidden");
+      el("modal-ok").onclick = null;
+      el("modal-cancel").onclick = null;
+      el("modal").onclick = null;
+      resolve(val);
+    };
+    el("modal-ok").onclick = () => done(true);
+    el("modal-cancel").onclick = () => done(false);
+    el("modal").onclick = (e) => { if (e.target === el("modal")) done(false); };
+  });
+}
 
 // ============================================================
 //  TOAST (schwebende Meldung)
