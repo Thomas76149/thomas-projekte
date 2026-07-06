@@ -720,6 +720,18 @@ el("welcome-close").addEventListener("click", () => {
   localStorage.setItem("routine-welcomed", "1");
 });
 
+el("change-pw").addEventListener("click", async () => {
+  const pw = el("new-pw").value;
+  if (pw.length < 6) { toast("Passwort braucht mind. 6 Zeichen", "err"); return; }
+  el("change-pw").disabled = true;
+  const { error } = await db.auth.updateUser({ password: pw });
+  el("change-pw").disabled = false;
+  if (error) { toast("Fehler: " + error.message, "err"); return; }
+  el("new-pw").value = "";
+  toast("Passwort geändert ✓");
+});
+el("logout-2").addEventListener("click", () => { if (confirmDiscard()) db.auth.signOut(); });
+
 el("export-csv").addEventListener("click", exportCSV);
 async function exportCSV() {
   const rows = await ladeRange("0001-01-01", "9999-12-31");
@@ -805,6 +817,7 @@ function escapeHtml(s) {
 async function initApp(user) {
   currentUser = user;
   el("who").textContent = user.email;
+  el("acc-email").textContent = user.email;
   show("app");
   if (!localStorage.getItem("routine-welcomed")) el("welcome").classList.remove("hidden");
   await ladeTracker();

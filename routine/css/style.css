@@ -516,6 +516,10 @@ body.light .stat-card:hover { border-color: #cfc8bd; box-shadow: 0 8px 24px rgba
 /* Textfelder: angenehme Mindesthöhe (auch bei Auto-Wachstum) */
 textarea.fi { min-height: 58px; }
 
+/* Passwort ändern (Mehr-Tab) */
+.pw-change { display: flex; gap: 8px; align-items: center; }
+.pw-change .fi { width: auto; max-width: 170px; padding: 8px 11px; font-size: 14px; }
+
 /* Onboarding-Banner */
 .welcome { display: flex; align-items: flex-start; gap: 12px; background: rgba(217, 119, 87, 0.1); border: 1px solid rgba(217, 119, 87, 0.3); border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
 .welcome-txt { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
