@@ -460,7 +460,7 @@ async function ladeWoche() {
        <div class="stat-sub">${a.sub || ""}</div>${bar}`;
     card.style.cursor = "pointer";
     card.title = "Im Verlauf ansehen";
-    card.onclick = () => { openView("verlauf"); el("chart-tracker").value = t.id; renderChart(); };
+    card.onclick = () => { openView("verlauf"); el("chart-tracker").value = t.id; if (el("chart-tracker")._refreshSel) el("chart-tracker")._refreshSel(); renderChart(); };
     box.appendChild(card);
   });
 }
@@ -556,6 +556,7 @@ function initVerlauf() {
     return;
   }
   el("chart-empty").textContent = "Für diesen Zeitraum gibt es noch keine Daten.";
+  if (el("chart-tracker")._refreshSel) el("chart-tracker")._refreshSel();
   renderChart();
 }
 el("chart-tracker").addEventListener("change", renderChart);
@@ -696,6 +697,7 @@ function openTrackerForm(t) {
   el("tf-templates").classList.toggle("hidden", !!t); // Vorlagen nur bei „neu"
   tfMsg("");
   syncTrackerFormFields();
+  if (el("tf-type")._refreshSel) el("tf-type")._refreshSel();
   el("tracker-form").classList.remove("hidden");
   el("tracker-form").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -865,6 +867,40 @@ const EMOJIS = [
   "🎸","🎮","🧹","💊","🦷","🚶","🧠","❤️","🙏","😊",
   "🔥","🌱","🌳","🚭","🍺","💰","⚽","📝","✅","⭐",
 ];
+// ---------- Eigenes Dropdown (styled Select) ----------
+function enhanceSelect(sel) {
+  const wrap = document.createElement("div");
+  wrap.className = "sel";
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "sel-btn";
+  const list = document.createElement("div");
+  list.className = "sel-list hidden";
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  wrap.appendChild(btn);
+  wrap.appendChild(list);
+  sel.classList.add("sel-native");
+
+  const refresh = () => { btn.textContent = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : ""; };
+  const close = () => { list.classList.add("hidden"); wrap.classList.remove("open"); };
+  const open = () => {
+    list.innerHTML = "";
+    [...sel.options].forEach((o) => {
+      const item = document.createElement("div");
+      item.className = "sel-item" + (o.value === sel.value ? " on" : "");
+      item.textContent = o.textContent;
+      item.onclick = () => { sel.value = o.value; sel.dispatchEvent(new Event("change")); refresh(); close(); };
+      list.appendChild(item);
+    });
+    list.classList.remove("hidden"); wrap.classList.add("open");
+  };
+  btn.onclick = () => (list.classList.contains("hidden") ? open() : close());
+  sel.addEventListener("change", refresh);
+  document.addEventListener("click", (e) => { if (!wrap.contains(e.target)) close(); });
+  sel._refreshSel = refresh;
+  refresh();
+}
+
 // ---------- Tracker-Vorlagen ----------
 const TEMPLATES = [
   { name: "Wasser trinken", type: "number", unit: "l", icon: "💧" },
@@ -896,6 +932,7 @@ function applyTemplate(tpl) {
   selectedIcon = tpl.icon || null;
   updateEmojiBtn();
   syncTrackerFormFields();
+  if (el("tf-type")._refreshSel) el("tf-type")._refreshSel();
   el("tf-name").focus();
 }
 
@@ -950,6 +987,7 @@ async function initApp(user) {
 setTheme(localStorage.getItem("routine-theme") || "dark");
 buildEmojiGrid();
 buildTemplates();
+["tf-type", "chart-tracker", "chart-range"].forEach((id) => enhanceSelect(el(id)));
 
 db.auth.onAuthStateChange((event, session) => {
   setTimeout(async () => {

@@ -438,10 +438,16 @@ select.fi { cursor: pointer; }
 body.light .field { background: rgba(0, 0, 0, 0.02); }
 .field:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.13);
   transform: translateY(-1px);
 }
-.field .fi:focus { box-shadow: none; } /* kein doppelter Ring */
+
+/* Fokus-Animation: Ring "ploppt" auf beim Reinklicken/Tippen */
+@keyframes fieldPop {
+  0% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0.5); }
+  55% { box-shadow: 0 0 0 6px rgba(217, 119, 87, 0.07); }
+  100% { box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.2); }
+}
+.fi:focus { border-color: var(--accent); animation: fieldPop 0.4s ease both; outline: none; }
 
 /* Skala als Füll-Rating */
 .scale-box { display: flex; flex-direction: column; gap: 6px; }
@@ -519,6 +525,35 @@ textarea.fi { min-height: 58px; }
 /* Passwort ändern (Mehr-Tab) */
 .pw-change { display: flex; gap: 8px; align-items: center; }
 .pw-change .fi { width: auto; max-width: 170px; padding: 8px 11px; font-size: 14px; }
+
+/* Eigenes Dropdown (styled Select) */
+.sel { position: relative; }
+.sel-native { display: none; }
+.sel-btn {
+  width: 100%; text-align: left; padding: 12px 40px 12px 14px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); font: inherit; font-size: 15px; cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sel-btn:hover { border-color: #444; }
+.sel-btn::after {
+  content: ""; position: absolute; right: 15px; top: 50%;
+  width: 7px; height: 7px; border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
+  transform: translateY(-70%) rotate(45deg); transition: transform 0.2s;
+}
+.sel.open .sel-btn { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.16); }
+.sel.open .sel-btn::after { transform: translateY(-30%) rotate(225deg); }
+.sel-list {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 5px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  max-height: 260px; overflow-y: auto; animation: fadeUp 0.16s ease;
+}
+.sel-item { padding: 10px 12px; border-radius: 7px; font-size: 14px; cursor: pointer; transition: background 0.12s; }
+.sel-item:hover { background: rgba(255, 255, 255, 0.06); }
+.sel-item.on { background: rgba(217, 119, 87, 0.18); }
+body.light .sel-item:hover { background: rgba(0, 0, 0, 0.05); }
+.chart-controls .sel { flex: 1; }
 
 /* Tracker-Vorlagen */
 .tf-templates { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 4px; }
