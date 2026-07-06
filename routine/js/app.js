@@ -422,6 +422,14 @@ async function ladeWoche() {
   const streakRows = await ladeRange(addDays(todayStr(), -59), todayStr());
   const byDate = Object.fromEntries(streakRows.map((r) => [r.date, r.values]));
 
+  // Gesamt-Serie: Tage am Stück mit mindestens einem Eintrag
+  const gs = overallStreak(byDate);
+  const ws = el("week-streak");
+  if (gs > 0) {
+    ws.classList.remove("hidden");
+    ws.innerHTML = `<span class="ws-fire">🔥</span><span><strong>${gs}</strong> Tag${gs === 1 ? "" : "e"} am Stück getrackt</span>`;
+  } else { ws.classList.add("hidden"); ws.innerHTML = ""; }
+
   // Aktivitäts-Heatmap: 5 Wochen bis zum Sonntag der angezeigten Woche
   const hmStart = addDays(to, -34);
   const hmRows = await ladeRange(hmStart, to);
@@ -495,6 +503,19 @@ function renderHeatmap(byDate, start) {
     html += `<div class="hm-cell l${lvl}${future}${isToday}" title="${deLabel(k)}: ${cnt} eingetragen"></div>`;
   }
   wrap.innerHTML = `<div class="hm-grid">${html}</div>`;
+}
+
+// Gesamt-Serie: aufeinanderfolgende Tage mit irgendeinem Eintrag
+function overallStreak(byDate) {
+  let s = 0;
+  const d = new Date();
+  if (!(byDate[fmt(d)] && Object.keys(byDate[fmt(d)]).length)) d.setDate(d.getDate() - 1); // heute noch offen -> ab gestern
+  while (true) {
+    const k = fmt(d);
+    if (byDate[k] && Object.keys(byDate[k]).length) { s++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return s;
 }
 
 function streak(trackerId, byDate) {
