@@ -1,0 +1,14 @@
+{
+  "name": "Routine",
+  "short_name": "Routine",
+  "description": "Dein täglicher Selbst-Tracker.",
+  "start_url": "/routine/",
+  "scope": "/routine/",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "icons": [
+    { "src": "icons/icon-192.png", "type": "image/png", "sizes": "192x192" },
+    { "src": "icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any maskable" }
+  ]
+}
