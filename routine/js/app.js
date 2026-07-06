@@ -672,6 +672,7 @@ function openTrackerForm(t) {
   selectedIcon = t && t.icon ? t.icon : null;
   updateEmojiBtn();
   el("emoji-grid").classList.add("hidden");
+  el("tf-templates").classList.toggle("hidden", !!t); // Vorlagen nur bei „neu"
   tfMsg("");
   syncTrackerFormFields();
   el("tracker-form").classList.remove("hidden");
@@ -821,6 +822,40 @@ const EMOJIS = [
   "🎸","🎮","🧹","💊","🦷","🚶","🧠","❤️","🙏","😊",
   "🔥","🌱","🌳","🚭","🍺","💰","⚽","📝","✅","⭐",
 ];
+// ---------- Tracker-Vorlagen ----------
+const TEMPLATES = [
+  { name: "Wasser trinken", type: "number", unit: "l", icon: "💧" },
+  { name: "Meditation", type: "boolean", icon: "🧘" },
+  { name: "Lesen", type: "number", unit: "min", icon: "📚" },
+  { name: "Schlaf", type: "number", unit: "h", icon: "😴" },
+  { name: "Schritte", type: "number", unit: "", icon: "🚶" },
+  { name: "Journaling", type: "text", icon: "✍️" },
+  { name: "Vitamine", type: "boolean", icon: "💊" },
+  { name: "Kein Zucker", type: "boolean", icon: "🍎" },
+];
+function buildTemplates() {
+  const wrap = el("tf-templates");
+  if (!wrap) return;
+  wrap.innerHTML = `<span class="tpl-label">Vorlage:</span>`;
+  TEMPLATES.forEach((tpl) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tpl-chip";
+    b.textContent = `${tpl.icon} ${tpl.name}`;
+    b.onclick = () => applyTemplate(tpl);
+    wrap.appendChild(b);
+  });
+}
+function applyTemplate(tpl) {
+  el("tf-name").value = tpl.name;
+  el("tf-type").value = tpl.type;
+  el("tf-unit").value = tpl.unit || "";
+  el("tf-target").value = "";
+  selectedIcon = tpl.icon || null;
+  updateEmojiBtn();
+  syncTrackerFormFields();
+  el("tf-name").focus();
+}
+
 function buildEmojiGrid() {
   const g = el("emoji-grid");
   if (!g) return;
@@ -871,6 +906,7 @@ async function initApp(user) {
 // Theme sofort setzen (auch vor Login) + Emoji-Auswahl vorbereiten
 setTheme(localStorage.getItem("routine-theme") || "dark");
 buildEmojiGrid();
+buildTemplates();
 
 db.auth.onAuthStateChange((event, session) => {
   setTimeout(async () => {
