@@ -130,7 +130,11 @@
             <input type="number" id="tf-target" class="fi" step="any" placeholder="z.B. 5" />
           </label>
           <label>Symbol (optional)
-            <input type="text" id="tf-icon" class="fi" placeholder="Emoji, z.B. 💧" maxlength="4" />
+            <div class="emoji-picker">
+              <button type="button" id="tf-icon-btn" class="emoji-current empty" aria-label="Symbol wählen">＋</button>
+              <span class="emoji-hint">zum Wählen tippen</span>
+            </div>
+            <div id="emoji-grid" class="emoji-grid hidden"></div>
           </label>
           <div class="save-row">
             <button id="tf-save" class="btn">Speichern</button>
@@ -161,6 +165,7 @@
     </section>
 
     <div id="loading" class="loading">lädt…</div>
+    <div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

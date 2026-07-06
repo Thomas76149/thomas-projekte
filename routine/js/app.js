@@ -9,6 +9,7 @@ let currentWeek = todayStr(); // Datum irgendwo in der angezeigten Woche
 let fields = [];
 let chart = null;
 let editingTrackerId = null;
+let selectedIcon = null;
 
 // ---------- Datums-Helfer ----------
 function fmt(d) {
@@ -205,13 +206,23 @@ function renderForm(map) {
       let sel = v && v.value_num != null ? Number(v.value_num) : null;
       const wrap = document.createElement("div"); wrap.className = "scale";
       const btns = [];
+      const paint = () => btns.forEach((b, idx) => {
+        const val = idx + 1;
+        b.classList.toggle("on", sel === val);
+        b.classList.toggle("lit", sel != null && val <= sel);
+      });
       for (let i = 1; i <= 10; i++) {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "scale-btn" + (sel === i ? " on" : ""); b.textContent = i;
-        b.onclick = () => { sel = i; btns.forEach((x, idx) => x.classList.toggle("on", idx + 1 === i)); };
+        b.type = "button"; b.className = "scale-btn"; b.textContent = i;
+        b.onclick = () => { sel = i; paint(); };
         btns.push(b); wrap.appendChild(b);
       }
-      row.appendChild(wrap);
+      paint();
+      const ends = document.createElement("div"); ends.className = "scale-ends";
+      ends.innerHTML = "<span>niedrig</span><span>hoch</span>";
+      const box = document.createElement("div"); box.className = "scale-box";
+      box.append(wrap, ends);
+      row.appendChild(box);
       get = () => (sel == null ? null : { value_num: sel });
 
     } else if (t.type === "number") {
@@ -265,7 +276,8 @@ async function saveEintrag() {
       const { error: e3 } = await db.from("entry_values").delete().eq("entry_id", entry.id).in("tracker_id", toDelete);
       if (e3) throw e3;
     }
-    saveMsg("Gespeichert ✓", "ok");
+    saveMsg("");
+    toast("Gespeichert ✓");
   } catch (err) { saveMsg("Fehler: " + (err.message || err), "err"); }
   finally { el("save-entry").disabled = false; }
 }
@@ -497,6 +509,7 @@ el("tracker-new").addEventListener("click", () => openTrackerForm(null));
 el("tf-cancel").addEventListener("click", closeTrackerForm);
 el("tf-type").addEventListener("change", syncTrackerFormFields);
 el("tf-save").addEventListener("click", saveTracker);
+el("tf-icon-btn").addEventListener("click", () => el("emoji-grid").classList.toggle("hidden"));
 
 function openTrackerForm(t) {
   editingTrackerId = t ? t.id : null;
@@ -505,7 +518,9 @@ function openTrackerForm(t) {
   el("tf-type").value = t ? t.type : "boolean";
   el("tf-unit").value = t && t.unit ? t.unit : "";
   el("tf-target").value = t && t.target != null ? t.target : "";
-  el("tf-icon").value = t && t.icon ? t.icon : "";
+  selectedIcon = t && t.icon ? t.icon : null;
+  updateEmojiBtn();
+  el("emoji-grid").classList.add("hidden");
   tfMsg("");
   syncTrackerFormFields();
   el("tracker-form").classList.remove("hidden");
@@ -525,8 +540,9 @@ async function saveTracker() {
   const unit = type === "number" ? (el("tf-unit").value.trim() || null) : null;
   const targetRaw = el("tf-target").value;
   const target = (type === "number" || type === "boolean") && targetRaw !== "" ? parseFloat(targetRaw) : null;
-  const icon = el("tf-icon").value.trim() || null;
+  const icon = selectedIcon || null;
 
+  const wasEdit = !!editingTrackerId;
   el("tf-save").disabled = true;
   tfMsg("Speichere…");
   try {
@@ -541,6 +557,7 @@ async function saveTracker() {
     await ladeTracker();
     renderTrackerList();
     closeTrackerForm();
+    toast(wasEdit ? "Tracker aktualisiert ✓" : "Tracker angelegt ✓");
   } catch (err) { tfMsg("Fehler: " + (err.message || err), "err"); }
   finally { el("tf-save").disabled = false; }
 }
@@ -551,6 +568,7 @@ async function deleteTracker(t) {
   if (error) { alert("Fehler beim Löschen: " + error.message); return; }
   await ladeTracker();
   renderTrackerList();
+  toast(t.name + " gelöscht");
 }
 
 async function toggleActive(t) {
@@ -601,6 +619,7 @@ async function exportCSV() {
   const a = document.createElement("a");
   a.href = url; a.download = "routine-export.csv";
   a.click(); URL.revokeObjectURL(url);
+  toast("CSV exportiert ✓");
 }
 function csvCell(t, v) {
   if (!v) return "";
@@ -610,6 +629,53 @@ function csvCell(t, v) {
   return v.value_num != null ? String(v.value_num) : "";
 }
 function csvEsc(s) { s = String(s ?? ""); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
+
+// ============================================================
+//  TOAST (schwebende Meldung)
+// ============================================================
+function toast(text, type = "ok") {
+  const wrap = el("toast-wrap");
+  if (!wrap) return;
+  const t = document.createElement("div");
+  t.className = "toast " + type;
+  t.textContent = text;
+  wrap.appendChild(t);
+  requestAnimationFrame(() => t.classList.add("in"));
+  setTimeout(() => { t.classList.remove("in"); setTimeout(() => t.remove(), 320); }, 2300);
+}
+
+// ============================================================
+//  EMOJI-PICKER
+// ============================================================
+const EMOJIS = [
+  "🎯","💪","🏃","🚴","🏋️","🧘","🚿","💧","☕","🍎",
+  "🥗","🍳","😴","🌅","🌙","⏰","📚","💻","✍️","🎨",
+  "🎸","🎮","🧹","💊","🦷","🚶","🧠","❤️","🙏","😊",
+  "🔥","🌱","🌳","🚭","🍺","💰","⚽","📝","✅","⭐",
+];
+function buildEmojiGrid() {
+  const g = el("emoji-grid");
+  if (!g) return;
+  g.innerHTML = "";
+  const none = document.createElement("button");
+  none.type = "button"; none.className = "emoji-cell none"; none.textContent = "✕"; none.title = "kein Symbol";
+  none.onclick = () => { selectedIcon = null; updateEmojiBtn(); g.classList.add("hidden"); };
+  g.appendChild(none);
+  EMOJIS.forEach((e) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "emoji-cell"; b.textContent = e;
+    b.onclick = () => { selectedIcon = e; updateEmojiBtn(); g.classList.add("hidden"); };
+    g.appendChild(b);
+  });
+}
+function updateEmojiBtn() {
+  const btn = el("tf-icon-btn");
+  btn.textContent = selectedIcon || "＋";
+  btn.classList.toggle("empty", !selectedIcon);
+  el("emoji-grid").querySelectorAll(".emoji-cell").forEach((c) =>
+    c.classList.toggle("on", c.textContent === selectedIcon)
+  );
+}
 
 // ---------- Utils ----------
 function escapeHtml(s) {
@@ -631,8 +697,9 @@ async function initApp(user) {
   openView("heute");
 }
 
-// Theme sofort setzen (auch vor Login)
+// Theme sofort setzen (auch vor Login) + Emoji-Auswahl vorbereiten
 setTheme(localStorage.getItem("routine-theme") || "dark");
+buildEmojiGrid();
 
 db.auth.onAuthStateChange((event, session) => {
   setTimeout(async () => {

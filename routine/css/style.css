@@ -410,10 +410,119 @@ select.fi { cursor: pointer; }
 /* ===== MEHR ===== */
 .mehr-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; font-size: 14px; }
 
+/* ===================================================== */
+/*  POLISH-PASS: Effekte, Emoji-Picker, Toasts, Anims     */
+/* ===================================================== */
+
+/* sanftes Einblenden */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.card:not(.hidden) { animation: fadeUp 0.3s ease; }
+.view:not(.hidden) { animation: fadeUp 0.28s ease; }
+
+/* atmender Marken-Punkt */
+@keyframes breathe { 0%, 100% { box-shadow: 0 0 12px var(--accent); } 50% { box-shadow: 0 0 22px var(--accent); } }
+.brand .dot { animation: breathe 3s ease-in-out infinite; }
+
+/* Buttons: Hover-Lift + Press */
+.btn:not(.ghost):hover { box-shadow: 0 6px 20px rgba(217, 119, 87, 0.3); }
+.btn:active { transform: translateY(1px) scale(0.99); }
+
+/* Eingabefelder als Panels: heben & glühen beim Tippen */
+.field {
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+body.light .field { background: rgba(0, 0, 0, 0.02); }
+.field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.13);
+  transform: translateY(-1px);
+}
+.field .fi:focus { box-shadow: none; } /* kein doppelter Ring */
+
+/* Skala als Füll-Rating */
+.scale-box { display: flex; flex-direction: column; gap: 6px; }
+.scale-ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); font-family: var(--mono); padding: 0 2px; }
+.scale-btn { transition: background 0.12s, color 0.12s, border-color 0.12s, transform 0.1s; }
+.scale-btn:active { transform: scale(0.9); }
+.scale-btn.lit { background: rgba(217, 119, 87, 0.18); border-color: rgba(217, 119, 87, 0.4); color: var(--text); }
+.scale-btn.on { background: var(--accent); border-color: var(--accent); color: #1a1008; font-weight: 600; transform: scale(1.08); box-shadow: 0 4px 14px rgba(217, 119, 87, 0.45); }
+
+/* Ja/Nein: Press-Feedback */
+.seg-btn:active { transform: scale(0.95); }
+
+/* Emoji-Picker */
+.emoji-picker { display: flex; align-items: center; gap: 12px; }
+.emoji-current {
+  width: 46px; height: 46px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--bg);
+  font-size: 22px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.emoji-current:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.12); }
+.emoji-current:active { transform: scale(0.93); }
+.emoji-current.empty { color: var(--text-dim); font-size: 20px; }
+.emoji-hint { font-size: 12px; color: var(--text-dim); }
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;
+  margin-top: 10px; padding: 12px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+  animation: fadeUp 0.2s ease;
+}
+.emoji-cell {
+  aspect-ratio: 1; border: 1px solid transparent; border-radius: 9px;
+  background: transparent; font-size: 20px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.12s, transform 0.12s, border-color 0.12s;
+}
+.emoji-cell:hover { background: var(--surface-2); transform: scale(1.15); }
+.emoji-cell.on { border-color: var(--accent); background: rgba(217, 119, 87, 0.2); }
+.emoji-cell.none { color: var(--err); font-size: 15px; }
+
+/* Streak-Flamme pulsiert */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.streak { animation: pulse 1.8s ease-in-out infinite; }
+
+/* Statistik-Karten heben beim Hover */
+.stat-card { transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s; }
+.stat-card:hover { border-color: #3a3a3a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25); }
+body.light .stat-card:hover { border-color: #cfc8bd; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
+
+/* Tracker-Zeilen heben beim Hover */
+.track-item { transition: border-color 0.15s, transform 0.15s; }
+.track-item:hover { border-color: #3a3a3a; transform: translateX(2px); }
+
+/* Toasts */
+.toast-wrap {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  z-index: 100; pointer-events: none;
+}
+.toast {
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 500;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  opacity: 0; transform: translateY(14px) scale(0.96);
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.toast.in { opacity: 1; transform: translateY(0) scale(1); }
+.toast.err { border-left-color: var(--err); }
+
 @media (max-width: 460px) {
   .card { padding: 26px 20px; }
   .scale-btn { width: 34px; height: 34px; }
   .week-stats { grid-template-columns: 1fr; }
   .nav { flex-wrap: wrap; }
   .nav-btn { flex: 1 1 30%; }
+  .emoji-grid { grid-template-columns: repeat(6, 1fr); }
+}
+
+/* Bewegungsreduktion respektieren */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
