@@ -63,6 +63,7 @@
         <button class="nav-btn active" data-view="heute">Heute</button>
         <button class="nav-btn" data-view="woche">Woche</button>
         <button class="nav-btn" data-view="verlauf">Verlauf</button>
+        <button class="nav-btn" data-view="notizen">Notizen</button>
         <button class="nav-btn" data-view="tracker">Tracker</button>
         <button class="nav-btn" data-view="mehr">Mehr</button>
       </nav>
@@ -114,6 +115,12 @@
         <div class="chart-box"><canvas id="chart-canvas"></canvas></div>
         <div id="chart-summary" class="chart-summary"></div>
         <p id="chart-empty" class="hint hidden">Für diesen Zeitraum gibt es noch keine Daten.</p>
+      </div>
+
+      <!-- ---- NOTIZEN / Reflexionen ---- -->
+      <div id="view-notizen" class="view hidden">
+        <h2 class="section-title">Notizen &amp; Reflexionen</h2>
+        <div id="notizen-list" class="notizen-list"></div>
       </div>
 
       <!-- ---- TRACKER (Verwaltung) ---- -->

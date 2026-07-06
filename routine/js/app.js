@@ -115,7 +115,7 @@ el("logout").addEventListener("click", () => { if (confirmDiscard()) db.auth.sig
 // ============================================================
 //  NAVIGATION
 // ============================================================
-const VIEWS = ["heute", "woche", "verlauf", "tracker", "mehr"];
+const VIEWS = ["heute", "woche", "verlauf", "notizen", "tracker", "mehr"];
 // Schutz vor Datenverlust: nur nachfragen, wenn wirklich ungespeicherte Änderungen da sind
 function confirmDiscard() {
   if (!dirty) return true;
@@ -142,7 +142,46 @@ function openView(view) {
   VIEWS.forEach((v) => el("view-" + v).classList.toggle("hidden", v !== view));
   if (view === "woche") ladeWoche();
   if (view === "verlauf") initVerlauf();
+  if (view === "notizen") ladeNotizen();
   if (view === "tracker") renderTrackerList();
+}
+
+// ============================================================
+//  NOTIZEN — Text-Tracker chronologisch
+// ============================================================
+async function ladeNotizen() {
+  const box = el("notizen-list");
+  box.innerHTML = `<p class="hint">lädt…</p>`;
+  const textTrackers = trackers.filter((t) => t.type === "text");
+  if (!textTrackers.length) {
+    box.innerHTML = `<p class="hint">Du hast keine Text-Tracker (z.B. „Reflexion"). Leg im Tracker-Tab einen an.</p>`;
+    return;
+  }
+  const nameById = Object.fromEntries(textTrackers.map((t) => [t.id, t]));
+  const from = addDays(todayStr(), -89); // letzte 90 Tage
+  const { data: entries, error } = await db.from("entries")
+    .select("entry_date, entry_values(tracker_id, value_text)")
+    .gte("entry_date", from).order("entry_date", { ascending: false });
+  if (error) { box.innerHTML = `<p class="hint">Fehler: ${escapeHtml(error.message)}</p>`; return; }
+
+  const days = (entries || []).map((e) => ({
+    date: e.entry_date,
+    notes: (e.entry_values || [])
+      .filter((v) => v.value_text && nameById[v.tracker_id])
+      .map((v) => ({ t: nameById[v.tracker_id], text: v.value_text })),
+  })).filter((d) => d.notes.length);
+
+  if (!days.length) {
+    box.innerHTML = `<p class="hint">Noch keine Notizen. Schreib heute eine im Heute-Tab.</p>`;
+    return;
+  }
+  box.innerHTML = days.map((d) => {
+    const head = parseDate(d.date).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "long", year: "numeric" });
+    const notes = d.notes.map((n) =>
+      `<div class="note"><div class="note-t">${n.t.icon || "📝"} ${escapeHtml(n.t.name)}</div><div class="note-x">${escapeHtml(n.text)}</div></div>`
+    ).join("");
+    return `<div class="note-day"><div class="note-date">${head}</div>${notes}</div>`;
+  }).join("");
 }
 
 // ============================================================
