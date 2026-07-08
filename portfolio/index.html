@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>document.documentElement.classList.add('js');</script>
 <style>
   :root{
     --bg:#0c0c0e;
@@ -55,7 +56,7 @@
   .lead{max-width:60ch;margin:26px 0 0;font-size:clamp(16px,2vw,19px);color:var(--muted)}
   .lead strong{color:var(--ink);font-weight:600}
   .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
-  .btn{font-size:15px;font-weight:500;padding:12px 22px;border-radius:8px;border:1px solid var(--line);transition:background .2s,border-color .2s,color .2s;cursor:pointer}
+  .btn{font-size:15px;font-weight:500;padding:12px 22px;border-radius:8px;border:1px solid var(--line);transition:background .2s,border-color .2s,color .2s,transform .25s cubic-bezier(.2,.7,.2,1);cursor:pointer;will-change:transform}
   .btn--solid{background:var(--ink);color:#0c0c0e;border-color:var(--ink)}
   .btn--solid:hover{background:#fff}
   .btn--ghost{background:transparent;color:var(--ink)}
@@ -122,20 +123,36 @@
   .foot a:hover{color:var(--ink)}
   .foot .links{display:flex;gap:16px;flex-wrap:wrap}
 
-  [data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
-  [data-reveal].in{opacity:1;transform:none}
-  @media(prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none}}
+  .js [data-reveal]{opacity:0;transform:translateY(16px);transition:opacity .6s cubic-bezier(.2,.7,.2,1),transform .6s cubic-bezier(.2,.7,.2,1)}
+  .js [data-reveal].in{opacity:1;transform:none}
+
+  /* --- polish --- */
+  #progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--ink);z-index:60;opacity:.8;transition:width .12s linear}
+  /* animated underline for nav + footer links */
+  .nav__links a, .foot .links a{position:relative}
+  .nav__links a::after, .foot .links a::after{content:"";position:absolute;left:0;bottom:-3px;height:1px;width:100%;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .28s cubic-bezier(.2,.7,.2,1)}
+  .nav__links a:hover::after, .foot .links a:hover::after{transform:scaleX(1)}
+  /* hero word entrance */
+  .word{display:inline-block;opacity:0;transform:translateY(22px);transition:opacity .55s cubic-bezier(.2,.7,.2,1),transform .55s cubic-bezier(.2,.7,.2,1)}
+  .word.on{opacity:1;transform:none}
+
+  @media(prefers-reduced-motion:reduce){
+    [data-reveal],.word{opacity:1;transform:none;transition:none}
+    #progress{display:none}
+    .btn{transition:background .2s,border-color .2s,color .2s}
+  }
 </style>
 </head>
 <body>
+<div id="progress" aria-hidden="true"></div>
 
 <nav>
   <div class="nav__in">
     <a class="brand" href="#top">Thomas Halbach<span> — Roblox scripter</span></a>
     <div class="nav__links">
-      <a href="#work">Work</a>
-      <a href="#capabilities">Capabilities</a>
-      <a href="#about">About</a>
+      <a class="u" href="#work">Work</a>
+      <a class="u" href="#capabilities">Capabilities</a>
+      <a class="u" href="#about">About</a>
     </div>
     <a class="nav__cta" href="#contact">Get in touch</a>
   </div>
@@ -144,7 +161,7 @@
 <header class="hero" id="top">
   <div class="wrap">
     <span class="status" data-reveal><i></i>Available for work</span>
-    <h1 data-reveal>Roblox scripter building the systems behind the game.</h1>
+    <h1 id="hero-title">Roblox scripter building the systems behind the game.</h1>
     <p class="lead" data-reveal>I'm <strong>Thomas</strong>, a scripter working in Luau. I build gameplay systems — weapons, enemies, saved data — and I learn fast: hand me something I haven't built before and I'll figure it out and ship it. I have <strong>three published games</strong>.</p>
     <div class="cta" data-reveal>
       <a class="btn btn--solid" href="#work">View work</a>
@@ -168,8 +185,8 @@
       </div>
       <p class="sub">Live on Roblox. Each is an ongoing project, so a few rough edges remain. Select one to read more.</p>
     </div>
-    <div class="work" data-reveal>
-      <a class="item" href="/spiele/survive-the-horde/">
+    <div class="work">
+      <a class="item" data-reveal href="/spiele/survive-the-horde/">
         <div class="item__no">01</div>
         <div>
           <div><span class="item__title">Survive the Horde</span><span class="item__tag">Survival FPS</span></div>
@@ -177,7 +194,7 @@
         </div>
         <div class="item__arrow">→</div>
       </a>
-      <a class="item" href="/spiele/realistic-weapon-test/">
+      <a class="item" data-reveal href="/spiele/realistic-weapon-test/">
         <div class="item__no">02</div>
         <div>
           <div><span class="item__title">Realistic Weapon Test</span><span class="item__tag">Sandbox</span></div>
@@ -185,7 +202,7 @@
         </div>
         <div class="item__arrow">→</div>
       </a>
-      <a class="item" href="/spiele/highest-roller-coaster/">
+      <a class="item" data-reveal href="/spiele/highest-roller-coaster/">
         <div class="item__no">03</div>
         <div>
           <div><span class="item__title">Highest Roller Coaster Ever</span><span class="item__tag">Physics</span></div>
@@ -206,11 +223,11 @@
       </div>
       <p class="sub">Areas I've worked in so far. If a project needs something not listed here, I'll learn it — that's how I built everything below.</p>
     </div>
-    <div class="caps" data-reveal>
-      <div class="cap"><div class="n">01</div><h3>Weapons &amp; combat</h3><p>Guns and combat that feel good to use — recoil, handling and first-person weapons.</p></div>
-      <div class="cap"><div class="n">02</div><h3>Enemies &amp; AI</h3><p>Enemies that move, attack and scale up — from basic mobs to bosses and waves.</p></div>
-      <div class="cap"><div class="n">03</div><h3>Server-side &amp; fair play</h3><p>Logic that runs on the server, so gameplay stays fair and clients can't cheat.</p></div>
-      <div class="cap"><div class="n">04</div><h3>Saving progress</h3><p>Storing player data reliably, so it's there when they come back.</p></div>
+    <div class="caps">
+      <div class="cap" data-reveal><div class="n">01</div><h3>Weapons &amp; combat</h3><p>Guns and combat that feel good to use — recoil, handling and first-person weapons.</p></div>
+      <div class="cap" data-reveal><div class="n">02</div><h3>Enemies &amp; AI</h3><p>Enemies that move, attack and scale up — from basic mobs to bosses and waves.</p></div>
+      <div class="cap" data-reveal><div class="n">03</div><h3>Server-side &amp; fair play</h3><p>Logic that runs on the server, so gameplay stays fair and clients can't cheat.</p></div>
+      <div class="cap" data-reveal><div class="n">04</div><h3>Saving progress</h3><p>Storing player data reliably, so it's there when they come back.</p></div>
     </div>
     <p class="note" data-reveal>I work with a modern, <strong>AI-assisted workflow</strong> to build and iterate quickly — and I understand, test and stand behind every system I ship.</p>
   </div>
@@ -267,8 +284,41 @@
 
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
-  var io = new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
-  document.querySelectorAll('[data-reveal]').forEach(function(el){io.observe(el);});
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // thin scroll-progress line
+  var prog = document.getElementById('progress');
+  function onScroll(){ var h=document.documentElement; var max=h.scrollHeight-h.clientHeight; prog.style.width=(max>0?(h.scrollTop/max*100):0)+'%'; }
+  addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+  // staggered reveals (delay by position within the group)
+  var io = new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.14});
+  document.querySelectorAll('[data-reveal]').forEach(function(el){
+    var sibs=[].slice.call(el.parentNode.children).filter(function(n){return n.getAttribute && n.getAttribute('data-reveal')!==null;});
+    var i=sibs.indexOf(el);
+    if(!reduce) el.style.transitionDelay=(Math.min(i,6)*70)+'ms';
+    io.observe(el);
+  });
+  // fail-safe: if the observer never fires (edge cases), reveal everything anyway
+  setTimeout(function(){ document.querySelectorAll('[data-reveal]:not(.in)').forEach(function(el){ el.classList.add('in'); }); }, 1500);
+
+  // hero: elegant word-by-word entrance
+  var h1=document.getElementById('hero-title');
+  if(h1 && !reduce){
+    var words=h1.textContent.trim().split(/\s+/);
+    h1.innerHTML=words.map(function(w){return '<span class="word">'+w+'</span>';}).join(' ');
+    var wEls=h1.querySelectorAll('.word');
+    wEls.forEach(function(sp,i){ sp.style.transitionDelay=(i*45)+'ms'; });
+    setTimeout(function(){ wEls.forEach(function(sp){ sp.classList.add('on'); }); }, 40);
+  }
+
+  // subtle magnetic buttons
+  if(!reduce && matchMedia('(pointer:fine)').matches){
+    document.querySelectorAll('.btn').forEach(function(b){
+      b.addEventListener('pointermove',function(e){var r=b.getBoundingClientRect();var mx=e.clientX-r.left-r.width/2;var my=e.clientY-r.top-r.height/2;b.style.transform='translate('+(mx*0.14).toFixed(1)+'px,'+(my*0.18).toFixed(1)+'px)';});
+      b.addEventListener('pointerleave',function(){b.style.transform='';});
+    });
+  }
 </script>
 </body>
 </html>
