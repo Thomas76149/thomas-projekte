@@ -106,44 +106,6 @@
   applyFilter(initialFilter());
 
   /* ============================================================
-     Turnier-Banner (WM/EM) — erscheint 30 Tage vorher und waehrend des Turniers
-     ============================================================ */
-  const TOURNAMENTS = [
-    { name:"WM 2026", emoji:"⚽", start:"2026-06-11", end:"2026-07-19", app:"spiele/wm2026/index.html", host:"USA · Kanada · Mexiko" },
-    { name:"EM 2028", emoji:"🏆", start:"2028-06-09", end:"2028-07-09", host:"GB & Irland" },
-    { name:"WM 2030", emoji:"⚽", start:"2030-06-13", end:"2030-07-21", host:"Spanien · Portugal · Marokko" },
-    { name:"EM 2032", emoji:"🏆", start:"2032-06-12", end:"2032-07-12", host:"Italien · Türkei" },
-  ];
-  const d2 = s => { const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); };
-  const DAY = 86400000;
-  function activeTournament(now){ for(const t of TOURNAMENTS){ const s=d2(t.start), e=new Date(+d2(t.end)+DAY); if(now>=s && now<e) return t; } return null; }
-  function soonTournament(now){ let best=null; for(const t of TOURNAMENTS){ const s=d2(t.start); const diff=(s-now)/DAY; if(diff>0 && diff<=30 && (!best||s<d2(best.start))) best=t; } return best; }
-
-  const tband = document.getElementById("tband");
-  (function renderBanner(now){
-    if(!tband) return;
-    const act = activeTournament(now);
-    if(act){
-      const day = Math.floor((now - d2(act.start))/DAY)+1;
-      tband.href = act.app || "#";
-      tband.classList.add("show");
-      tband.innerHTML = `<span class="tb-emoji">${act.emoji}</span>
-        <span><b>${esc(act.name)} läuft</b> · Tag ${day} <span class="live">live</span></span>
-        ${act.app?`<span class="tb-go">zur Übersicht →</span>`:""}`;
-      return;
-    }
-    const soon = soonTournament(now);
-    if(soon){
-      const days = Math.ceil((d2(soon.start)-now)/DAY);
-      tband.href = soon.app || "#";
-      tband.classList.add("show");
-      tband.innerHTML = `<span class="tb-emoji">${soon.emoji}</span>
-        <span><b>${esc(soon.name)}</b> startet in ${days} Tag${days===1?"":"en"} · ${esc(soon.host)}</span>
-        ${soon.app?`<span class="tb-go">Vorschau →</span>`:""}`;
-    }
-  })(new Date());
-
-  /* ============================================================
      Sternenhimmel — wird nur beim Laden und nach Resize gezeichnet
      ============================================================ */
   (function stars(){
